@@ -66,16 +66,15 @@ npm run preview
 │       └── global.css                 # CSS variables and resets
 ```
 
-## Features (To Be Implemented)
+## Features
 
-- ✅ Project scaffolding complete
-- ⬜ B+ tree data structure
-- ⬜ Insert operation with animation
-- ⬜ Delete operation with animation
-- ⬜ Step-by-step playback controls
-- ⬜ SVG pan and zoom
-- ⬜ Responsive design
-- ⬜ Tree statistics display
+- B+ Tree Visualizer with animated insert/delete operations
+- ER Diagram Builder with AI-powered schema generation
+- Step-by-step animation playback controls
+- Interactive SVG canvas with pan and zoom
+- Responsive design for all screen sizes
+- Multi-tool landing page with starfield background
+- External CPA Calculator integration
 
 ## Development Status
 
