@@ -1,0 +1,50 @@
+/* InputBox component styles - Claude-style centered input */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.textarea {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--accent-orange);
+  font-size: 14px;
+  margin-top: -8px;
+}
+
+.button {
+  padding: 12px 24px;
+  background-color: var(--accent-blue);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #3d7de0;
+}

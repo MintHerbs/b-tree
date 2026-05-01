@@ -1,0 +1,57 @@
+/* TreeNode component styles - B+ tree node with pointer and key slots */
+
+.node {
+  transition: all 0.3s ease;
+}
+
+.nodeRect {
+  fill: var(--bg-card);
+  stroke: var(--border-subtle);
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.nodeRect.highlighted {
+  stroke: var(--border-highlight);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px var(--border-highlight));
+}
+
+.keySlot {
+  fill: var(--bg-card);
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.pointerSlot {
+  fill: var(--pointer-slot);
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.keyText {
+  fill: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.keyText.highlightedKey {
+  fill: var(--accent-orange);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.leafLabel {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-body);
+  text-anchor: middle;
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}

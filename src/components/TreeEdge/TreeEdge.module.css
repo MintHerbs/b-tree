@@ -1,0 +1,16 @@
+/* TreeEdge component styles - lines connecting tree nodes */
+
+.edge {
+  stroke: var(--edge-color);
+  stroke-width: 2;
+  fill: none;
+  transition: stroke 0.3s ease;
+}
+
+.leafPointer {
+  stroke: var(--accent-green);
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+  fill: none;
+  transition: stroke 0.3s ease;
+}
