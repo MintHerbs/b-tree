@@ -25,23 +25,12 @@ export function useBPlusTree(order = 3) {
       values = [values]
     }
 
-    // Clone tree and insert new values
+    // Insert directly into the tree (library handles everything)
     setTree(currentTree => {
       const newTree = new BPlusTree(currentTree.order)
       
-      // Get all existing keys
-      const allKeys = []
-      const collectKeys = (node) => {
-        if (node.isLeaf) {
-          allKeys.push(...node.keys)
-        } else {
-          node.children.forEach(child => collectKeys(child))
-        }
-      }
-      collectKeys(currentTree.root)
-      
-      // Insert existing keys plus new values
-      allKeys.forEach(k => newTree.insert(k))
+      const existingKeys = currentTree.getAllKeys()
+      existingKeys.forEach(k => newTree.insert(k))
       values.forEach(v => newTree.insert(v))
       
       return newTree
@@ -54,26 +43,18 @@ export function useBPlusTree(order = 3) {
       values = [values]
     }
 
-    // Clone tree and delete values
+    // Delete directly from the tree (library handles everything)
     setTree(currentTree => {
       const newTree = new BPlusTree(currentTree.order)
       
-      // Get all existing keys
-      const allKeys = []
-      const collectKeys = (node) => {
-        if (node.isLeaf) {
-          allKeys.push(...node.keys)
-        } else {
-          node.children.forEach(child => collectKeys(child))
-        }
-      }
-      collectKeys(currentTree.root)
-      
-      // Insert existing keys except deleted values
-      allKeys.forEach(k => {
-        if (!values.some(v => String(v).toLowerCase() === String(k).toLowerCase())) {
-          newTree.insert(k)
-        }
+      const existingKeys = currentTree.getAllKeys()
+      const normalizedValues = values.map(v => {
+        const str = String(v).toLowerCase().trim()
+        const num = Number(str)
+        return isNaN(num) ? str : num
+      })
+      existingKeys.forEach(k => {
+        if (!normalizedValues.includes(k)) newTree.insert(k)
       })
       
       return newTree
