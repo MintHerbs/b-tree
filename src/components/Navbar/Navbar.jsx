@@ -62,10 +62,10 @@ function Navbar({ order, onOrderChange }) {
             <input
               id="order"
               type="number"
-              min="2"
+              min="3"
               max="10"
               value={order}
-              onChange={(e) => onOrderChange(parseInt(e.target.value) || 2)}
+              onChange={(e) => onOrderChange(parseInt(e.target.value) || 3)}
             />
           </div>
         )}

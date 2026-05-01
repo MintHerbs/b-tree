@@ -80,15 +80,15 @@ function HeroText({ activeTool, order, onOrderChange }) {
   const handleOrderBlur = (e) => {
     const value = parseInt(e.target.value)
     // Reset to valid range if invalid
-    if (isNaN(value) || value < 2) {
-      onOrderChange(2)
+    if (isNaN(value) || value < 3) {
+      onOrderChange(3)
     } else if (value > 10) {
       onOrderChange(10)
     }
   }
 
-  // Determine if order is invalid (below 2)
-  const isInvalid = order < 2
+  // Determine if order is invalid (below 3)
+  const isInvalid = order < 3
 
   return (
     <div className={styles.container}>
@@ -102,7 +102,7 @@ function HeroText({ activeTool, order, onOrderChange }) {
             <span className={`${styles.orderBox} ${isInvalid ? styles.orderBoxError : ''}`}>
               <input
                 type="number"
-                min="2"
+                min="3"
                 max="10"
                 value={order}
                 onChange={handleOrderChange}

@@ -6,7 +6,7 @@ function mkNode(isLeaf) {
 
 export class BPlusTree {
   constructor(order = 4) {
-    if (order < 2) throw new Error('Order must be at least 2')
+    if (order < 3) throw new Error('Order must be at least 3')
     this.order = order
     this.maxKeys = order - 1               // m - 1
     this.maxChildren = order               // m

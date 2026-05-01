@@ -10,7 +10,7 @@ import styles from './LandingPage.module.css'
 
 function LandingPage() {
   const [activeTool, setActiveTool] = useState('btree')
-  const [order, setOrder] = useState(2)
+  const [order, setOrder] = useState(3)
   const [showToast, setShowToast] = useState(false)
   const navigate = useNavigate()
 
