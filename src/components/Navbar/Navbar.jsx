@@ -1,5 +1,6 @@
 // Top navigation bar - displays app name, order input, and about link
 import { useNavigate, useLocation } from 'react-router-dom'
+import moonLogo from '../../img/moon.svg'
 import styles from './Navbar.module.css'
 
 function Navbar({ order, onOrderChange }) {
@@ -12,13 +13,34 @@ function Navbar({ order, onOrderChange }) {
     navigate('/')
   }
 
+  // On landing page, render only the About link in top-right corner
+  if (isLandingPage) {
+    return (
+      <nav className={styles.navbarLanding}>
+        <a href="#" className={styles.aboutLink}>About</a>
+      </nav>
+    )
+  }
+
+  // On tree page, render full navbar
+  // On tree page, render full navbar
   return (
     <nav className={styles.navbar}>
-      {!isLandingPage && (
-        <div className={styles.left}>
-          <h2 className={styles.title}>B+ Tree Visualizer</h2>
-        </div>
-      )}
+      <div className={styles.left}>
+        <a 
+          href="https://www.linkedin.com/in/offrian/" 
+          target="_blank" 
+          rel="noreferrer"
+          className={styles.logoLink}
+        >
+          <img 
+            src={moonLogo} 
+            alt="Moon logo" 
+            className={styles.logo}
+          />
+        </a>
+        <h2 className={styles.title}>B+ Tree Visualizer</h2>
+      </div>
       <div className={styles.right}>
         {onOrderChange && (
           <div className={styles.orderInput}>

@@ -1,11 +1,24 @@
 // Converts B+ tree structure to x/y coordinates for SVG rendering
 // Uses level-based spacing algorithm (can be upgraded to Reingold-Tilford)
 
-const KEY_SLOT_WIDTH = 50
 const POINTER_SLOT_WIDTH = 24
 const NODE_HEIGHT = 60
 const LEVEL_VERTICAL_SPACING = 120
 const MIN_HORIZONTAL_SPACING = 40
+
+/**
+ * Calculate the width of a key slot based on the key's text length
+ * @param {string|number} key - The key value
+ * @returns {number} - Width in pixels
+ */
+function calculateKeySlotWidth(key) {
+  const keyString = String(key)
+  const textLength = keyString.length
+  // Each character is approximately 9px, plus 24px padding
+  const calculatedWidth = textLength * 9 + 24
+  // Minimum width of 48px
+  return Math.max(48, calculatedWidth)
+}
 
 /**
  * Calculate layout positions for all nodes in the tree
@@ -32,8 +45,8 @@ export function calculateTreeLayout(root) {
       levels[level] = []
     }
 
-    // Calculate node dimensions based on key count
-    const dimensions = calculateNodeDimensions(node.keys.length, node.keys.length)
+    // Calculate node dimensions based on actual key lengths
+    const dimensions = calculateNodeDimensions(node.keys)
     
     const nodeData = {
       id: node.id,
@@ -41,6 +54,7 @@ export function calculateTreeLayout(root) {
       isLeaf: node.isLeaf,
       width: dimensions.width,
       height: dimensions.height,
+      keySlotWidths: dimensions.keySlotWidths,
       nextLeafId: node.next ? node.next.id : null,
       children: node.children || []
     }
@@ -90,6 +104,7 @@ export function calculateTreeLayout(root) {
         width: nodeData.width,
         height: nodeData.height,
         keys: nodeData.keys,
+        keySlotWidths: nodeData.keySlotWidths,
         isLeaf: nodeData.isLeaf,
         nextLeafId: nodeData.nextLeafId
       })
@@ -116,31 +131,37 @@ export function calculateTreeLayout(root) {
 }
 
 /**
- * Calculate node dimensions based on number of keys
- * @param {number} keyCount - Number of keys in the node
- * @param {number} order - Tree order (optional, not used in current implementation)
- * @returns {Object} - { width, height }
+ * Calculate node dimensions based on the actual keys
+ * @param {Array} keys - Array of key values
+ * @returns {Object} - { width, height, keySlotWidths }
  */
-export function calculateNodeDimensions(keyCount, order) {
+export function calculateNodeDimensions(keys) {
   // B+ tree node layout: [ P | K1 | P | K2 | P | ... | Kn | P ]
-  // Number of pointer slots = keyCount + 1
-  // Number of key slots = keyCount
+  // Number of pointer slots = keys.length + 1
+  // Number of key slots = keys.length
   
+  const keyCount = keys.length
   const numPointerSlots = keyCount + 1
-  const numKeySlots = keyCount
   
-  const width = (numKeySlots * KEY_SLOT_WIDTH) + (numPointerSlots * POINTER_SLOT_WIDTH)
+  // Calculate width for each key slot based on its text length
+  const keySlotWidths = keys.map(key => calculateKeySlotWidth(key))
+  
+  // Total width = all pointer slots + all key slots
+  const totalKeyWidth = keySlotWidths.reduce((sum, width) => sum + width, 0)
+  const totalPointerWidth = numPointerSlots * POINTER_SLOT_WIDTH
+  const width = totalKeyWidth + totalPointerWidth
   const height = NODE_HEIGHT
 
-  return { width, height }
+  return { width, height, keySlotWidths }
 }
 
 /**
  * Get slot positions within a node for rendering
  * @param {number} keyCount - Number of keys in the node
+ * @param {Array} keySlotWidths - Array of widths for each key slot
  * @returns {Array} - Array of slot objects with { type: 'pointer'|'key', x, width, index }
  */
-export function getNodeSlots(keyCount) {
+export function getNodeSlots(keyCount, keySlotWidths = []) {
   const slots = []
   let currentX = 0
 
@@ -157,14 +178,15 @@ export function getNodeSlots(keyCount) {
 
     // Key slot (except after the last pointer)
     if (i < keyCount) {
+      const keySlotWidth = keySlotWidths[i] || 48 // fallback to minimum
       slots.push({
         type: 'key',
         x: currentX,
-        width: KEY_SLOT_WIDTH,
+        width: keySlotWidth,
         index: i,
         keyIndex: i
       })
-      currentX += KEY_SLOT_WIDTH
+      currentX += keySlotWidth
     }
   }
 

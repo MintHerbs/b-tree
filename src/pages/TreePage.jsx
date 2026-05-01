@@ -1,6 +1,7 @@
 // Main visualization screen - three-column layout with TreeCanvas, OperationsPanel, and StepControls
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import Starfield from '../components/Starfield/Starfield'
 import Navbar from '../components/Navbar/Navbar'
 import TreeCanvas from '../components/TreeCanvas/TreeCanvas'
 import OperationsPanel from '../components/OperationsPanel/OperationsPanel'
@@ -52,6 +53,9 @@ function TreePage() {
 
   return (
     <div className={styles.container}>
+      {/* Starfield background - z-index: 0 */}
+      <Starfield />
+      
       <Navbar order={order} />
       
       <div className={styles.mainContent}>

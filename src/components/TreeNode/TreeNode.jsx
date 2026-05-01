@@ -3,10 +3,10 @@ import styles from './TreeNode.module.css'
 import { getNodeSlots } from '../../lib/treeLayout'
 
 function TreeNode({ node, isHighlighted, highlightedKeys = [] }) {
-  const { id, x, y, keys, width, height, isLeaf } = node
+  const { id, x, y, keys, width, height, isLeaf, keySlotWidths = [] } = node
   
   // Get slot layout for this node
-  const slots = getNodeSlots(keys.length)
+  const slots = getNodeSlots(keys.length, keySlotWidths)
 
   return (
     <g className={styles.node} transform={`translate(${x - width / 2}, ${y - height / 2})`}>

@@ -5,32 +5,32 @@
 }
 
 .nodeRect {
-  fill: var(--bg-card);
-  stroke: var(--border-subtle);
+  fill: #0d0d0d;
+  stroke: #2a2a3a;
   stroke-width: 2;
   transition: all 0.3s ease;
 }
 
 .nodeRect.highlighted {
-  stroke: var(--border-highlight);
+  stroke: #8B5CF6;
   stroke-width: 3;
-  filter: drop-shadow(0 0 12px var(--border-highlight));
+  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.4));
 }
 
 .keySlot {
-  fill: var(--bg-card);
-  stroke: var(--border-subtle);
+  fill: #0d0d0d;
+  stroke: #2a2a3a;
   stroke-width: 1;
 }
 
 .pointerSlot {
-  fill: var(--pointer-slot);
-  stroke: var(--border-subtle);
+  fill: #111128;
+  stroke: #2a2a3a;
   stroke-width: 1;
 }
 
 .keyText {
-  fill: var(--text-primary);
+  fill: #ffffff;
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 500;

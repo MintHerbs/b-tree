@@ -79,7 +79,7 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
   return (
     <div className={styles.panel}>
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Insert Values</h3>
+        <h3 className={styles.sectionTitle}>INSERT VALUES</h3>
         <input
           className={styles.input}
           type="text"
@@ -98,7 +98,7 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
       </div>
 
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Delete Values</h3>
+        <h3 className={styles.sectionTitle}>DELETE VALUES</h3>
         <input
           className={styles.input}
           type="text"
@@ -108,7 +108,7 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
           onKeyPress={(e) => handleKeyPress(e, handleDelete)}
         />
         <button 
-          className={styles.button} 
+          className={styles.deleteButton} 
           onClick={handleDelete}
           disabled={!deleteInput.trim()}
         >
@@ -117,7 +117,7 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
       </div>
 
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Tree Info</h3>
+        <h3 className={styles.sectionTitle}>TREE INFO</h3>
         <div className={styles.info}>
           <div className={styles.infoRow}>
             <span>Order (t):</span>

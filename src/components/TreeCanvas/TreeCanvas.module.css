@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-dark);
+  background-color: transparent;
   overflow: hidden;
   position: relative;
 }
@@ -15,6 +15,7 @@
   height: 100%;
   cursor: grab;
   user-select: none;
+  background: transparent;
 }
 
 .svg:active {

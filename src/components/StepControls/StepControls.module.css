@@ -5,8 +5,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--bg-controls);
-  border-top: 1px solid var(--border-subtle);
+  background-color: #000000;
+  border-top: 1px solid #1a1a1a;
   z-index: 100;
   gap: var(--spacing-lg);
   min-height: 72px;
@@ -39,23 +39,22 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background-color: var(--bg-card);
-  color: var(--text-primary);
+  background-color: transparent;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 6px;
-  transition: all 0.2s;
-  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid #333333;
+  cursor: pointer;
 }
 
 .button:hover:not(:disabled) {
-  background-color: var(--border-subtle);
-  border-color: var(--accent-blue);
-  transform: translateY(-1px);
+  border-color: #8B5CF6;
 }
 
 .button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .button:disabled {
@@ -64,13 +63,13 @@
 }
 
 .playButton {
-  background-color: var(--accent-blue);
-  border-color: var(--accent-blue);
+  background-color: #8B5CF6;
+  border-color: #8B5CF6;
 }
 
 .playButton:hover:not(:disabled) {
-  background-color: #3d7de0;
-  border-color: #3d7de0;
+  background-color: #7c3aed;
+  border-color: #7c3aed;
 }
 
 .buttonIcon {
@@ -85,14 +84,14 @@
 .stepCounter {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: rgba(255, 255, 255, 0.6);
   font-family: var(--font-mono);
   letter-spacing: 0.5px;
 }
 
 .description {
   font-size: 13px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.85);
   text-align: center;
   max-width: 400px;
   white-space: nowrap;
@@ -102,7 +101,7 @@
 
 .speedLabel {
   font-size: 13px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
 }
 
@@ -112,7 +111,7 @@
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--border-subtle);
+  background: #222222;
   border-radius: 2px;
   outline: none;
 }
@@ -122,21 +121,21 @@
   appearance: none;
   width: 16px;
   height: 16px;
-  background: var(--accent-blue);
+  background: #8B5CF6;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .slider::-webkit-slider-thumb:hover {
-  background: #3d7de0;
+  background: #7c3aed;
   transform: scale(1.1);
 }
 
 .slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  background: var(--accent-blue);
+  background: #8B5CF6;
   border-radius: 50%;
   cursor: pointer;
   border: none;
@@ -144,8 +143,13 @@
 }
 
 .slider::-moz-range-thumb:hover {
-  background: #3d7de0;
+  background: #7c3aed;
   transform: scale(1.1);
+}
+
+.slider::-moz-range-track {
+  background: #222222;
+  border-radius: 2px;
 }
 
 .slider:disabled {
@@ -163,7 +167,7 @@
 
 .speedValue {
   font-size: 13px;
-  color: var(--text-primary);
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
   font-family: var(--font-mono);
   min-width: 40px;

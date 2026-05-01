@@ -5,20 +5,52 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background-color: var(--bg-panel);
-  border-bottom: 1px solid var(--border-subtle);
+  background-color: #000000;
+  border-bottom: 1px solid #1a1a1a;
   height: 60px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Landing page - minimal floating link */
+.navbarLanding {
+  position: fixed;
+  top: 16px;
+  right: 24px;
+  z-index: 10;
+  background: none;
+  border: none;
+  padding: 0;
+  height: auto;
 }
 
 .left {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.logoLink:hover {
+  opacity: 1;
+}
+
+.logo {
+  width: 28px;
+  height: 28px;
 }
 
 .title {
   font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
 }
 
 .right {
@@ -49,26 +81,26 @@
 }
 
 .resetButton {
-  padding: 6px 12px;
-  background-color: var(--bg-card);
-  color: var(--text-primary);
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #8B5CF6;
   font-size: 14px;
   font-weight: 500;
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
+  border: 1px solid #8B5CF6;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .resetButton:hover {
-  background-color: var(--border-subtle);
-  border-color: var(--accent-blue);
+  background-color: rgba(139, 92, 246, 0.15);
 }
 
 .aboutLink {
-  color: var(--accent-blue);
+  color: #8B5CF6;
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .aboutLink:hover {
@@ -80,8 +112,18 @@
     padding: 12px 16px;
   }
 
+  .navbarLanding {
+    top: 12px;
+    right: 16px;
+  }
+
   .title {
     font-size: 16px;
+  }
+
+  .logo {
+    width: 24px;
+    height: 24px;
   }
 
   .right {
@@ -94,6 +136,6 @@
 
   .resetButton {
     font-size: 13px;
-    padding: 5px 10px;
+    padding: 6px 12px;
   }
 }
