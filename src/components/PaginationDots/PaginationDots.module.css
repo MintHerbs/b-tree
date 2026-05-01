@@ -1,0 +1,22 @@
+/* PaginationDots component styles */
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #333333;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dot.active {
+  background-color: #8B5CF6;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.6);
+}

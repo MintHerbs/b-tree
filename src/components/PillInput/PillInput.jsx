@@ -1,9 +1,16 @@
 // Pill-shaped text input with conditional send button
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import styles from './PillInput.module.css'
 
-function PillInput({ activeTool, onSubmit }) {
-  const [value, setValue] = useState('')
+function PillInput({ activeTool, onSubmit, placeholder, defaultValue = '' }) {
+  const [value, setValue] = useState(defaultValue)
+
+  // Update value if defaultValue changes
+  useEffect(() => {
+    if (defaultValue) {
+      setValue(defaultValue)
+    }
+  }, [defaultValue])
 
   const handleSubmit = () => {
     if (value.trim().length === 0) return
@@ -19,13 +26,16 @@ function PillInput({ activeTool, onSubmit }) {
   }
 
   const hasContent = value.length > 0
+  
+  // Use custom placeholder or default
+  const inputPlaceholder = placeholder || "banana, 67, 69, cabbage, moon..."
 
   return (
     <div className={styles.container}>
       <input
         type="text"
         className={styles.input}
-        placeholder="banana, 67, 69, cabbage, moon..."
+        placeholder={inputPlaceholder}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyPress={handleKeyPress}

@@ -278,38 +278,31 @@ export { BPlusNode as BPlusTreeNode }
 // --- TEST ---
 // Run with: node src/lib/BPlusTree.js
 if (typeof process !== 'undefined' && process.argv[1]?.endsWith('BPlusTree.js')) {
-  const tree = new BPlusTree(3)
-  ;[5, 3, 8, 1, 9, 2, 7].forEach(k => tree.insert(k))
+  const tree = new BPlusTree(2) // order 3 = max 2 keys per node
+  ;['5', '15', '25', '35', '45'].forEach(k => tree.insert(k))
 
-  function printNode(node, prefix = '') {
-    const tag = node.isLeaf ? ' (leaf)' : ' (internal)'
-    console.log(`${prefix}[${node.keys.join(', ')}]${tag}  id=${node.id}`)
-    if (!node.isLeaf) node.children.forEach(c => printNode(c, prefix + '  '))
+  console.log('=== Tree structure after inserting [5,15,25,35,45] with t=2 (order 3) ===')
+  console.log('BFS level-by-level:\n')
+
+  // BFS traversal
+  const queue = [{ node: tree.root, level: 0 }]
+  let currentLevel = 0
+
+  while (queue.length > 0) {
+    const { node, level } = queue.shift()
+
+    if (level > currentLevel) {
+      console.log('') // new line for new level
+      currentLevel = level
+    }
+
+    const tag = node.isLeaf ? 'L' : 'I'
+    process.stdout.write(`[${node.keys.join(',')}](${tag}) `)
+
+    if (!node.isLeaf) {
+      node.children.forEach(child => queue.push({ node: child, level: level + 1 }))
+    }
   }
 
-  console.log('=== Tree structure after inserting [5,3,8,1,9,2,7] with t=3 ===')
-  printNode(tree.root)
-
-  console.log('\n=== Leaf chain (linked list) ===')
-  let leaf = tree.root
-  while (!leaf.isLeaf) leaf = leaf.children[0]
-  const parts = []
-  while (leaf) { parts.push('[' + leaf.keys.join(', ') + ']'); leaf = leaf.next }
-  console.log(parts.join(' → '))
-
-  console.log('\n=== Stats ===', tree.getStats())
-
-  console.log('\n=== Search ===')
-  ;[1, 5, 7, 4, 9].forEach(k => console.log(`  search(${k}) → ${tree.search(k)}`))
-
-  console.log('\n=== Delete 5 (a separator key) then delete 3 ===')
-  tree.delete(5)
-  tree.delete(3)
-  printNode(tree.root)
-  let l = tree.root
-  while (!l.isLeaf) l = l.children[0]
-  const p2 = []
-  while (l) { p2.push('[' + l.keys.join(', ') + ']'); l = l.next }
-  console.log('Leaf chain:', p2.join(' → '))
-  console.log('Stats after deletes:', tree.getStats())
+  console.log('\n')
 }

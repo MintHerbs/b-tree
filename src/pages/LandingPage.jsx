@@ -44,13 +44,10 @@ function LandingPage() {
         navigate('/tree', { state: { values, order } })
       }
     } else if (activeTool === 'erd') {
-      // Show "coming soon" toast
-      setShowToast(true)
-      
-      // Hide toast after 2500ms
-      setTimeout(() => {
-        setShowToast(false)
-      }, 2500)
+      // Navigate to ERD page with question
+      if (value.trim().length > 0) {
+        navigate('/erd', { state: { question: value.trim() } })
+      }
     }
   }
 

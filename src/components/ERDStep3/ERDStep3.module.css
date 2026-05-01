@@ -1,0 +1,50 @@
+/* ERDStep3 component styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+  position: relative;
+}
+
+.backButton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #8B5CF6;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  color: #7c3aed;
+  text-decoration: underline;
+}
+
+.title {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.error {
+  font-size: 0.9rem;
+  color: #ef4444;
+  margin: 0;
+  margin-top: -12px;
+}

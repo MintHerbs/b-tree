@@ -1,0 +1,74 @@
+/* ERDPage styles */
+
+.erdPage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #000000;
+}
+
+.erdMain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 60px;
+}
+
+.resetButton {
+  position: absolute;
+  top: 80px;
+  right: 40px;
+  padding: 10px 20px;
+  background-color: transparent;
+  color: #8B5CF6;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #8B5CF6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.resetButton:hover {
+  background-color: rgba(139, 92, 246, 0.15);
+}
+
+.resetButton:active {
+  transform: scale(0.98);
+}
+
+.stepContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.stepTitle {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
+}
+
+.stepSubtitle {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.canvasWrapper {
+  width: 90vw;
+  height: 70vh;
+}
