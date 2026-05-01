@@ -79,7 +79,7 @@ function AboutPage() {
         {/* Text content */}
         <div className={styles.textContainer}>
           <p className={styles.intro}>
-            Just a dude who codes sometimes, gets lost in fantasy novels (Tolkien, Herbert — the ones that make you question reality a little), and is currently down a rabbit hole of astrophysics research. Honestly don't know what to write here so I'll let Samwise Gamgee from Lord of the Rings do the talking:
+            Just a dude who codes sometimes, gets lost in fantasy novels (Tolkien, Herbert - the ones that make you question reality a little), and is currently down a rabbit hole of astrophysics research. Honestly don't know what to write here so I'll let Samwise Gamgee from Lord of the Rings do the talking:
           </p>
           
           <div className={styles.divider} />

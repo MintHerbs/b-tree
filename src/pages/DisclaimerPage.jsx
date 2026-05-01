@@ -35,7 +35,7 @@ function DisclaimerPage() {
           <h1 className={styles.title}>Open Source & Built for Students</h1>
           
           <p className={styles.description}>
-            This tool is open source — built by students, for students. If you want to contribute, 
+            This tool is open source - built by students, for students. If you want to contribute, 
             fix something that's broken, or just poke around the codebase, you're welcome to. 
             Pull requests are open.
           </p>
@@ -55,7 +55,7 @@ function DisclaimerPage() {
             </p>
             
             <p className={styles.warningText}>
-              This tool is intended as a study aid only. Any academic work submitted must be your own — 
+              This tool is intended as a study aid only. Any academic work submitted must be your own - 
               if your institution prohibits the use of AI-assisted tools in assessments, it is your 
               responsibility to comply with those guidelines. The developers of this tool take no 
               responsibility for academic misconduct arising from its misuse.
