@@ -1,6 +1,7 @@
 // About page with Lottie animation and personal story
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import lottie from 'lottie-web'
 import Starfield from '../components/Starfield/Starfield'
 import Sidebar from '../components/Sidebar/Sidebar'
 import alienAnimation from '../img/alien.json'
@@ -26,36 +27,30 @@ function AboutPage() {
   useEffect(() => {
     let animationInstance = null
 
-    const loadLottie = async () => {
+    if (lottieRef.current) {
       try {
-        const lottie = await import('lottie-web')
-        if (lottieRef.current && !animationInstance) {
-          // Clear any existing content first
-          lottieRef.current.innerHTML = ''
-          
-          animationInstance = lottie.default.loadAnimation({
-            container: lottieRef.current,
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            animationData: alienAnimation
-          })
-        }
+        // Clear any existing content first
+        lottieRef.current.innerHTML = ''
+        
+        animationInstance = lottie.loadAnimation({
+          container: lottieRef.current,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          animationData: alienAnimation
+        })
       } catch (error) {
         console.error('Failed to load Lottie:', error)
         // Fallback: show animated emoji if Lottie fails to load
-        if (lottieRef.current && !animationInstance) {
+        if (lottieRef.current) {
           lottieRef.current.innerHTML = '<div class="' + styles.alienEmoji + '">👽</div>'
         }
       }
     }
 
-    loadLottie()
-
     return () => {
       if (animationInstance) {
         animationInstance.destroy()
-        animationInstance = null
       }
     }
   }, [])
