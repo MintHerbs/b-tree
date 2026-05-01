@@ -13,10 +13,107 @@ class BPlusNode {
 
 export class BPlusTree {
   constructor(order = 3) {
-    this.order = order // m = order (max children for internal, max keys = m-1)
-    this.maxKeys = order - 1
-    this.minKeys = Math.ceil(order / 2) - 1 // ⌈m/2⌉ - 1 for leaves
+    // Validate order
+    if (order < 2) {
+      throw new Error('Order must be at least 2')
+    }
+    
+    this.order = order // m = order
+    
+    // B+ Tree formulas:
+    // Max keys = m - 1 (but we use m for implementation convenience)
+    // Max children = m
+    // Min children = ⌈m/2⌉
+    // Min keys (leaf) = ⌈(m-1)/2⌉ 
+    // Min keys (internal) = ⌈m/2⌉ - 1
+    
+    this.maxKeys = order // Maximum keys allowed in a node
+    this.maxChildren = order + 1 // Maximum children for internal nodes
+    
+    this.minKeys = Math.ceil((order - 1) / 2) // Minimum keys for leaf nodes (except root)
+    this.minKeysInternal = Math.ceil(order / 2) - 1 // Minimum keys for internal nodes (except root)
+    this.minChildren = Math.ceil(order / 2) // Minimum children for internal nodes
+    
     this.root = new BPlusNode(true)
+  }
+  
+  // Get current tree parameters for display/debugging
+  getParameters() {
+    return {
+      order: this.order,
+      maxKeys: this.maxKeys,
+      maxChildren: this.maxChildren,
+      minKeys: this.minKeys,
+      minKeysInternal: this.minKeysInternal,
+      minChildren: this.minChildren
+    }
+  }
+  
+  // Validate tree structure (for debugging/testing)
+  validate() {
+    const errors = []
+    
+    const validateNode = (node, path = 'root') => {
+      // Check max keys constraint
+      if (node.keys.length > this.maxKeys) {
+        errors.push(`${path}: Has ${node.keys.length} keys, exceeds max ${this.maxKeys}`)
+      }
+      
+      // Check min keys constraint (except root)
+      if (node !== this.root) {
+        const minRequired = node.isLeaf ? this.minKeys : this.minKeysInternal
+        if (node.keys.length < minRequired) {
+          errors.push(`${path}: Has ${node.keys.length} keys, below min ${minRequired}`)
+        }
+      }
+      
+      // For internal nodes, validate children
+      if (!node.isLeaf) {
+        // Check max children
+        if (node.children.length > this.maxChildren) {
+          errors.push(`${path}: Has ${node.children.length} children, exceeds max ${this.maxChildren}`)
+        }
+        
+        // Check min children (except root)
+        if (node !== this.root && node.children.length < this.minChildren) {
+          errors.push(`${path}: Has ${node.children.length} children, below min ${this.minChildren}`)
+        }
+        
+        // Verify children count = keys count + 1
+        if (node.children.length !== node.keys.length + 1) {
+          errors.push(`${path}: Children count (${node.children.length}) != keys count + 1 (${node.keys.length + 1})`)
+        }
+        
+        // Verify keys are in sorted order
+        for (let i = 1; i < node.keys.length; i++) {
+          if (this._cmp(node.keys[i-1], node.keys[i]) >= 0) {
+            errors.push(`${path}: Keys not in sorted order at index ${i}`)
+          }
+        }
+        
+        // Recursively validate children
+        node.children.forEach((child, i) => {
+          // Verify parent pointer
+          if (child.parent !== node) {
+            errors.push(`${path}.child[${i}]: Parent pointer incorrect`)
+          }
+          validateNode(child, `${path}.child[${i}]`)
+        })
+      } else {
+        // For leaf nodes, verify keys are sorted
+        for (let i = 1; i < node.keys.length; i++) {
+          if (this._cmp(node.keys[i-1], node.keys[i]) >= 0) {
+            errors.push(`${path}: Keys not in sorted order at index ${i}`)
+          }
+        }
+      }
+    }
+    
+    validateNode(this.root)
+    return {
+      valid: errors.length === 0,
+      errors
+    }
   }
 
   // Normalize key for comparison
@@ -72,7 +169,7 @@ export class BPlusTree {
     leaf.keys.push(key)
     leaf.keys.sort((a, b) => this._cmp(a, b))
 
-    // Split if exceeds maxKeys
+    // Split if exceeds maxKeys (split when we have more than order keys)
     if (leaf.keys.length > this.maxKeys) {
       this._splitLeaf(leaf)
     }
@@ -158,9 +255,13 @@ export class BPlusTree {
 
     leaf.keys.splice(idx, 1)
 
-    if (leaf === this.root) return // root leaf has no minimum
-    if (leaf.keys.length >= this.minKeys) return // still meets minimum
+    // Root leaf has no minimum requirement
+    if (leaf === this.root) return
+    
+    // If leaf still meets minimum, we're done
+    if (leaf.keys.length >= this.minKeys) return
 
+    // Leaf is underflow, need to fix
     this._fixLeaf(leaf)
   }
 
@@ -199,8 +300,8 @@ export class BPlusTree {
       leaf.next = right.next
       parent.keys.splice(idx, 1)
       parent.children.splice(idx + 1, 1)
-    } else {
-      // Absorb leaf into left sibling
+    } else if (idx > 0) {
+      // Absorb leaf into left sibling (only if left sibling exists)
       const left = parent.children[idx - 1]
       left.keys.push(...leaf.keys)
       left.keys.sort((a, b) => this._cmp(a, b)) // Sort after merge
@@ -220,18 +321,21 @@ export class BPlusTree {
       }
       return
     }
-    if (node.keys.length >= this.minKeys) return
+    // Use appropriate minimum based on node type
+    const minRequired = node.isLeaf ? this.minKeys : this.minKeysInternal
+    if (node.keys.length >= minRequired) return
     this._fixInternal(node)
   }
 
   _fixInternal(node) {
     const parent = node.parent
     const idx = parent.children.indexOf(node)
+    const minRequired = this.minKeysInternal
 
     // Attempt: borrow from right sibling
     if (idx < parent.children.length - 1) {
       const right = parent.children[idx + 1]
-      if (right.keys.length > this.minKeys) {
+      if (right.keys.length > minRequired) {
         node.keys.push(parent.keys[idx])      // pull separator down to end of node
         node.keys.sort((a, b) => this._cmp(a, b)) // Sort after borrowing
         parent.keys[idx] = right.keys.shift() // right's first key becomes new separator
@@ -245,7 +349,7 @@ export class BPlusTree {
     // Attempt: borrow from left sibling
     if (idx > 0) {
       const left = parent.children[idx - 1]
-      if (left.keys.length > this.minKeys) {
+      if (left.keys.length > minRequired) {
         node.keys.unshift(parent.keys[idx - 1])  // pull separator down to front of node
         node.keys.sort((a, b) => this._cmp(a, b)) // Sort after borrowing
         parent.keys[idx - 1] = left.keys.pop()   // left's last key becomes new separator
@@ -267,8 +371,8 @@ export class BPlusTree {
       node.children.push(...right.children)
       parent.keys.splice(idx, 1)
       parent.children.splice(idx + 1, 1)
-    } else {
-      // Merge left sibling with node
+    } else if (idx > 0) {
+      // Merge left sibling with node (only if left sibling exists)
       const left = parent.children[idx - 1]
       left.keys.push(parent.keys[idx - 1]) // pull separator down
       left.keys.push(...node.keys)
@@ -306,7 +410,7 @@ export { BPlusNode as BPlusTreeNode }
 // --- TEST ---
 // Run with: node src/lib/BPlusTree.js
 if (typeof process !== 'undefined' && process.argv[1]?.endsWith('BPlusTree.js')) {
-  const tree = new BPlusTree(3) // order 3 = max 2 keys per node
+  const tree = new BPlusTree(3) // order 3 = max 3 keys per node
   ;['5', '15', '25', '35', '45'].forEach(k => tree.insert(k))
 
   console.log('=== Tree structure after inserting [5,15,25,35,45] with order=3 ===')

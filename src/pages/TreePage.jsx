@@ -1,13 +1,11 @@
-// Main visualization screen - three-column layout with TreeCanvas, OperationsPanel, and StepControls
+// Main visualization screen - two-column layout with TreeCanvas and OperationsPanel
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Starfield from '../components/Starfield/Starfield'
 import Navbar from '../components/Navbar/Navbar'
 import TreeCanvas from '../components/TreeCanvas/TreeCanvas'
 import OperationsPanel from '../components/OperationsPanel/OperationsPanel'
-import StepControls from '../components/StepControls/StepControls'
 import { useBPlusTree } from '../hooks/useBPlusTree'
-import { useAnimationPlayer } from '../hooks/useAnimationPlayer'
 import styles from './TreePage.module.css'
 
 function TreePage() {
@@ -15,11 +13,8 @@ function TreePage() {
   const { values = [], order = 3 } = location.state || {}
   const [isPanelOpen, setIsPanelOpen] = useState(false)
 
-  // Tree management hook
-  const { tree, steps, stats, initializeTree, insert, deleteValues } = useBPlusTree([], order)
-  
-  // Animation playback hook
-  const player = useAnimationPlayer(steps)
+  // Tree management hook (no animation)
+  const { tree, stats, initializeTree, insert, deleteValues } = useBPlusTree(order)
 
   // Initialize tree on mount with values from router
   useEffect(() => {
@@ -48,9 +43,6 @@ function TreePage() {
     setIsPanelOpen(false)
   }
 
-  // Get current step data for rendering
-  const currentStep = player.currentStep
-
   return (
     <div className={styles.container}>
       {/* Starfield background - z-index: 0 */}
@@ -59,14 +51,7 @@ function TreePage() {
       <Navbar order={order} />
       
       <div className={styles.mainContent}>
-        <TreeCanvas
-          treeSnapshot={currentStep?.treeSnapshot}
-          highlightNodeId={currentStep?.highlightNodeId}
-          highlightKeys={currentStep?.highlightKeys || []}
-          arrowFrom={currentStep?.arrowFrom}
-          arrowTo={currentStep?.arrowTo}
-          arrowLabel={currentStep?.arrowLabel}
-        />
+        <TreeCanvas tree={tree} />
         
         {/* Desktop: always visible */}
         <div className={styles.desktopPanel}>
@@ -108,8 +93,6 @@ function TreePage() {
           </>
         )}
       </div>
-      
-      <StepControls player={player} />
     </div>
   )
 }

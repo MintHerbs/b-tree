@@ -1,21 +1,21 @@
 // SVG viewport - owns the <svg> root element and handles pan/zoom
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import styles from './TreeCanvas.module.css'
 import TreeNode from '../TreeNode/TreeNode'
 import TreeEdge from '../TreeEdge/TreeEdge'
-import PointerArrow from '../PointerArrow/PointerArrow'
 import { calculateTreeLayout } from '../../lib/treeLayout'
 
-function TreeCanvas({ treeSnapshot, highlightNodeId, highlightKeys, arrowFrom, arrowTo, arrowLabel }) {
+function TreeCanvas({ tree }) {
   const svgRef = useRef(null)
   const [viewBox, setViewBox] = useState({ x: -500, y: -100, width: 1000, height: 800 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
 
-  // Calculate layout from tree snapshot
-  const layout = treeSnapshot?.root 
-    ? calculateTreeLayout(treeSnapshot.root)
-    : { nodes: [], edges: [] }
+  // Calculate layout from tree
+  const layout = useMemo(() => {
+    if (!tree || !tree.root) return { nodes: [], edges: [] }
+    return calculateTreeLayout(tree.root)
+  }, [tree])
 
   const hasTree = layout.nodes.length > 0
 
@@ -144,19 +144,6 @@ function TreeCanvas({ treeSnapshot, highlightNodeId, highlightKeys, arrowFrom, a
           >
             <path d="M0,0 L0,6 L9,3 z" fill="var(--accent-green)" />
           </marker>
-
-          {/* Pointer arrow (orange) */}
-          <marker
-            id="pointer-arrow"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="3"
-            orient="auto"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,6 L9,3 z" fill="var(--accent-orange)" />
-          </marker>
         </defs>
 
         {/* Render parent-child edges first (behind nodes) */}
@@ -193,8 +180,8 @@ function TreeCanvas({ treeSnapshot, highlightNodeId, highlightKeys, arrowFrom, a
           <TreeNode
             key={node.id}
             node={node}
-            isHighlighted={node.id === highlightNodeId}
-            highlightedKeys={highlightKeys || []}
+            isHighlighted={false}
+            highlightedKeys={[]}
           />
         ))}
 
@@ -224,15 +211,6 @@ function TreeCanvas({ treeSnapshot, highlightNodeId, highlightKeys, arrowFrom, a
             />
           )
         })}
-
-        {/* Render pointer arrow (on top) */}
-        {arrowFrom && arrowTo && (
-          <PointerArrow
-            from={arrowFrom}
-            to={arrowTo}
-            label={arrowLabel}
-          />
-        )}
       </svg>
 
       {/* Zoom controls hint */}
