@@ -1,0 +1,9 @@
+/* Starfield component styles */
+
+.canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #000000;
+}

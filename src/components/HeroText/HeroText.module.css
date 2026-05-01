@@ -1,0 +1,116 @@
+/* HeroText component styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.title {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
+  transition: opacity 0.2s ease;
+}
+
+.subtitle {
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Order box container */
+.orderBox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: transparent;
+  transition: all 0.15s ease;
+  cursor: text;
+  position: relative;
+}
+
+.orderBox:hover {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+.orderBox:focus-within {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+/* Error state - red border and text */
+.orderBoxError {
+  border-color: #ef4444;
+}
+
+.orderBoxError:hover,
+.orderBoxError:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.orderBoxError .orderInput {
+  color: #ef4444;
+}
+
+/* Order input inside the box */
+.orderInput {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: #8B5CF6;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  cursor: text;
+}
+
+.orderInput::-webkit-inner-spin-button,
+.orderInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.orderInput[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Fade animation classes */
+.fadeOut {
+  opacity: 0;
+}
+
+.fadeIn {
+  opacity: 1;
+}
+
+.subtitle.fadeOut {
+  opacity: 0;
+}
+
+.subtitle.fadeIn {
+  opacity: 1;
+}
+
+/* Bold text for order label */
+.orderLabel {
+  font-weight: 700;
+}

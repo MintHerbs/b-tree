@@ -1,7 +1,15 @@
 /* Global styles - CSS variables, resets, fonts */
 
 :root {
-  /* Colors */
+  /* Grok-inspired landing page colors */
+  --color-bg: #000000;
+  --color-accent: #8B5CF6;
+  --color-star: #ffffff;
+  --color-muted: #555555;
+  --color-surface: #0f0f0f;
+  --color-border: #222222;
+
+  /* Tree page colors */
   --bg-dark: #0d0d0d;
   --bg-card: #1a1a2e;
   --bg-panel: #111122;

@@ -1,0 +1,106 @@
+/* PillInput component styles */
+
+.container {
+  position: relative;
+  width: min(680px, 90vw);
+  height: 56px;
+  background-color: #0f0f0f;
+  border: 1px solid #222222;
+  border-radius: 9999px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.container:focus-within {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-family: inherit;
+  caret-color: #8B5CF6;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Send button - purple circle with arrow */
+.sendButton {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  background-color: #8B5CF6;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  animation: scaleIn 0.15s ease;
+}
+
+.sendButton:hover {
+  background-color: #7c3aed;
+  transform: scale(1.05);
+}
+
+.sendButton:active {
+  transform: scale(0.95);
+}
+
+/* Arrow chevron SVG */
+.arrow {
+  width: 16px;
+  height: 16px;
+  color: #ffffff;
+}
+
+/* Scale-in animation for send button */
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .container {
+    width: 95vw;
+    height: 52px;
+    padding: 12px 18px;
+  }
+
+  .input {
+    font-size: 14px;
+  }
+
+  .sendButton {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .arrow {
+    width: 14px;
+    height: 14px;
+  }
+}

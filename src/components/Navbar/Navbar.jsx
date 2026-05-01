@@ -6,6 +6,7 @@ function Navbar({ order, onOrderChange }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isTreePage = location.pathname === '/tree'
+  const isLandingPage = location.pathname === '/'
 
   const handleReset = () => {
     navigate('/')
@@ -13,9 +14,11 @@ function Navbar({ order, onOrderChange }) {
 
   return (
     <nav className={styles.navbar}>
-      <div className={styles.left}>
-        <h2 className={styles.title}>B+ Tree Visualizer</h2>
-      </div>
+      {!isLandingPage && (
+        <div className={styles.left}>
+          <h2 className={styles.title}>B+ Tree Visualizer</h2>
+        </div>
+      )}
       <div className={styles.right}>
         {onOrderChange && (
           <div className={styles.orderInput}>

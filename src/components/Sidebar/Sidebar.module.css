@@ -1,0 +1,59 @@
+/* Sidebar component styles */
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  background-color: #000000;
+  border-right: 1px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 16px;
+  z-index: 10;
+}
+
+/* Moon logo */
+.moonLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+  margin-bottom: 24px;
+}
+
+.moonLink:hover {
+  opacity: 1;
+}
+
+.moonLogo {
+  width: 28px;
+  height: 28px;
+}
+
+/* Tool icons container */
+.icons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Responsive - smaller screens */
+@media (max-width: 640px) {
+  .sidebar {
+    width: 40px;
+  }
+
+  .moonLogo {
+    width: 22px;
+    height: 22px;
+  }
+
+  .moonLink {
+    margin-bottom: 20px;
+  }
+}
