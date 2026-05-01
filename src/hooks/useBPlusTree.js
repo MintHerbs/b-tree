@@ -46,7 +46,7 @@ export function useBPlusTree(initialValues = [], order = 3) {
     })
 
     // Apply insertions to the actual tree
-    const newTree = new BPlusTree(tree.t)
+    const newTree = new BPlusTree(tree.order)
     // Rebuild tree from scratch by getting all keys from current tree
     const allKeys = []
     const collectKeys = (node) => {
@@ -82,7 +82,7 @@ export function useBPlusTree(initialValues = [], order = 3) {
     })
 
     // Apply deletions to the actual tree
-    const newTree = new BPlusTree(tree.t)
+    const newTree = new BPlusTree(tree.order)
     // Rebuild tree from scratch
     const allKeys = []
     const collectKeys = (node) => {

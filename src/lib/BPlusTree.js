@@ -12,20 +12,34 @@ class BPlusNode {
 }
 
 export class BPlusTree {
-  constructor(t = 3) {
-    this.t = t
+  constructor(order = 3) {
+    this.order = order // m = order (max children for internal, max keys = m-1)
+    this.maxKeys = order - 1
+    this.minKeys = Math.ceil(order / 2) - 1 // ⌈m/2⌉ - 1 for leaves
     this.root = new BPlusNode(true)
   }
 
-  // Normalize key for comparison: lowercase string
-  _str(k) {
-    return String(k).toLowerCase()
+  // Normalize key for comparison
+  _normalize(k) {
+    const str = String(k).toLowerCase()
+    // Try to parse as number for numeric comparison
+    const num = Number(str)
+    return isNaN(num) ? str : num
   }
 
   // Returns negative / zero / positive
   _cmp(a, b) {
-    const as = this._str(a)
-    const bs = this._str(b)
+    const an = this._normalize(a)
+    const bn = this._normalize(b)
+    
+    // If both are numbers, compare numerically
+    if (typeof an === 'number' && typeof bn === 'number') {
+      return an - bn
+    }
+    
+    // Otherwise compare as strings
+    const as = String(an)
+    const bs = String(bn)
     return as < bs ? -1 : as > bs ? 1 : 0
   }
 
@@ -51,30 +65,32 @@ export class BPlusTree {
   insert(key) {
     const leaf = this._findLeaf(key)
 
-    // Find sorted insertion index
-    let i = leaf.keys.length - 1
-    while (i >= 0 && this._cmp(leaf.keys[i], key) > 0) i--
+    // Check for duplicate
+    if (leaf.keys.some(k => this._cmp(k, key) === 0)) return
 
-    if (i >= 0 && this._cmp(leaf.keys[i], key) === 0) return // duplicate
+    // Insert and sort
+    leaf.keys.push(key)
+    leaf.keys.sort((a, b) => this._cmp(a, b))
 
-    leaf.keys.splice(i + 1, 0, key)
-
-    if (leaf.keys.length === 2 * this.t) this._splitLeaf(leaf)
+    // Split if exceeds maxKeys
+    if (leaf.keys.length > this.maxKeys) {
+      this._splitLeaf(leaf)
+    }
   }
 
-  // Split a leaf that has reached 2t keys into two leaves of t keys each
+  // Split a leaf that has exceeded maxKeys
   _splitLeaf(leaf) {
-    const t = this.t
+    const mid = Math.ceil(leaf.keys.length / 2)
     const right = new BPlusNode(true)
 
-    // right takes the upper half; leaf retains the lower half
-    right.keys = leaf.keys.splice(t) // leaf: keys[0..t-1], right: keys[t..2t-1]
+    // Split: left keeps [0..mid-1], right gets [mid..end]
+    right.keys = leaf.keys.splice(mid)
 
     // Maintain the leaf linked list
     right.next = leaf.next
     leaf.next = right
 
-    // The separator pushed up is the first key of the right node (copied, not removed)
+    // The separator is the first key of the right node (COPIED, not removed from right)
     const separator = right.keys[0]
 
     if (leaf === this.root) {
@@ -86,35 +102,39 @@ export class BPlusTree {
       this.root = newRoot
     } else {
       right.parent = leaf.parent
-      this._insertIntoInternal(leaf, separator, right)
+      this._insertIntoParent(leaf.parent, separator, leaf, right)
     }
   }
 
-  // After a child split, push `separator` and `rightChild` into the parent
-  _insertIntoInternal(leftChild, separator, rightChild) {
-    const parent = leftChild.parent
+  // Insert separator between leftChild and rightChild in parent
+  _insertIntoParent(parent, separator, leftChild, rightChild) {
+    // Find position of leftChild
     const idx = parent.children.indexOf(leftChild)
-
+    
+    // Insert separator at position idx (between leftChild and rightChild)
     parent.keys.splice(idx, 0, separator)
+    // Insert rightChild after leftChild
     parent.children.splice(idx + 1, 0, rightChild)
-    rightChild.parent = parent
 
-    if (parent.keys.length === 2 * this.t) this._splitInternal(parent)
+    // Split if exceeds maxKeys
+    if (parent.keys.length > this.maxKeys) {
+      this._splitInternal(parent)
+    }
   }
 
-  // Split an overfull internal node (2t keys, 2t+1 children)
-  // Median key is PUSHED UP (not copied); left keeps t-1 keys, right keeps t keys
+  // Split an overfull internal node
+  // Median key is MOVED UP (not copied); left and right split evenly
   _splitInternal(node) {
-    const t = this.t
-    const mid = t - 1 // index of the key to promote
-
+    const mid = Math.floor(node.keys.length / 2)
     const promoted = node.keys[mid]
     const right = new BPlusNode(false)
 
-    right.keys = node.keys.splice(mid + 1) // keys[t..2t-1] → right
-    node.keys.splice(mid)                   // drop median; node keeps keys[0..t-2]
+    // Split keys: left keeps [0..mid-1], promoted goes up, right gets [mid+1..end]
+    right.keys = node.keys.splice(mid + 1)
+    node.keys.splice(mid) // Remove promoted key
 
-    right.children = node.children.splice(mid + 1) // children[t..2t] → right
+    // Split children: right gets [mid+1..end]
+    right.children = node.children.splice(mid + 1)
     right.children.forEach(c => (c.parent = right))
 
     if (node === this.root) {
@@ -126,7 +146,7 @@ export class BPlusTree {
       this.root = newRoot
     } else {
       right.parent = node.parent
-      this._insertIntoInternal(node, promoted, right)
+      this._insertIntoParent(node.parent, promoted, node, right)
     }
   }
 
@@ -138,8 +158,8 @@ export class BPlusTree {
 
     leaf.keys.splice(idx, 1)
 
-    if (leaf === this.root) return       // root leaf has no minimum
-    if (leaf.keys.length >= this.t - 1) return // still meets minimum
+    if (leaf === this.root) return // root leaf has no minimum
+    if (leaf.keys.length >= this.minKeys) return // still meets minimum
 
     this._fixLeaf(leaf)
   }
@@ -151,8 +171,9 @@ export class BPlusTree {
     // Attempt: borrow from right sibling
     if (idx < parent.children.length - 1) {
       const right = parent.children[idx + 1]
-      if (right.keys.length > this.t - 1) {
+      if (right.keys.length > this.minKeys) {
         leaf.keys.push(right.keys.shift())
+        leaf.keys.sort((a, b) => this._cmp(a, b)) // Sort after borrowing
         parent.keys[idx] = right.keys[0] // new first key of right becomes separator
         return
       }
@@ -161,8 +182,9 @@ export class BPlusTree {
     // Attempt: borrow from left sibling
     if (idx > 0) {
       const left = parent.children[idx - 1]
-      if (left.keys.length > this.t - 1) {
+      if (left.keys.length > this.minKeys) {
         leaf.keys.unshift(left.keys.pop())
+        leaf.keys.sort((a, b) => this._cmp(a, b)) // Sort after borrowing
         parent.keys[idx - 1] = leaf.keys[0] // new first key of leaf becomes separator
         return
       }
@@ -173,6 +195,7 @@ export class BPlusTree {
       // Absorb right sibling into leaf
       const right = parent.children[idx + 1]
       leaf.keys.push(...right.keys)
+      leaf.keys.sort((a, b) => this._cmp(a, b)) // Sort after merge
       leaf.next = right.next
       parent.keys.splice(idx, 1)
       parent.children.splice(idx + 1, 1)
@@ -180,6 +203,7 @@ export class BPlusTree {
       // Absorb leaf into left sibling
       const left = parent.children[idx - 1]
       left.keys.push(...leaf.keys)
+      left.keys.sort((a, b) => this._cmp(a, b)) // Sort after merge
       left.next = leaf.next
       parent.keys.splice(idx - 1, 1)
       parent.children.splice(idx, 1)
@@ -196,7 +220,7 @@ export class BPlusTree {
       }
       return
     }
-    if (node.keys.length >= this.t - 1) return
+    if (node.keys.length >= this.minKeys) return
     this._fixInternal(node)
   }
 
@@ -207,8 +231,9 @@ export class BPlusTree {
     // Attempt: borrow from right sibling
     if (idx < parent.children.length - 1) {
       const right = parent.children[idx + 1]
-      if (right.keys.length > this.t - 1) {
+      if (right.keys.length > this.minKeys) {
         node.keys.push(parent.keys[idx])      // pull separator down to end of node
+        node.keys.sort((a, b) => this._cmp(a, b)) // Sort after borrowing
         parent.keys[idx] = right.keys.shift() // right's first key becomes new separator
         const moved = right.children.shift()
         moved.parent = node
@@ -220,8 +245,9 @@ export class BPlusTree {
     // Attempt: borrow from left sibling
     if (idx > 0) {
       const left = parent.children[idx - 1]
-      if (left.keys.length > this.t - 1) {
+      if (left.keys.length > this.minKeys) {
         node.keys.unshift(parent.keys[idx - 1])  // pull separator down to front of node
+        node.keys.sort((a, b) => this._cmp(a, b)) // Sort after borrowing
         parent.keys[idx - 1] = left.keys.pop()   // left's last key becomes new separator
         const moved = left.children.pop()
         moved.parent = node
@@ -236,6 +262,7 @@ export class BPlusTree {
       const right = parent.children[idx + 1]
       node.keys.push(parent.keys[idx]) // pull separator down
       node.keys.push(...right.keys)
+      node.keys.sort((a, b) => this._cmp(a, b)) // Sort after merge
       right.children.forEach(c => (c.parent = node))
       node.children.push(...right.children)
       parent.keys.splice(idx, 1)
@@ -245,6 +272,7 @@ export class BPlusTree {
       const left = parent.children[idx - 1]
       left.keys.push(parent.keys[idx - 1]) // pull separator down
       left.keys.push(...node.keys)
+      left.keys.sort((a, b) => this._cmp(a, b)) // Sort after merge
       node.children.forEach(c => (c.parent = left))
       left.children.push(...node.children)
       parent.keys.splice(idx - 1, 1)
@@ -268,7 +296,7 @@ export class BPlusTree {
     }
 
     walk(this.root, 1)
-    return { order: this.t, nodeCount, keyCount, height }
+    return { order: this.order, nodeCount, keyCount, height }
   }
 }
 
@@ -278,10 +306,10 @@ export { BPlusNode as BPlusTreeNode }
 // --- TEST ---
 // Run with: node src/lib/BPlusTree.js
 if (typeof process !== 'undefined' && process.argv[1]?.endsWith('BPlusTree.js')) {
-  const tree = new BPlusTree(2) // order 3 = max 2 keys per node
+  const tree = new BPlusTree(3) // order 3 = max 2 keys per node
   ;['5', '15', '25', '35', '45'].forEach(k => tree.insert(k))
 
-  console.log('=== Tree structure after inserting [5,15,25,35,45] with t=2 (order 3) ===')
+  console.log('=== Tree structure after inserting [5,15,25,35,45] with order=3 ===')
   console.log('BFS level-by-level:\n')
 
   // BFS traversal

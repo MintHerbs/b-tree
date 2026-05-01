@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import lottie from 'lottie-web'
 import Starfield from '../components/Starfield/Starfield'
 import Sidebar from '../components/Sidebar/Sidebar'
-import alienAnimation from '../img/alien.json'
+// import alienAnimation from '../img/alien.json' // Temporarily disabled
 import styles from './AboutPage.module.css'
 
 function AboutPage() {
@@ -32,6 +32,10 @@ function AboutPage() {
         // Clear any existing content first
         lottieRef.current.innerHTML = ''
         
+        // Temporarily use emoji fallback
+        lottieRef.current.innerHTML = '<div class="' + styles.alienEmoji + '">👽</div>'
+        
+        /* Lottie animation disabled temporarily
         animationInstance = lottie.loadAnimation({
           container: lottieRef.current,
           renderer: 'svg',
@@ -39,6 +43,7 @@ function AboutPage() {
           autoplay: true,
           animationData: alienAnimation
         })
+        */
       } catch (error) {
         console.error('Failed to load Lottie:', error)
         // Fallback: show animated emoji if Lottie fails to load
