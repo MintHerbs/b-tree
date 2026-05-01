@@ -67,7 +67,7 @@ function DisclaimerPage() {
           </div>
           
           <a 
-            href="https://github.com/yourusername/yourrepo"
+            href="https://github.com/MintHerbs/b-tree"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.githubButton}
