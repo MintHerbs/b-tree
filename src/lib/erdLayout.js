@@ -1,6 +1,6 @@
 // Assigns x/y coordinates to all ERD nodes — grid layout with arc-biased attributes and repulsion
 
-export function calculateERDLayout(erdData) {
+export function calculateERDLayout(erdData, manualPositions = {}) {
   const nodes = []
   const edges = []
 
@@ -23,15 +23,19 @@ export function calculateERDLayout(erdData) {
     const col = i % cols
     const row = Math.floor(i / cols)
 
+    // Check if this entity has a manual position
+    const manualPos = manualPositions[entity.id]
+    
     const entityNode = {
       id: entity.id,
       type: 'entity',
       name: entity.name,
-      x: -gridW / 2 + col * H_SPACING,
-      y: -gridH / 2 + row * V_SPACING,
+      x: manualPos?.manuallyPlaced ? manualPos.x : (-gridW / 2 + col * H_SPACING),
+      y: manualPos?.manuallyPlaced ? manualPos.y : (-gridH / 2 + row * V_SPACING),
       width: Math.max(130, entity.name.length * 10 + 40),
       height: 54,
       isWeak: entity.isWeak || false,
+      manuallyPlaced: manualPos?.manuallyPlaced || false,
       col, row
     }
 
@@ -48,13 +52,21 @@ export function calculateERDLayout(erdData) {
       .map(p => entityMap.get(p.entityId))
       .filter(Boolean)
 
+    // Check if this relationship has a manual position
+    const manualPos = manualPositions[rel.id]
+    
     let relX = 0, relY = 0
-    if (participants.length === 1) {
-      relX = participants[0].x
-      relY = participants[0].y - 200
-    } else if (participants.length >= 2) {
-      relX = participants.reduce((s, e) => s + e.x, 0) / participants.length
-      relY = participants.reduce((s, e) => s + e.y, 0) / participants.length
+    if (!manualPos?.manuallyPlaced) {
+      if (participants.length === 1) {
+        relX = participants[0].x
+        relY = participants[0].y - 200
+      } else if (participants.length >= 2) {
+        relX = participants.reduce((s, e) => s + e.x, 0) / participants.length
+        relY = participants.reduce((s, e) => s + e.y, 0) / participants.length
+      }
+    } else {
+      relX = manualPos.x
+      relY = manualPos.y
     }
 
     const relNode = {
@@ -64,7 +76,8 @@ export function calculateERDLayout(erdData) {
       x: relX, y: relY,
       width: Math.max(110, rel.name.length * 9 + 36),
       height: 64,
-      isIdentifying: rel.isIdentifying || false
+      isIdentifying: rel.isIdentifying || false,
+      manuallyPlaced: manualPos?.manuallyPlaced || false
     }
 
     nodes.push(relNode)
@@ -163,25 +176,37 @@ export function calculateERDLayout(erdData) {
 
     // (4) Distribute attributes evenly within the free arc
     attrs.forEach((attr, i) => {
-      let angle
-      if (attrs.length === 1) {
-        // Single attribute: place at center of free arc
-        angle = startAngle + arcSpan / 2
+      // Check if this attribute has a manual position
+      const manualPos = manualPositions[attr.id]
+      
+      let attrX, attrY
+      if (manualPos?.manuallyPlaced) {
+        attrX = manualPos.x
+        attrY = manualPos.y
       } else {
-        // Multiple attributes: distribute evenly
-        angle = startAngle + (i / (attrs.length - 1)) * arcSpan
+        let angle
+        if (attrs.length === 1) {
+          // Single attribute: place at center of free arc
+          angle = startAngle + arcSpan / 2
+        } else {
+          // Multiple attributes: distribute evenly
+          angle = startAngle + (i / (attrs.length - 1)) * arcSpan
+        }
+        attrX = entityNode.x + Math.cos(angle) * 170
+        attrY = entityNode.y + Math.sin(angle) * 170
       }
       
       const attrNode = {
         id: attr.id,
         type: 'attribute',
         name: attr.name,
-        x: entityNode.x + Math.cos(angle) * 170,
-        y: entityNode.y + Math.sin(angle) * 170,
+        x: attrX,
+        y: attrY,
         width: Math.max(90, attr.name.length * 8 + 28),
         height: 38,
         attrType: attr.type,
-        animationIndex: attrAnimIndex++
+        animationIndex: attrAnimIndex++,
+        manuallyPlaced: manualPos?.manuallyPlaced || false
       }
       nodes.push(attrNode)
       edges.push({ type: 'attribute-link', from: entity.id, to: attr.id, fromNode: entityNode, toNode: attrNode })
@@ -196,19 +221,32 @@ export function calculateERDLayout(erdData) {
     if (attrs.length === 0) return
 
     attrs.forEach((attr, i) => {
-      const angle = attrs.length === 1
-        ? Math.PI / 2
-        : (i / (attrs.length - 1)) * Math.PI
+      // Check if this attribute has a manual position
+      const manualPos = manualPositions[attr.id]
+      
+      let attrX, attrY
+      if (manualPos?.manuallyPlaced) {
+        attrX = manualPos.x
+        attrY = manualPos.y
+      } else {
+        const angle = attrs.length === 1
+          ? Math.PI / 2
+          : (i / (attrs.length - 1)) * Math.PI
+        attrX = relNode.x + Math.cos(angle) * 100
+        attrY = relNode.y + Math.sin(angle) * 100
+      }
+      
       const attrNode = {
         id: attr.id,
         type: 'attribute',
         name: attr.name,
-        x: relNode.x + Math.cos(angle) * 100,
-        y: relNode.y + Math.sin(angle) * 100,
+        x: attrX,
+        y: attrY,
         width: Math.max(90, attr.name.length * 8 + 28),
         height: 38,
         attrType: attr.type,
-        animationIndex: attrAnimIndex++
+        animationIndex: attrAnimIndex++,
+        manuallyPlaced: manualPos?.manuallyPlaced || false
       }
       nodes.push(attrNode)
       edges.push({ type: 'attribute-link', from: rel.id, to: attr.id, fromNode: relNode, toNode: attrNode })
@@ -220,14 +258,18 @@ export function calculateERDLayout(erdData) {
     const parentEntity = entityMap.get(hierarchy.parent)
     if (!parentEntity) return
 
+    // Check if this ISA triangle has a manual position
+    const manualPos = manualPositions[hierarchy.id]
+    
     const triangleNode = {
       id: hierarchy.id,
       type: 'isa',
       name: 'IS-A',
-      x: parentEntity.x,
-      y: parentEntity.y + 150,
+      x: manualPos?.manuallyPlaced ? manualPos.x : parentEntity.x,
+      y: manualPos?.manuallyPlaced ? manualPos.y : (parentEntity.y + 150),
       width: 80,
-      height: 60
+      height: 60,
+      manuallyPlaced: manualPos?.manuallyPlaced || false
     }
 
     nodes.push(triangleNode)
@@ -248,8 +290,12 @@ export function calculateERDLayout(erdData) {
     hierarchy.children.forEach((childId) => {
       const childEntity = entityMap.get(childId)
       if (!childEntity) return
-      childEntity.x = childX
-      childEntity.y = childY
+      
+      // Only update child position if not manually placed
+      if (!childEntity.manuallyPlaced) {
+        childEntity.x = childX
+        childEntity.y = childY
+      }
       childX += childSpacing
       edges.push({
         type: 'isa-child',

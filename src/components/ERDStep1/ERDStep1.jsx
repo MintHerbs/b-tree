@@ -1,8 +1,9 @@
 // ERD Step 1 - User describes their ER scenario
 import PillInput from '../PillInput/PillInput'
+import PaginationDots from '../PaginationDots/PaginationDots'
 import styles from './ERDStep1.module.css'
 
-function ERDStep1({ initialQuestion, onSubmit }) {
+function ERDStep1({ initialQuestion, onSubmit, currentStep, totalSteps }) {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>ER Diagram Builder</h1>
@@ -13,6 +14,7 @@ function ERDStep1({ initialQuestion, onSubmit }) {
         placeholder="e.g. A university has students who enroll in courses taught by professors..."
         defaultValue={initialQuestion}
       />
+      <PaginationDots total={totalSteps} current={currentStep} />
     </div>
   )
 }

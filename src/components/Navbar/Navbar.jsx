@@ -7,6 +7,7 @@ function Navbar({ order, onOrderChange }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isTreePage = location.pathname === '/tree'
+  const isERDPage = location.pathname === '/erd'
   const isLandingPage = location.pathname === '/'
 
   const handleReset = () => {
@@ -22,8 +23,10 @@ function Navbar({ order, onOrderChange }) {
     )
   }
 
-  // On tree page, render full navbar
-  // On tree page, render full navbar
+  // Determine title based on page
+  const title = isERDPage ? 'ER Diagram Builder' : 'B+ Tree Visualizer'
+
+  // On tree or ERD page, render full navbar
   return (
     <nav className={styles.navbar}>
       <div className={styles.left}>
@@ -39,7 +42,7 @@ function Navbar({ order, onOrderChange }) {
             className={styles.logo}
           />
         </a>
-        <h2 className={styles.title}>B+ Tree Visualizer</h2>
+        <h2 className={styles.title}>{title}</h2>
       </div>
       <div className={styles.right}>
         {onOrderChange && (

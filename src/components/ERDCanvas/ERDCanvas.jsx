@@ -118,43 +118,143 @@ function edgeContent(edge) {
 
 function ERDCanvas({ erdData }) {
   const svgRef = useRef(null)
+  const [viewBox, setViewBox] = useState({ x: -700, y: -200, width: 1400, height: 900 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  
+  // Node dragging state
+  const [dragState, setDragState] = useState(null) // { nodeId, startX, startY, offsetX, offsetY, attributeOffsets }
+  const [nodePositions, setNodePositions] = useState({}) // { nodeId: { x, y, manuallyPlaced } }
 
   const layout = useMemo(
-    () => erdData ? calculateERDLayout(erdData) : { nodes: [], edges: [], bounds: null },
-    [erdData]
+    () => erdData ? calculateERDLayout(erdData, nodePositions) : { nodes: [], edges: [] },
+    [erdData, nodePositions]
   )
 
-  // Initial viewBox derived from layout bounds with 100px padding on each side
-  const [viewBox, setViewBox] = useState(() => {
-    if (!layout.bounds) return { x: -700, y: -200, width: 1400, height: 900 }
-    const { minX, minY, width, height } = layout.bounds
-    return { x: minX - 100, y: minY - 100, width: width + 200, height: height + 200 }
-  })
+  // Convert mouse position to SVG coordinates
+  const screenToSVG = useCallback((clientX, clientY) => {
+    const svg = svgRef.current
+    if (!svg) return { x: 0, y: 0 }
+    const rect = svg.getBoundingClientRect()
+    const x = viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width
+    const y = viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height
+    return { x, y }
+  }, [viewBox])
 
-  const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0) return
+  // Start dragging a node
+  const handleNodeMouseDown = useCallback((e, node) => {
+    // Only drag entities, relationships, and ISA nodes (not attributes)
+    if (node.type === 'attribute') return
+    
+    e.stopPropagation()
+    const svgPos = screenToSVG(e.clientX, e.clientY)
+    
+    // Calculate offset from mouse to node center
+    const offsetX = node.x - svgPos.x
+    const offsetY = node.y - svgPos.y
+    
+    // Find all attributes belonging to this node
+    const attributeOffsets = []
+    if (node.type === 'entity' || node.type === 'relationship') {
+      layout.nodes.forEach(n => {
+        if (n.type === 'attribute') {
+          // Check if this attribute belongs to the dragged node
+          const edge = layout.edges.find(e => 
+            e.type === 'attribute-link' && 
+            e.from === node.id && 
+            e.to === n.id
+          )
+          if (edge) {
+            attributeOffsets.push({
+              id: n.id,
+              offsetX: n.x - node.x,
+              offsetY: n.y - node.y
+            })
+          }
+        }
+      })
+    }
+    
+    setDragState({
+      nodeId: node.id,
+      startX: svgPos.x,
+      startY: svgPos.y,
+      offsetX,
+      offsetY,
+      attributeOffsets,
+      hasMoved: false
+    })
+  }, [layout.nodes, layout.edges, screenToSVG])
+
+  // Handle mouse move during drag
+  const handleMouseMove = useCallback((e) => {
+    if (dragState) {
+      const svgPos = screenToSVG(e.clientX, e.clientY)
+      
+      // Calculate new position with offset
+      const newX = svgPos.x + dragState.offsetX
+      const newY = svgPos.y + dragState.offsetY
+      
+      // Check if moved significantly (> 3px) to distinguish from click
+      const dx = svgPos.x - dragState.startX
+      const dy = svgPos.y - dragState.startY
+      const hasMoved = dragState.hasMoved || (Math.abs(dx) > 3 || Math.abs(dy) > 3)
+      
+      // Update positions for the dragged node and its attributes
+      setNodePositions(prev => {
+        const updated = { ...prev }
+        
+        // Update main node
+        updated[dragState.nodeId] = { x: newX, y: newY, manuallyPlaced: true }
+        
+        // Update attributes with same relative offset
+        dragState.attributeOffsets.forEach(attr => {
+          updated[attr.id] = {
+            x: newX + attr.offsetX,
+            y: newY + attr.offsetY,
+            manuallyPlaced: true
+          }
+        })
+        
+        return updated
+      })
+      
+      setDragState(prev => ({ ...prev, hasMoved }))
+    } else if (isPanning) {
+      const dx = e.clientX - panStart.x
+      const dy = e.clientY - panStart.y
+      const svg = svgRef.current
+      if (!svg) return
+      const rect = svg.getBoundingClientRect()
+      const scaleX = viewBox.width / rect.width
+      const scaleY = viewBox.height / rect.height
+      setViewBox(prev => ({ ...prev, x: prev.x - dx * scaleX, y: prev.y - dy * scaleY }))
+      setPanStart({ x: e.clientX, y: e.clientY })
+    }
+  }, [dragState, isPanning, panStart, viewBox.width, viewBox.height, screenToSVG])
+
+  // Handle mouse up - end drag or pan
+  const handleMouseUp = useCallback(() => {
+    if (dragState) {
+      setDragState(null)
+    }
+    setIsPanning(false)
+  }, [dragState])
+
+  const handleMouseLeave = useCallback(() => {
+    if (dragState) {
+      setDragState(null)
+    }
+    setIsPanning(false)
+  }, [dragState])
+
+  // Start panning (only if not dragging a node)
+  const handleBackgroundMouseDown = useCallback((e) => {
+    if (e.button !== 0 || dragState) return
     setIsPanning(true)
     setPanStart({ x: e.clientX, y: e.clientY })
     e.preventDefault()
-  }, [])
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isPanning) return
-    const dx = e.clientX - panStart.x
-    const dy = e.clientY - panStart.y
-    const svg = svgRef.current
-    if (!svg) return
-    const rect = svg.getBoundingClientRect()
-    const scaleX = viewBox.width / rect.width
-    const scaleY = viewBox.height / rect.height
-    setViewBox(prev => ({ ...prev, x: prev.x - dx * scaleX, y: prev.y - dy * scaleY }))
-    setPanStart({ x: e.clientX, y: e.clientY })
-  }, [isPanning, panStart, viewBox.width, viewBox.height])
-
-  const handleMouseUp = useCallback(() => setIsPanning(false), [])
-  const handleMouseLeave = useCallback(() => setIsPanning(false), [])
+  }, [dragState])
 
   const handleWheel = useCallback((e) => {
     e.preventDefault()
@@ -184,11 +284,12 @@ function ERDCanvas({ erdData }) {
         ref={svgRef}
         className={styles.svg}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-        onMouseDown={handleMouseDown}
+        onMouseDown={handleBackgroundMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
+        style={{ cursor: dragState ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
       >
         {/* Edges first — behind nodes so lines don't overlap labels */}
         {layout.edges.map((edge, i) => (
@@ -196,12 +297,23 @@ function ERDCanvas({ erdData }) {
         ))}
 
         {/* Nodes on top */}
-        {layout.nodes.map(node => (
-          <g key={node.id}>{nodeShape(node)}</g>
-        ))}
+        {layout.nodes.map(node => {
+          const isDraggable = node.type === 'entity' || node.type === 'relationship' || node.type === 'isa'
+          return (
+            <g 
+              key={node.id}
+              onMouseDown={isDraggable ? (e) => handleNodeMouseDown(e, node) : undefined}
+              style={{ cursor: isDraggable ? 'move' : 'default' }}
+            >
+              {nodeShape(node)}
+            </g>
+          )
+        })}
       </svg>
 
-      <div className={styles.hint}>Drag to pan • Scroll to zoom</div>
+      <div className={styles.hint}>
+        {dragState ? 'Dragging node...' : 'Drag nodes to reposition • Drag background to pan • Scroll to zoom'}
+      </div>
     </div>
   )
 }

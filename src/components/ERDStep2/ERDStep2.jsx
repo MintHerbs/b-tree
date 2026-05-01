@@ -1,8 +1,9 @@
 // ERD Step 2 - Show generated prompt with copy button
 import { useState } from 'react'
+import PaginationDots from '../PaginationDots/PaginationDots'
 import styles from './ERDStep2.module.css'
 
-function ERDStep2({ prompt, onNext }) {
+function ERDStep2({ prompt, onNext, currentStep, totalSteps }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -34,9 +35,11 @@ function ERDStep2({ prompt, onNext }) {
 
       <div className={styles.buttons}>
         <button className={styles.nextButton} onClick={onNext}>
-          Next: paste the JSON →
+          Next: paste the JSON
         </button>
       </div>
+      
+      <PaginationDots total={totalSteps} current={currentStep} />
     </div>
   )
 }

@@ -1,9 +1,9 @@
 // ER Diagram Builder page - 4-step paginated flow
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Starfield from '../components/Starfield/Starfield'
+import Sidebar from '../components/Sidebar/Sidebar'
 import Navbar from '../components/Navbar/Navbar'
-import PaginationDots from '../components/PaginationDots/PaginationDots'
 import ERDStep1 from '../components/ERDStep1/ERDStep1'
 import ERDStep2 from '../components/ERDStep2/ERDStep2'
 import ERDStep3 from '../components/ERDStep3/ERDStep3'
@@ -14,6 +14,7 @@ import styles from './ERDPage.module.css'
 
 function ERDPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const initialQuestion = location.state?.question || ''
   
   // If question provided, skip to step 2; otherwise start at step 1
@@ -30,6 +31,15 @@ function ERDPage() {
       setPrompt(generatedPrompt)
     }
   }, [initialQuestion])
+
+  // Handle tool switching from sidebar
+  const handleToolChange = (tool) => {
+    if (tool === 'btree') {
+      navigate('/')
+    } else if (tool === 'calculator') {
+      window.open('https://lazy-grades.vercel.app/', '_blank')
+    }
+  }
 
   // Step 1: User submits question
   const handleStep1Submit = (value) => {
@@ -66,6 +76,14 @@ function ERDPage() {
     setStep(2)
   }
 
+  // Previous button - go back one step
+  const handlePrevious = () => {
+    if (step > 1) {
+      setStep(step - 1)
+      setError(false)
+    }
+  }
+
   // Reset ERD flow
   const handleReset = () => {
     setStep(1)
@@ -80,11 +98,24 @@ function ERDPage() {
       {/* Starfield background - z-index: 0 */}
       <Starfield />
       
-      {/* Navbar - landing page style (About link only) */}
+      {/* Sidebar - z-index: 10 */}
+      <Sidebar 
+        activeTool="erd"
+        onToolChange={handleToolChange}
+      />
+      
+      {/* Navbar */}
       <Navbar />
       
       {/* Main content */}
       <main className={styles.erdMain}>
+        {/* Previous button - show on steps 2, 3, 4 */}
+        {step > 1 && (
+          <button className={styles.previousButton} onClick={handlePrevious}>
+            Previous
+          </button>
+        )}
+        
         {/* Reset button - only show on step 4 (canvas view) */}
         {step === 4 && (
           <button className={styles.resetButton} onClick={handleReset}>
@@ -92,14 +123,13 @@ function ERDPage() {
           </button>
         )}
         
-        {/* Show 3 dots when skipping step 1, 4 dots when starting from step 1 */}
-        <PaginationDots total={initialQuestion ? 3 : 4} current={initialQuestion ? step - 1 : step} />
-        
         {/* Step 1: User describes scenario */}
         {step === 1 && (
           <ERDStep1 
             initialQuestion={initialQuestion}
             onSubmit={handleStep1Submit}
+            currentStep={initialQuestion ? step - 1 : step}
+            totalSteps={initialQuestion ? 3 : 4}
           />
         )}
         
@@ -108,6 +138,8 @@ function ERDPage() {
           <ERDStep2 
             prompt={prompt}
             onNext={handleStep2Next}
+            currentStep={initialQuestion ? step - 1 : step}
+            totalSteps={initialQuestion ? 3 : 4}
           />
         )}
         
@@ -115,8 +147,9 @@ function ERDPage() {
         {step === 3 && (
           <ERDStep3 
             onSubmit={handleStep3Submit}
-            onBack={handleStep3Back}
             error={error}
+            currentStep={initialQuestion ? step - 1 : step}
+            totalSteps={initialQuestion ? 3 : 4}
           />
         )}
         
