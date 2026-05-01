@@ -22,6 +22,9 @@
   border: none;
   padding: 0;
   height: auto;
+  display: flex;
+  gap: 20px;
+  align-items: center;
 }
 
 .left {

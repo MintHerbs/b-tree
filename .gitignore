@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude and documentation files
+.claude/
+*.md
+!README.md

@@ -27,8 +27,12 @@ function PillInput({ activeTool, onSubmit, placeholder, defaultValue = '' }) {
 
   const hasContent = value.length > 0
   
-  // Use custom placeholder or default
-  const inputPlaceholder = placeholder || "banana, 67, 69, cabbage, moon..."
+  // Use custom placeholder or default based on active tool
+  const defaultPlaceholder = activeTool === 'btree' 
+    ? "Frodo, Sauron, 67, Gandalf, etc..."
+    : "Consider the following scenario. Draw an Entity Relationship..."
+  
+  const inputPlaceholder = placeholder || defaultPlaceholder
 
   return (
     <div className={styles.container}>

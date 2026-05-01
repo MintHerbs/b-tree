@@ -49,7 +49,7 @@ function Sidebar({ activeTool, onToolChange }) {
         <SidebarIcon
           iconOff={calculatorOff}
           iconOn={calculatorOn}
-          tooltip="Calculator"
+          tooltip="CPA Calculator"
           isActive={false}
           onClick={() => onToolChange('calculator')}
         />

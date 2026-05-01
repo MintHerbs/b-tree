@@ -8,7 +8,7 @@ const CONTENT = {
   },
   erd: {
     title: 'ER Diagram Builder',
-    subtitle: 'describe your entities and relationships'
+    subtitle: 'Copy paste your question here'
   }
 }
 

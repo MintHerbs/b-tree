@@ -14,11 +14,22 @@ function Navbar({ order, onOrderChange }) {
     navigate('/')
   }
 
-  // On landing page, render only the About link in top-right corner
+  const handleAboutClick = (e) => {
+    e.preventDefault()
+    navigate('/about')
+  }
+
+  const handleDisclaimerClick = (e) => {
+    e.preventDefault()
+    navigate('/disclaimer')
+  }
+
+  // On landing page, render only the Disclaimer and About links in top-right corner
   if (isLandingPage) {
     return (
       <nav className={styles.navbarLanding}>
-        <a href="#" className={styles.aboutLink}>About</a>
+        <a href="/disclaimer" onClick={handleDisclaimerClick} className={styles.aboutLink}>Disclaimer</a>
+        <a href="/about" onClick={handleAboutClick} className={styles.aboutLink}>About</a>
       </nav>
     )
   }
@@ -63,7 +74,8 @@ function Navbar({ order, onOrderChange }) {
             Reset / New Tree
           </button>
         )}
-        <a href="#" className={styles.aboutLink}>About</a>
+        <a href="/disclaimer" onClick={handleDisclaimerClick} className={styles.aboutLink}>Disclaimer</a>
+        <a href="/about" onClick={handleAboutClick} className={styles.aboutLink}>About</a>
       </div>
     </nav>
   )

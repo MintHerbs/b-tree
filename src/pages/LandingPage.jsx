@@ -73,6 +73,7 @@ function LandingPage() {
           onOrderChange={handleOrderChange}
         />
         <PillInput activeTool={activeTool} onSubmit={handleSubmit} />
+        <p className={styles.credit}>Made by CS for CS 🗿</p>
       </main>
 
       {/* Toast notification */}
