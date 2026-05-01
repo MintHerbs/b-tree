@@ -15,7 +15,8 @@ import {
 import {
   renderSingleLine,
   renderDoubleLine,
-  renderAttributeLine
+  renderAttributeLine,
+  getNodeEdgePoint
 } from './edges.jsx'
 import styles from './ERDCanvas.module.css'
 
@@ -62,21 +63,25 @@ function nodeShape(node) {
 function edgeContent(edge) {
   const { fromNode: from, toNode: to } = edge
 
+  // Calculate border intersection points
+  const fromPoint = getNodeEdgePoint(from, to.x, to.y)
+  const toPoint = getNodeEdgePoint(to, from.x, from.y)
+
   if (edge.type === 'attribute-link') {
-    return renderAttributeLine(from.x, from.y, to.x, to.y)
+    return renderAttributeLine(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y)
   }
 
   if (edge.type === 'relationship-entity') {
     const line = edge.participation === 'total'
-      ? renderDoubleLine(from.x, from.y, to.x, to.y)
-      : renderSingleLine(from.x, from.y, to.x, to.y)
+      ? renderDoubleLine(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y)
+      : renderSingleLine(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y)
 
     // Cardinality label 20px from entity end, along the line toward relationship
-    const totalDist = Math.sqrt((to.x - from.x) ** 2 + (to.y - from.y) ** 2) || 1
-    const ux = (from.x - to.x) / totalDist
-    const uy = (from.y - to.y) / totalDist
-    const labelX = to.x + ux * 20
-    const labelY = to.y + uy * 20
+    const totalDist = Math.sqrt((toPoint.x - fromPoint.x) ** 2 + (toPoint.y - fromPoint.y) ** 2) || 1
+    const ux = (fromPoint.x - toPoint.x) / totalDist
+    const uy = (fromPoint.y - toPoint.y) / totalDist
+    const labelX = toPoint.x + ux * 20
+    const labelY = toPoint.y + uy * 20
 
     return (
       <>
@@ -100,12 +105,12 @@ function edgeContent(edge) {
 
   if (edge.type === 'isa-parent') {
     return edge.participation === 'total'
-      ? renderDoubleLine(from.x, from.y, to.x, to.y)
-      : renderSingleLine(from.x, from.y, to.x, to.y)
+      ? renderDoubleLine(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y)
+      : renderSingleLine(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y)
   }
 
   if (edge.type === 'isa-child') {
-    return renderSingleLine(from.x, from.y, to.x, to.y)
+    return renderSingleLine(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y)
   }
 
   return null

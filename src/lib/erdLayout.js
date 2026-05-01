@@ -14,8 +14,8 @@ export function calculateERDLayout(erdData) {
   const entityCount = erdData.entities.length
   const cols = Math.ceil(Math.sqrt(entityCount))
   const rows = Math.ceil(entityCount / cols)
-  const H_SPACING = 280
-  const V_SPACING = 260
+  const H_SPACING = 380
+  const V_SPACING = 320
   const gridW = (cols - 1) * H_SPACING
   const gridH = (rows - 1) * V_SPACING
 
@@ -85,7 +85,7 @@ export function calculateERDLayout(erdData) {
     })
   })
 
-  // --- Step 3: Entity attributes — 360° arc, biased away from grid neighbors ---
+  // --- Step 3: Entity attributes — smart arc distribution away from neighbors ---
   let attrAnimIndex = 0
 
   erdData.entities.forEach((entity) => {
@@ -94,16 +94,90 @@ export function calculateERDLayout(erdData) {
     const attrs = entity.attributes || []
     if (attrs.length === 0) return
 
-    const startAngle = getEntityArcStartAngle(entityNode.col, entityNode.row, cols, entityCount)
+    // (1) Find all neighboring nodes and their angles
+    const occupiedAngles = []
+    
+    // Add other entities as neighbors
+    nodes.forEach(node => {
+      if (node.id === entityNode.id || node.type === 'attribute') return
+      const dx = node.x - entityNode.x
+      const dy = node.y - entityNode.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance > 0 && distance < 500) { // Consider nodes within 500px as neighbors
+        occupiedAngles.push(Math.atan2(dy, dx))
+      }
+    })
+    
+    // Add relationships this entity participates in
+    relationships.forEach(rel => {
+      const participates = rel.participants.some(p => p.entityId === entity.id)
+      if (participates) {
+        const relNode = relationshipMap.get(rel.id)
+        if (relNode) {
+          const dx = relNode.x - entityNode.x
+          const dy = relNode.y - entityNode.y
+          const distance = Math.sqrt(dx * dx + dy * dy)
+          if (distance > 0) {
+            occupiedAngles.push(Math.atan2(dy, dx))
+          }
+        }
+      }
+    })
 
+    // (2) & (3) Find the largest free arc
+    let startAngle = 0
+    let arcSpan = 2 * Math.PI // Default to full circle
+    
+    if (occupiedAngles.length > 0) {
+      // Sort angles
+      occupiedAngles.sort((a, b) => a - b)
+      
+      // Find largest gap between consecutive occupied angles
+      let maxGap = 0
+      let maxGapStart = 0
+      
+      for (let i = 0; i < occupiedAngles.length; i++) {
+        const current = occupiedAngles[i]
+        const next = occupiedAngles[(i + 1) % occupiedAngles.length]
+        
+        let gap
+        if (i === occupiedAngles.length - 1) {
+          // Wrap-around gap
+          gap = (2 * Math.PI - current) + (next + 2 * Math.PI)
+        } else {
+          gap = next - current
+        }
+        
+        if (gap > maxGap) {
+          maxGap = gap
+          maxGapStart = current
+        }
+      }
+      
+      // Use the largest free arc if it's significant (> 90 degrees)
+      if (maxGap > Math.PI / 2) {
+        startAngle = maxGapStart + 0.2 // Offset slightly from the occupied angle
+        arcSpan = maxGap - 0.4 // Leave small margins
+      }
+    }
+
+    // (4) Distribute attributes evenly within the free arc
     attrs.forEach((attr, i) => {
-      const angle = startAngle + (i / attrs.length) * 2 * Math.PI
+      let angle
+      if (attrs.length === 1) {
+        // Single attribute: place at center of free arc
+        angle = startAngle + arcSpan / 2
+      } else {
+        // Multiple attributes: distribute evenly
+        angle = startAngle + (i / (attrs.length - 1)) * arcSpan
+      }
+      
       const attrNode = {
         id: attr.id,
         type: 'attribute',
         name: attr.name,
-        x: entityNode.x + Math.cos(angle) * 140,
-        y: entityNode.y + Math.sin(angle) * 140,
+        x: entityNode.x + Math.cos(angle) * 170,
+        y: entityNode.y + Math.sin(angle) * 170,
         width: Math.max(90, attr.name.length * 8 + 28),
         height: 38,
         attrType: attr.type,
