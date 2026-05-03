@@ -8,7 +8,7 @@ import HeroText from '../components/HeroText/HeroText'
 import PillInput from '../components/PillInput/PillInput'
 import styles from './LandingPage.module.css'
 
-function LandingPage() {
+function LandingPage({ onAIStateChange }) {
   const [activeTool, setActiveTool] = useState('btree')
   const [order, setOrder] = useState(3)
   const [showToast, setShowToast] = useState(false)
@@ -72,7 +72,11 @@ function LandingPage() {
           order={order}
           onOrderChange={handleOrderChange}
         />
-        <PillInput activeTool={activeTool} onSubmit={handleSubmit} />
+        <PillInput 
+          activeTool={activeTool} 
+          onSubmit={handleSubmit}
+          onAIStateChange={onAIStateChange}
+        />
         <p className={styles.credit}>Made by CS for CS 🗿</p>
       </main>
 

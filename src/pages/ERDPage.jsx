@@ -1,4 +1,4 @@
-// ER Diagram Builder page - 4-step paginated flow
+// ER Diagram Builder page - 3-step paginated flow
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Starfield from '../components/Starfield/Starfield'
@@ -12,24 +12,39 @@ import { buildERDPrompt } from '../lib/erdPromptBuilder'
 import { parseERD } from '../lib/erdParser'
 import styles from './ERDPage.module.css'
 
-function ERDPage() {
+function ERDPage({ onAIStateChange }) {
   const location = useLocation()
   const navigate = useNavigate()
   const initialQuestion = location.state?.question || ''
   
-  // If question provided, skip to step 2; otherwise start at step 1
-  const [step, setStep] = useState(initialQuestion ? 2 : 1)
+  const [step, setStep] = useState(1)
   const [question, setQuestion] = useState(initialQuestion)
   const [prompt, setPrompt] = useState('')
   const [parsedERD, setParsedERD] = useState(null)
   const [error, setError] = useState(false)
 
-  // On mount, if question exists, generate prompt automatically
+  // Cleanup: set to 'idle' when leaving the page
+  useEffect(() => {
+    return () => {
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('idle')
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // If question provided from landing page, generate prompt and advance to step 2
   useEffect(() => {
     if (initialQuestion) {
       const generatedPrompt = buildERDPrompt(initialQuestion)
       setPrompt(generatedPrompt)
+      setStep(2)
+      // Transition to 'waiting' state when advancing to step 2
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('waiting')
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuestion])
 
   // Handle tool switching from sidebar
@@ -47,40 +62,63 @@ function ERDPage() {
     const generatedPrompt = buildERDPrompt(value)
     setPrompt(generatedPrompt)
     setStep(2)
+    // Transition to 'waiting' state when advancing to step 2
+    if (typeof onAIStateChange === 'function') {
+      onAIStateChange('waiting')
+    }
   }
 
-  // Step 2: User clicks Next
+  // Step 2: User copies prompt and advances to step 3
   const handleStep2Next = () => {
     setStep(3)
   }
 
   // Step 3: User pastes JSON
   const handleStep3Submit = (value) => {
+    // Show 'thinking' state immediately (synchronously, before any setState)
+    if (typeof onAIStateChange === 'function') {
+      onAIStateChange('thinking')
+    }
+    
     // Use erdParser to validate
     const result = parseERD(value)
     
     if (result.valid) {
-      // Store parsed data and advance to step 4
+      // Store parsed data
       setParsedERD(result.data)
       setError(false)
-      setStep(4)
+      
+      // After 3 seconds, collapse to 'idle'
+      setTimeout(() => {
+        if (typeof onAIStateChange === 'function') {
+          onAIStateChange('idle')
+        }
+      }, 3000)
     } else {
-      // Show error
+      // Show error and reset to idle immediately
       setError(true)
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('idle')
+      }
     }
-  }
-
-  // Step 3: Back button
-  const handleStep3Back = () => {
-    setError(false)
-    setStep(2)
   }
 
   // Previous button - go back one step
   const handlePrevious = () => {
-    if (step > 1) {
-      setStep(step - 1)
+    if (step === 2) {
+      setStep(1)
       setError(false)
+      // Back to observing state
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('observing')
+      }
+    } else if (step === 3) {
+      setStep(2)
+      setError(false)
+      // Back to waiting state
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('waiting')
+      }
     }
   }
 
@@ -91,6 +129,9 @@ function ERDPage() {
     setPrompt('')
     setParsedERD(null)
     setError(false)
+    if (typeof onAIStateChange === 'function') {
+      onAIStateChange('observing')
+    }
   }
 
   return (
@@ -109,15 +150,15 @@ function ERDPage() {
       
       {/* Main content */}
       <main className={styles.erdMain}>
-        {/* Previous button - show on steps 2, 3, 4 */}
-        {step > 1 && (
+        {/* Previous button - show on steps 2 and 3 (before canvas renders) */}
+        {(step === 2 || (step === 3 && !parsedERD)) && (
           <button className={styles.previousButton} onClick={handlePrevious}>
             Previous
           </button>
         )}
         
-        {/* Reset button - only show on step 4 (canvas view) */}
-        {step === 4 && (
+        {/* Reset button - only show when canvas is visible */}
+        {parsedERD && (
           <button className={styles.resetButton} onClick={handleReset}>
             Reset ERD
           </button>
@@ -128,33 +169,34 @@ function ERDPage() {
           <ERDStep1 
             initialQuestion={initialQuestion}
             onSubmit={handleStep1Submit}
-            currentStep={initialQuestion ? step - 1 : step}
-            totalSteps={initialQuestion ? 3 : 4}
+            onAIStateChange={onAIStateChange}
+            currentStep={1}
+            totalSteps={3}
           />
         )}
         
-        {/* Step 2: Generated prompt + copy */}
+        {/* Step 2: Copy prompt */}
         {step === 2 && (
           <ERDStep2 
             prompt={prompt}
             onNext={handleStep2Next}
-            currentStep={initialQuestion ? step - 1 : step}
-            totalSteps={initialQuestion ? 3 : 4}
+            currentStep={2}
+            totalSteps={3}
           />
         )}
         
-        {/* Step 3: Paste JSON */}
-        {step === 3 && (
+        {/* Step 3: Paste JSON (before canvas renders) */}
+        {step === 3 && !parsedERD && (
           <ERDStep3 
             onSubmit={handleStep3Submit}
             error={error}
-            currentStep={initialQuestion ? step - 1 : step}
-            totalSteps={initialQuestion ? 3 : 4}
+            currentStep={3}
+            totalSteps={3}
           />
         )}
         
-        {/* Step 4: Rendered diagram */}
-        {step === 4 && (
+        {/* Canvas: Rendered diagram (after JSON submission) */}
+        {parsedERD && (
           <ERDCanvas erdData={parsedERD} />
         )}
       </main>

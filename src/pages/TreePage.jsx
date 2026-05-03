@@ -8,13 +8,20 @@ import OperationsPanel from '../components/OperationsPanel/OperationsPanel'
 import { useBPlusTree } from '../hooks/useBPlusTree'
 import styles from './TreePage.module.css'
 
-function TreePage() {
+function TreePage({ onAIStateChange }) {
   const location = useLocation()
   const { values = [], order = 3 } = location.state || {}
   const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   // Tree management hook (no animation)
   const { tree, stats, initializeTree, insert, deleteValues } = useBPlusTree(order)
+
+  // Reset to idle on mount
+  useEffect(() => {
+    if (typeof onAIStateChange === 'function') {
+      onAIStateChange('idle')
+    }
+  }, [onAIStateChange])
 
   // Initialize tree on mount with values from router
   useEffect(() => {
@@ -25,12 +32,30 @@ function TreePage() {
 
   // Handle insert operation from OperationsPanel
   const handleInsert = (valuesToInsert) => {
+    if (typeof onAIStateChange === 'function') {
+      onAIStateChange('thinking')
+    }
     insert(valuesToInsert)
+    // Show thinking state briefly, then return to idle
+    setTimeout(() => {
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('idle')
+      }
+    }, 800)
   }
 
   // Handle delete operation from OperationsPanel
   const handleDelete = (valuesToDelete) => {
+    if (typeof onAIStateChange === 'function') {
+      onAIStateChange('thinking')
+    }
     deleteValues(valuesToDelete)
+    // Show thinking state briefly, then return to idle
+    setTimeout(() => {
+      if (typeof onAIStateChange === 'function') {
+        onAIStateChange('idle')
+      }
+    }, 800)
   }
 
   // Toggle mobile panel

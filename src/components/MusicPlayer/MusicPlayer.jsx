@@ -30,7 +30,8 @@ const MusicPlayer = forwardRef((props, ref) => {
           loop: 1,
           playlist: 'wjJ3-SzxhCk',
           controls: 0,
-          mute: 0
+          mute: 0,
+          origin: window.location.origin
         },
         events: {
           onReady: (e) => e.target.playVideo()
