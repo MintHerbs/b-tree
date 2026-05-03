@@ -27,3 +27,5 @@ dist-ssr
 .claude/
 *.md
 !README.md
+.vercel
+.env*.local

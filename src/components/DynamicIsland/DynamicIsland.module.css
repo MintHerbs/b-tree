@@ -1,0 +1,116 @@
+.pill {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-24px);
+  z-index: 9999;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  height: 36px;
+  width: 56px;
+  padding: 0;
+  
+  background: #000;
+  border: 1px solid #1a1a1a;
+  border-radius: 9999px;
+  box-shadow:
+    0 0 0 1px #222,
+    0 8px 32px rgba(0, 0, 0, 0.9),
+    0 2px 12px rgba(0, 0, 0, 0.7);
+  
+  opacity: 0;
+  transition: 
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  overflow: hidden;
+}
+
+.pill.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pill.expanded {
+  width: auto;
+  min-width: 220px;
+  height: 36px;
+  padding: 0 16px;
+  justify-content: space-between;
+}
+
+.greenDot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.onlineText {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 16px;
+  background: #2a2a2a;
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+.rightSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.playButton {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playButton:hover {
+  opacity: 0.8;
+}
+
+.hint {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease 0.25s;
+}
+
+.content.visible {
+  opacity: 1;
+}
