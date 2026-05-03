@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react'
+import GridLoader from '../smoothui/grid-loader/index.tsx'
 import styles from './DynamicIsland.module.css'
 
-export default function DynamicIsland({ onlineCount, isPlaying, onPlayPause }) {
+export default function DynamicIsland({ 
+  onlineCount, 
+  isPlaying, 
+  onPlayPause,
+  aiState = 'idle',
+  errorMessage = ''
+}) {
   const [isVisible, setIsVisible] = useState(false)
   const [state, setState] = useState('idle') // 'idle' | 'hover' | 'music'
   const pillRef = useRef(null)
+  const previousAIStateRef = useRef('idle') // Store AI state before opening music
 
   useEffect(() => {
     // Entrance animation after 3 second delay
@@ -17,17 +25,30 @@ export default function DynamicIsland({ onlineCount, isPlaying, onPlayPause }) {
     return () => clearTimeout(timer)
   }, [])
 
+  // Auto-reset error state after 3 seconds
+  useEffect(() => {
+    if (aiState === 'error') {
+      const timer = setTimeout(() => {
+        // Error state will be reset by parent component
+      }, 3000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [aiState])
+
   useEffect(() => {
     // Close music player on outside click or Escape key
     const handleClickOutside = (e) => {
       if (state === 'music' && pillRef.current && !pillRef.current.contains(e.target)) {
-        setState('idle')
+        // Return to previous AI state if it was active, otherwise idle
+        setState(previousAIStateRef.current !== 'idle' ? 'ai-active' : 'idle')
       }
     }
 
     const handleEscape = (e) => {
       if (state === 'music' && e.key === 'Escape') {
-        setState('idle')
+        // Return to previous AI state if it was active, otherwise idle
+        setState(previousAIStateRef.current !== 'idle' ? 'ai-active' : 'idle')
       }
     }
 
@@ -43,7 +64,8 @@ export default function DynamicIsland({ onlineCount, isPlaying, onPlayPause }) {
   }, [state])
 
   const handleMouseEnter = () => {
-    if (state === 'idle') {
+    // Don't allow hover state when AI is active
+    if (state === 'idle' && aiState === 'idle') {
       setState('hover')
     }
   }
@@ -56,10 +78,25 @@ export default function DynamicIsland({ onlineCount, isPlaying, onPlayPause }) {
   }
 
   const handleClick = () => {
+    // Allow music state when AI is active OR when idle
     if (state !== 'music') {
+      if (aiState !== 'idle') {
+        // Store current AI state before opening music
+        previousAIStateRef.current = aiState
+      }
       setState('music')
     }
   }
+
+  const handleMusicIconClick = (e) => {
+    e.stopPropagation() // Prevent pill click
+    // Store current AI state before opening music
+    previousAIStateRef.current = aiState
+    setState('music')
+  }
+
+  // Determine if we should show AI content (but not when music is open)
+  const showAIContent = aiState !== 'idle' && state !== 'music'
 
   const handlePlayPauseClick = (e) => {
     e.stopPropagation() // Prevent pill click
@@ -72,7 +109,7 @@ export default function DynamicIsland({ onlineCount, isPlaying, onPlayPause }) {
         <motion.div
           ref={pillRef}
           className={styles.pill}
-          data-state={state}
+          data-state={showAIContent ? aiState : state}
           layout
           style={{ borderRadius: 32 }}
           transition={{ type: 'spring', bounce: 0.5, duration: 0.25 }}
@@ -83,70 +120,169 @@ export default function DynamicIsland({ onlineCount, isPlaying, onPlayPause }) {
           onClick={handleClick}
         >
           <motion.div
-            key={state}
+            key={showAIContent ? aiState : state}
             initial={{ opacity: 0, scale: 0.9, filter: 'blur(5px)' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
             transition={{ type: 'spring', bounce: 0.5, delay: 0.05 }}
             className={styles.content}
+            data-ai-state={aiState}
           >
-            {/* Green dot - visible in idle and hover states only */}
-            {state !== 'music' && <div className={styles.greenDot} />}
+            {/* AI States: observing, waiting, processing, error */}
+            {showAIContent && (
+              <>
+                {aiState === 'observing' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <GridLoader 
+                      blur={1.2}
+                      color="blue" 
+                      gap={1}
+                      mode="pulse" 
+                      pattern="plus-full"
+                      rounded
+                      size="sm"
+                    />
+                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      Observing
+                    </span>
+                  </div>
+                )}
 
-            {/* Hover state: "1 online" text */}
-            {state === 'hover' && (
-              <span className={styles.onlineText}>
-                {onlineCount} online
-              </span>
+                {aiState === 'waiting' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <GridLoader 
+                      blur={1}
+                      color="white" 
+                      gap={1}
+                      mode="stagger" 
+                      pattern="frame"
+                      size="sm"
+                    />
+                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      Waiting
+                    </span>
+                  </div>
+                )}
+
+                {aiState === 'processing' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <GridLoader 
+                      blur={1}
+                      color="white" 
+                      gap={1}
+                      mode="stagger" 
+                      pattern="frame"
+                      size="sm"
+                    />
+                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      Thinking
+                    </span>
+                  </div>
+                )}
+
+                {aiState === 'thinking' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <GridLoader 
+                      blur={1}
+                      color="amber" 
+                      gap={1}
+                      mode="stagger" 
+                      pattern="frame"
+                      size="sm"
+                    />
+                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      Thinking...
+                    </span>
+                  </div>
+                )}
+
+                {aiState === 'generating' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <GridLoader 
+                      blur={1}
+                      color="white" 
+                      gap={1}
+                      mode="stagger" 
+                      pattern="frame"
+                      size="sm"
+                    />
+                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      Generating...
+                    </span>
+                  </div>
+                )}
+
+                {aiState === 'error' && (
+                  <>
+                    <div className={styles.errorDot} />
+                    <span className={styles.errorText}>{errorMessage}</span>
+                  </>
+                )}
+              </>
             )}
 
-            {/* Music state: full music player panel */}
-            {state === 'music' && (
-              <div className={styles.musicPanel}>
-                {/* Album art */}
-                <div className={styles.albumArt}>
-                  🌌
-                </div>
+            {/* Normal states: only show when AI is idle */}
+            {!showAIContent && (
+              <>
+                {/* Green dot - visible in idle and hover states only */}
+                {state !== 'music' && <div className={styles.greenDot} />}
 
-                {/* Song info */}
-                <div className={styles.songInfo}>
-                  <div className={styles.songTitle}>Starry Night Lofi</div>
-                  <div className={styles.artistName}>mooner.dev</div>
-                </div>
+                {/* Hover state: "1 online" text */}
+                {state === 'hover' && (
+                  <span className={styles.onlineText}>
+                    {onlineCount} online
+                  </span>
+                )}
 
-                {/* Music controls */}
-                <div className={styles.musicControls}>
-                  <motion.button
-                    className={styles.controlButton}
-                    aria-label="Skip back"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <SkipBack size={16} />
-                  </motion.button>
+                {/* Music state: full music player panel */}
+                {state === 'music' && (
+                  <div className={styles.musicPanel}>
+                    {/* Album art */}
+                    <div className={styles.albumArt}>
+                      🌌
+                    </div>
 
-                  <motion.button
-                    className={styles.controlButton}
-                    onClick={handlePlayPauseClick}
-                    aria-label={isPlaying ? 'Pause music' : 'Play music'}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                  </motion.button>
+                    {/* Song info */}
+                    <div className={styles.songInfo}>
+                      <div className={styles.songTitle}>Starry Night Lofi</div>
+                      <div className={styles.artistName}>mooner.dev</div>
+                    </div>
 
-                  <motion.button
-                    className={styles.controlButton}
-                    aria-label="Skip forward"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <SkipForward size={16} />
-                  </motion.button>
-                </div>
-              </div>
+                    {/* Music controls */}
+                    <div className={styles.musicControls}>
+                      <motion.button
+                        className={styles.controlButton}
+                        aria-label="Skip back"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <SkipBack size={16} />
+                      </motion.button>
+
+                      <motion.button
+                        className={styles.controlButton}
+                        onClick={handlePlayPauseClick}
+                        aria-label={isPlaying ? 'Pause music' : 'Play music'}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                      </motion.button>
+
+                      <motion.button
+                        className={styles.controlButton}
+                        aria-label="Skip forward"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <SkipForward size={16} />
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         </motion.div>

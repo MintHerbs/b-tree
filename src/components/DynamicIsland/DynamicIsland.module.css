@@ -3,7 +3,7 @@
 /* Wrapper: handles fixed positioning + full width */
 .wrapper {
   position: fixed;
-  top: 16px;
+  top: 8px;
   left: 0;
   width: 100vw;
   display: flex;
@@ -50,6 +50,36 @@
   cursor: default;
 }
 
+/* State: thinking - expanded pill */
+.pill[data-state="thinking"] {
+  cursor: pointer;
+}
+
+/* State: generating - expanded pill */
+.pill[data-state="generating"] {
+  cursor: pointer;
+}
+
+/* State: observing - expanded pill */
+.pill[data-state="observing"] {
+  cursor: pointer;
+}
+
+/* State: waiting - expanded pill */
+.pill[data-state="waiting"] {
+  cursor: pointer;
+}
+
+/* State: processing - expanded pill */
+.pill[data-state="processing"] {
+  cursor: pointer;
+}
+
+/* State: error - show error message */
+.pill[data-state="error"] {
+  cursor: default;
+}
+
 .content {
   display: flex;
   align-items: center;
@@ -60,6 +90,25 @@
 .pill[data-state="music"] .content {
   padding: 12px 16px;
   width: 280px;
+}
+
+/* AI states: thinking, generating, observing, waiting, processing - expanded pill */
+.pill[data-state="thinking"] .content,
+.pill[data-state="generating"] .content,
+.pill[data-state="observing"] .content,
+.pill[data-state="waiting"] .content,
+.pill[data-state="processing"] .content {
+  padding: 8px 16px;
+  gap: 0;
+  align-items: center;
+  height: 36px;
+  max-height: 44px;
+  overflow: hidden;
+}
+
+/* Error state */
+.pill[data-state="error"] .content {
+  padding: 12px 20px;
 }
 
 .greenDot {
@@ -154,4 +203,31 @@
 
 .controlButton:active {
   background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* AI state text */
+.aiText {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+/* Error state */
+.errorDot {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 }

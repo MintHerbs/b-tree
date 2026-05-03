@@ -1,19 +1,23 @@
 // Router setup - defines application routes
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useRef, useState } from 'react'
+import { useRef, useState, lazy, Suspense } from 'react'
 import LandingPage from './pages/LandingPage'
-import TreePage from './pages/TreePage'
-import ERDPage from './pages/ERDPage'
-import AboutPage from './pages/AboutPage'
-import DisclaimerPage from './pages/DisclaimerPage'
 import { usePresence } from './hooks/usePresence'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import DynamicIsland from './components/DynamicIsland/DynamicIsland'
+
+// Lazy load route components for code splitting
+const TreePage = lazy(() => import('./pages/TreePage'))
+const ERDPage = lazy(() => import('./pages/ERDPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
 
 function App() {
   const { onlineCount } = usePresence()
   const musicPlayerRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [aiState, setAIState] = useState('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -24,6 +28,19 @@ function App() {
     setIsPlaying(prev => !prev)
   }
 
+  const handleAIStateChange = (newState, message = '') => {
+    setAIState(newState)
+    setErrorMessage(message)
+    
+    // Auto-reset error state after 3 seconds
+    if (newState === 'error') {
+      setTimeout(() => {
+        setAIState('idle')
+        setErrorMessage('')
+      }, 3000)
+    }
+  }
+
   return (
     <BrowserRouter>
       <MusicPlayer ref={musicPlayerRef} />
@@ -31,14 +48,18 @@ function App() {
         onlineCount={onlineCount}
         isPlaying={isPlaying}
         onPlayPause={handlePlayPause}
+        aiState={aiState}
+        errorMessage={errorMessage}
       />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/tree" element={<TreePage />} />
-        <Route path="/erd" element={<ERDPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/disclaimer" element={<DisclaimerPage />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<LandingPage onAIStateChange={setAIState} />} />
+          <Route path="/tree" element={<TreePage onAIStateChange={setAIState} />} />
+          <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/disclaimer" element={<DisclaimerPage />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

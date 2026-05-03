@@ -1,5 +1,10 @@
 /* Global styles - CSS variables, resets, fonts */
 
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* Grok-inspired landing page colors */
   --color-bg: #000000;

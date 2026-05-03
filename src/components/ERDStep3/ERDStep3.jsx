@@ -1,4 +1,4 @@
-// ERD Step 3 - User pastes JSON from LLM
+// ERD Step 3 - Paste JSON input
 import PillInput from '../PillInput/PillInput'
 import PaginationDots from '../PaginationDots/PaginationDots'
 import styles from './ERDStep3.module.css'

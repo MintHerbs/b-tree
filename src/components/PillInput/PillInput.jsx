@@ -1,9 +1,10 @@
 // Pill-shaped text input with conditional send button
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import styles from './PillInput.module.css'
 
-function PillInput({ activeTool, onSubmit, placeholder, defaultValue = '' }) {
+function PillInput({ activeTool, onSubmit, onAIStateChange, placeholder, defaultValue = '' }) {
   const [value, setValue] = useState(defaultValue)
+  const hasTriggeredObserving = useRef(false)
 
   // Update value if defaultValue changes
   useEffect(() => {
@@ -11,6 +12,39 @@ function PillInput({ activeTool, onSubmit, placeholder, defaultValue = '' }) {
       setValue(defaultValue)
     }
   }, [defaultValue])
+
+  const handleChange = (e) => {
+    const newValue = e.target.value
+    setValue(newValue)
+
+    // Trigger 'observing' on first keystroke (only once per session)
+    if (newValue.length > 0 && !hasTriggeredObserving.current && typeof onAIStateChange === 'function') {
+      onAIStateChange('observing')
+      hasTriggeredObserving.current = true
+    }
+
+    // If input is cleared back to empty, collapse pill to 'idle'
+    if (newValue.length === 0 && hasTriggeredObserving.current && typeof onAIStateChange === 'function') {
+      onAIStateChange('idle')
+      hasTriggeredObserving.current = false
+    }
+  }
+
+  const handleFocus = () => {
+    // Trigger 'observing' immediately when input is focused (clicked)
+    if (!hasTriggeredObserving.current && typeof onAIStateChange === 'function') {
+      onAIStateChange('observing')
+      hasTriggeredObserving.current = true
+    }
+  }
+
+  const handleBlur = () => {
+    // If input is empty when losing focus, return to 'idle'
+    if (value.length === 0 && hasTriggeredObserving.current && typeof onAIStateChange === 'function') {
+      onAIStateChange('idle')
+      hasTriggeredObserving.current = false
+    }
+  }
 
   const handleSubmit = () => {
     if (value.trim().length === 0) return
@@ -41,7 +75,9 @@ function PillInput({ activeTool, onSubmit, placeholder, defaultValue = '' }) {
         className={styles.input}
         placeholder={inputPlaceholder}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyPress={handleKeyPress}
       />
       

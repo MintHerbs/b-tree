@@ -1,0 +1,84 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 2rem;
+}
+
+.glowWrapper {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.card {
+  background: var(--color-surface, #0f0f0f);
+  border: 1px solid var(--color-border, #222);
+  border-radius: 16px;
+  padding: 28px;
+  min-width: 240px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  flex-grow: 1;
+}
+
+.button {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-accent, #8B5CF6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.button:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: scale(1.02);
+}
+
+.button:disabled {
+  background: var(--color-muted, #555);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
