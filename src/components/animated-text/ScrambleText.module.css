@@ -1,0 +1,12 @@
+/* ScrambleText component styles */
+
+.scrambleText {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Apply monospace font during animation to prevent jittering */
+.scrambleText.animating {
+  font-family: monospace;
+  min-width: 100%;
+}

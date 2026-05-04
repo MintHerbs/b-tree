@@ -1,5 +1,6 @@
 // Large heading and subtitle that updates based on active tool
 import { useState, useEffect } from 'react'
+import { ScrambleText } from '../animated-text'
 import styles from './HeroText.module.css'
 
 const CONTENT = {
@@ -93,12 +94,18 @@ function HeroText({ activeTool, order, onOrderChange }) {
   return (
     <div className={styles.container}>
       <h1 className={`${styles.title} ${isVisible ? styles.fadeIn : styles.fadeOut}`}>
-        {content.title}
+        <ScrambleText key={activeTool} duration={500} speed={80} skipInitialAnimation={true}>
+          {content.title}
+        </ScrambleText>
       </h1>
       <p className={`${styles.subtitle} ${isVisible ? styles.fadeIn : styles.fadeOut}`}>
         {activeTool === 'btree' ? (
           <>
-            insert your values separated by a comma | <span className={styles.orderLabel}>order:</span>{' '}
+            <ScrambleText key={`${activeTool}-subtitle`} duration={500} speed={80} skipInitialAnimation={true}>
+              insert your values separated by a comma
+            </ScrambleText>
+            {' | '}
+            <span className={styles.orderLabel}>order:</span>{' '}
             <span className={`${styles.orderBox} ${isInvalid ? styles.orderBoxError : ''}`}>
               <input
                 type="number"
@@ -115,7 +122,9 @@ function HeroText({ activeTool, order, onOrderChange }) {
             </span>
           </>
         ) : (
-          content.subtitle
+          <ScrambleText key={`${activeTool}-subtitle`} duration={500} speed={80} skipInitialAnimation={true}>
+            {content.subtitle}
+          </ScrambleText>
         )}
       </p>
     </div>

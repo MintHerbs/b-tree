@@ -1,5 +1,6 @@
 // ER Diagram Builder page - 3-step paginated flow
 import { useState, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Starfield from '../components/Starfield/Starfield'
 import Sidebar from '../components/Sidebar/Sidebar'
@@ -37,8 +38,13 @@ function ERDPage({ onAIStateChange }) {
   useEffect(() => {
     if (initialQuestion) {
       const generatedPrompt = buildERDPrompt(initialQuestion)
-      setPrompt(generatedPrompt)
-      setStep(2)
+      
+      // Force synchronous state updates for instant transition
+      flushSync(() => {
+        setPrompt(generatedPrompt)
+        setStep(2)
+      })
+      
       // Transition to 'waiting' state when advancing to step 2
       if (typeof onAIStateChange === 'function') {
         onAIStateChange('waiting')
@@ -58,10 +64,15 @@ function ERDPage({ onAIStateChange }) {
 
   // Step 1: User submits question
   const handleStep1Submit = (value) => {
-    setQuestion(value)
     const generatedPrompt = buildERDPrompt(value)
-    setPrompt(generatedPrompt)
-    setStep(2)
+    
+    // Force synchronous state updates for instant transition
+    flushSync(() => {
+      setQuestion(value)
+      setPrompt(generatedPrompt)
+      setStep(2)
+    })
+    
     // Transition to 'waiting' state when advancing to step 2
     if (typeof onAIStateChange === 'function') {
       onAIStateChange('waiting')
