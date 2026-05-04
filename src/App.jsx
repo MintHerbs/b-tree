@@ -4,7 +4,7 @@ import { useRef, useState, lazy, Suspense } from 'react'
 import LandingPage from './pages/LandingPage'
 import { usePresence } from './hooks/usePresence'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
-import DynamicIsland from './components/DynamicIsland/DynamicIsland'
+import DynamicIsland from './components/dynamic-island'
 
 // Lazy load route components for code splitting
 const TreePage = lazy(() => import('./pages/TreePage'))

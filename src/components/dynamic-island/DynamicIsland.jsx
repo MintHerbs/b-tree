@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react'
-import GridLoader from '../smoothui/grid-loader/index.tsx'
+import AIStateContent from './AIStateContent'
 import styles from './DynamicIsland.module.css'
 
 export default function DynamicIsland({ 
@@ -127,97 +127,9 @@ export default function DynamicIsland({
             className={styles.content}
             data-ai-state={aiState}
           >
-            {/* AI States: observing, waiting, processing, error */}
+            {/* AI States: observing, waiting, processing, thinking, generating, error */}
             {showAIContent && (
-              <>
-                {aiState === 'observing' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <GridLoader 
-                      blur={1.2}
-                      color="blue" 
-                      gap={1}
-                      mode="pulse" 
-                      pattern="plus-full"
-                      rounded
-                      size="sm"
-                    />
-                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      Observing
-                    </span>
-                  </div>
-                )}
-
-                {aiState === 'waiting' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <GridLoader 
-                      blur={1}
-                      color="white" 
-                      gap={1}
-                      mode="stagger" 
-                      pattern="frame"
-                      size="sm"
-                    />
-                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      Waiting
-                    </span>
-                  </div>
-                )}
-
-                {aiState === 'processing' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <GridLoader 
-                      blur={1}
-                      color="white" 
-                      gap={1}
-                      mode="stagger" 
-                      pattern="frame"
-                      size="sm"
-                    />
-                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      Thinking
-                    </span>
-                  </div>
-                )}
-
-                {aiState === 'thinking' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <GridLoader 
-                      blur={1}
-                      color="amber" 
-                      gap={1}
-                      mode="stagger" 
-                      pattern="frame"
-                      size="sm"
-                    />
-                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      Thinking...
-                    </span>
-                  </div>
-                )}
-
-                {aiState === 'generating' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <GridLoader 
-                      blur={1}
-                      color="white" 
-                      gap={1}
-                      mode="stagger" 
-                      pattern="frame"
-                      size="sm"
-                    />
-                    <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      Generating...
-                    </span>
-                  </div>
-                )}
-
-                {aiState === 'error' && (
-                  <>
-                    <div className={styles.errorDot} />
-                    <span className={styles.errorText}>{errorMessage}</span>
-                  </>
-                )}
-              </>
+              <AIStateContent aiState={aiState} errorMessage={errorMessage} />
             )}
 
             {/* Normal states: only show when AI is idle */}

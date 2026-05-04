@@ -6,6 +6,8 @@
   align-items: center;
   gap: 12px;
   text-align: center;
+  min-height: 140px; /* Fixed height to maintain consistent positioning */
+  justify-content: center;
 }
 
 .title {
@@ -15,6 +17,9 @@
   margin: 0;
   transition: opacity 0.2s ease;
   animation: softGlow 3s ease-in-out infinite;
+  min-height: 60px; /* Reserve space for title */
+  display: flex;
+  align-items: center;
 }
 
 @keyframes softGlow {
@@ -39,6 +44,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 48px; /* Reserve space for subtitle */
+  justify-content: center;
 }
 
 /* Order box container */
