@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Starfield from '../components/Starfield/Starfield'
-import Sidebar from '../components/Sidebar/Sidebar'
 import Navbar from '../components/Navbar/Navbar'
 import ERDStep1 from '../components/ERDStep1/ERDStep1'
 import ERDStep2 from '../components/ERDStep2/ERDStep2'
@@ -19,7 +18,6 @@ function ERDPage({ onAIStateChange }) {
   const initialQuestion = location.state?.question || ''
   
   const [step, setStep] = useState(1)
-  const [question, setQuestion] = useState(initialQuestion)
   const [prompt, setPrompt] = useState('')
   const [parsedERD, setParsedERD] = useState(null)
   const [error, setError] = useState(false)
@@ -53,22 +51,12 @@ function ERDPage({ onAIStateChange }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuestion])
 
-  // Handle tool switching from sidebar
-  const handleToolChange = (tool) => {
-    if (tool === 'btree') {
-      navigate('/')
-    } else if (tool === 'calculator') {
-      window.open('https://lazy-grades.vercel.app/', '_blank')
-    }
-  }
-
   // Step 1: User submits question
   const handleStep1Submit = (value) => {
     const generatedPrompt = buildERDPrompt(value)
     
     // Force synchronous state updates for instant transition
     flushSync(() => {
-      setQuestion(value)
       setPrompt(generatedPrompt)
       setStep(2)
     })
@@ -136,7 +124,6 @@ function ERDPage({ onAIStateChange }) {
   // Reset ERD flow
   const handleReset = () => {
     setStep(1)
-    setQuestion('')
     setPrompt('')
     setParsedERD(null)
     setError(false)
@@ -149,12 +136,6 @@ function ERDPage({ onAIStateChange }) {
     <div className={styles.erdPage}>
       {/* Starfield background - z-index: 0 */}
       <Starfield />
-      
-      {/* Sidebar - z-index: 10 */}
-      <Sidebar 
-        activeTool="erd"
-        onToolChange={handleToolChange}
-      />
       
       {/* Navbar */}
       <Navbar />

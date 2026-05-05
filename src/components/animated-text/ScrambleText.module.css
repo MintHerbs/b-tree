@@ -2,11 +2,12 @@
 
 .scrambleText {
   display: inline-block;
-  white-space: nowrap;
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Apply monospace font during animation to prevent jittering */
 .scrambleText.animating {
-  font-family: monospace;
-  min-width: 100%;
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 0.02em;
 }

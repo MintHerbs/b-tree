@@ -1,3 +1,4 @@
+// RETIRED — replaced by src/components/layout/Sidebar
 // Left icon rail with moon logo and tool icons
 import SidebarIcon from '../SidebarIcon/SidebarIcon'
 import styles from './Sidebar.module.css'

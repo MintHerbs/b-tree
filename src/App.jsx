@@ -1,10 +1,10 @@
 // Router setup - defines application routes
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useRef, useState, lazy, Suspense } from 'react'
-import LandingPage from './pages/LandingPage'
 import { usePresence } from './hooks/usePresence'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import DynamicIsland from './components/dynamic-island'
+import Sidebar from './components/layout/Sidebar'
 
 // Lazy load route components for code splitting
 const TreePage = lazy(() => import('./pages/TreePage'))
@@ -18,6 +18,7 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [aiState, setAIState] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [activeChild, setActiveChild] = useState('btree')
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -51,9 +52,16 @@ function App() {
         aiState={aiState}
         errorMessage={errorMessage}
       />
+      {/* Global sidebar - persists across all routes */}
+      <Sidebar
+        defaultOpenGroup="database"
+        activeChild={activeChild}
+        onChildSelect={setActiveChild}
+      />
       <Suspense fallback={null}>
         <Routes>
-          <Route path="/" element={<LandingPage onAIStateChange={setAIState} />} />
+          {/* Default route redirects to /tree */}
+          <Route path="/" element={<Navigate to="/tree" replace />} />
           <Route path="/tree" element={<TreePage onAIStateChange={setAIState} />} />
           <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} />} />
           <Route path="/about" element={<AboutPage />} />

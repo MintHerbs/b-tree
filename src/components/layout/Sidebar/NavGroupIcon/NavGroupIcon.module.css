@@ -1,0 +1,110 @@
+/* NavGroupIcon component styles */
+
+.groupIconContainer {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.iconContainer {
+  position: relative;
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.iconWrapper {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.iconWrapper svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.5;
+}
+
+.iconWrapper img {
+  width: 22px;
+  height: 22px;
+}
+
+/* Active indicator line */
+.activeLine {
+  width: 28px;
+  height: 2px;
+  background-color: #EA6C0A;
+  margin-top: -4px;
+  opacity: 0;
+  animation: fadeInLine 0.2s ease forwards;
+}
+
+@keyframes fadeInLine {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #1c1c1c;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive - smaller screens */
+@media (max-width: 640px) {
+  .iconContainer {
+    height: 48px;
+  }
+
+  .iconWrapper {
+    width: 18px;
+    height: 18px;
+  }
+
+  .iconWrapper svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .iconWrapper img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .activeLine {
+    width: 24px;
+  }
+
+  .tooltip {
+    display: none;
+  }
+}

@@ -1,3 +1,4 @@
+// RETIRED — replaced by NavChildIcon
 // Single icon slot with hover tooltip and on/off SVG swap
 import { useState } from 'react'
 import styles from './SidebarIcon.module.css'

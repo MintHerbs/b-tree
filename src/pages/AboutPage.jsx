@@ -1,27 +1,13 @@
 // About page with Lottie animation and personal story
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import lottie from 'lottie-web'
 import Starfield from '../components/Starfield/Starfield'
-import Sidebar from '../components/Sidebar/Sidebar'
 // import alienAnimation from '../img/alien.json' // Temporarily disabled
 import styles from './AboutPage.module.css'
 
 function AboutPage() {
-  const navigate = useNavigate()
   const [showFullText, setShowFullText] = useState(false)
   const lottieRef = useRef(null)
-
-  // Handle tool switching from sidebar
-  const handleToolChange = (tool) => {
-    if (tool === 'btree') {
-      navigate('/')
-    } else if (tool === 'erd') {
-      navigate('/')
-    } else if (tool === 'calculator') {
-      window.open('https://lazy-grades.vercel.app/', '_blank')
-    }
-  }
 
   // Load Lottie animation
   useEffect(() => {
@@ -64,12 +50,6 @@ function AboutPage() {
     <div className={styles.aboutPage}>
       {/* Starfield background */}
       <Starfield />
-      
-      {/* Sidebar */}
-      <Sidebar 
-        activeTool={null}
-        onToolChange={handleToolChange}
-      />
       
       {/* Main content */}
       <main className={styles.content}>

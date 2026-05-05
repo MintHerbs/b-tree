@@ -1,5 +1,6 @@
 // ERD Step 2 - Show generated prompt with copy button
 import { useState } from 'react'
+import { motion } from 'motion/react'
 import PaginationDots from '../PaginationDots/PaginationDots'
 import styles from './ERDStep2.module.css'
 
@@ -17,7 +18,12 @@ function ERDStep2({ prompt, onNext, currentStep, totalSteps }) {
   }
 
   return (
-    <div className={styles.container}>
+    <motion.div 
+      className={styles.container}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <p className={styles.instruction}>
         Copy the prompt below and paste it into ChatGPT, Claude, Gemini, or any LLM.
         Then copy the JSON it returns and paste it in the next step.
@@ -40,7 +46,7 @@ function ERDStep2({ prompt, onNext, currentStep, totalSteps }) {
       </div>
       
       <PaginationDots total={totalSteps} current={currentStep} />
-    </div>
+    </motion.div>
   )
 }
 
