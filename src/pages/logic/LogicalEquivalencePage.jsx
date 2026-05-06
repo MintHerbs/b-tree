@@ -8,6 +8,7 @@ import PillInput from '../../components/PillInput/PillInput'
 import SymbolBar from '../../components/logic/SymbolBar'
 import ProofTreeCanvas from '../../components/logic/ProofTreeCanvas'
 import LogicRulesPanel from '../../components/logic/LogicRulesPanel'
+import InferenceRulesDrawer from '../../components/logic/InferenceRulesDrawer'
 import { runProof } from '../../lib/logic/proofEngine'
 import { parseFormula } from '../../lib/logic/formulaParser'
 import styles from './LogicalEquivalencePage.module.css'
@@ -15,6 +16,7 @@ import styles from './LogicalEquivalencePage.module.css'
 export default function LogicalEquivalencePage({ onAIStateChange }) {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [isRulesDrawerOpen, setIsRulesDrawerOpen] = useState(false)
   
   const inputRef = useRef(null)
 
@@ -130,6 +132,8 @@ export default function LogicalEquivalencePage({ onAIStateChange }) {
         <Navbar 
           showNewFormula={true}
           onNewFormula={handleReset}
+          showRulesButton={true}
+          onRulesClick={() => setIsRulesDrawerOpen(true)}
         />
         
         <main className={styles.main}>
@@ -140,6 +144,12 @@ export default function LogicalEquivalencePage({ onAIStateChange }) {
           {/* Rules reference panel */}
           <LogicRulesPanel />
         </main>
+        
+        {/* Inference Rules Drawer */}
+        <InferenceRulesDrawer 
+          isOpen={isRulesDrawerOpen}
+          onClose={() => setIsRulesDrawerOpen(false)}
+        />
       </div>
     )
   }

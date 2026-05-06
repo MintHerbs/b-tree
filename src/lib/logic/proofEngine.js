@@ -81,6 +81,49 @@ function isAtom(node) {
 }
 
 /**
+ * Checks if a derived formula is useful for reaching the conclusion.
+ * A formula is useful if:
+ * - It IS the conclusion, OR
+ * - It appears as an antecedent in an implication in the KB (f→X exists), OR
+ * - It is a literal that appears in a disjunction in the KB
+ */
+function isUseful(formulaNode, conclusion, knowledgeBase) {
+  // Check if it's the conclusion
+  if (formulasEqual(formulaNode, conclusion)) {
+    return true;
+  }
+  
+  const normalized = normalise(formulaNode);
+  
+  // Check if any formula in KB has this as an antecedent
+  for (const step of knowledgeBase.values()) {
+    const kb = step.formulaNode;
+    
+    // Check if kb is an implication with formulaNode as antecedent
+    if (kb.type === 'implies' && formulasEqual(kb.left, formulaNode)) {
+      return true;
+    }
+    
+    // Check if formulaNode appears in a disjunction
+    if (kb.type === 'or') {
+      if (formulasEqual(kb.left, formulaNode) || formulasEqual(kb.right, formulaNode)) {
+        return true;
+      }
+    }
+    
+    // Check if negation of formulaNode appears (useful for M.T. and D.S.)
+    if (formulaNode.type === 'not' && formulasEqual(kb, formulaNode.child)) {
+      return true;
+    }
+    if (kb.type === 'not' && formulasEqual(kb.child, formulaNode)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Runs the forward-chaining proof algorithm.
  * @param {string[]} premisesArray - array of premise formula strings
  * @param {string} conclusionString - target conclusion formula string
@@ -133,19 +176,24 @@ export function runProof(premisesArray, conclusionString) {
     };
   }
   
-  const MAX_KB_SIZE = 100;
-  const MAX_ITERATIONS = 200;
+  const MAX_STEPS = 20;
+  const MAX_ITERATIONS = 50;
   let iteration = 0;
   
   /**
-   * Adds a new derived formula to the knowledge base.
-   * Returns true if the formula was new, false if it was already known.
+   * Adds a new derived formula to the knowledge base if it's useful.
+   * Returns true if the formula was new and useful, false otherwise.
    */
   function addDerivedFormula(formulaNode, rule, fromIds) {
     const normalized = normalise(formulaNode);
     
     if (knowledgeBase.has(normalized)) {
       return false; // Already known
+    }
+    
+    // Check if this formula is useful for reaching the conclusion
+    if (!isUseful(formulaNode, conclusion, knowledgeBase)) {
+      return false; // Not useful, skip it
     }
     
     const step = {
@@ -174,22 +222,36 @@ export function runProof(premisesArray, conclusionString) {
   while (iteration < MAX_ITERATIONS) {
     iteration++;
     
-    // Check size limit
-    if (knowledgeBase.size > MAX_KB_SIZE) {
+    // Check step limit
+    if (steps.length > MAX_STEPS) {
       return {
         success: false,
         steps,
-        error: 'Proof too complex'
+        error: 'Proof too long or conclusion not reachable with available rules'
       };
     }
     
     const formulas = getAllFormulas();
     let newFormulaAdded = false;
     
-    // Main forward-chaining loop
-    // Apply rules in priority order: productive rules first, then generative rules
+    // Apply rules in preferred order for shortest readable proofs
     
-    // Priority 1: Simplification (always productive, no branching)
+    // Priority 1: Double Negation (simplifies formulas)
+    for (const f of formulas) {
+      if (f.formulaNode.type === 'not' && f.formulaNode.child.type === 'not') {
+        const derived = f.formulaNode.child.child;
+        
+        if (addDerivedFormula(derived, 'D.N.', [f.id])) {
+          newFormulaAdded = true;
+          
+          if (formulasEqual(derived, conclusion)) {
+            return { success: true, steps, error: null };
+          }
+        }
+      }
+    }
+    
+    // Priority 2: Simplification (breaks down conjunctions)
     for (const f of formulas) {
       if (f.formulaNode.type === 'and') {
         const left = f.formulaNode.left;
@@ -213,48 +275,7 @@ export function runProof(premisesArray, conclusionString) {
       }
     }
     
-    // Priority 2: Double Negation (always productive)
-    for (const f of formulas) {
-      if (f.formulaNode.type === 'not' && f.formulaNode.child.type === 'not') {
-        const derived = f.formulaNode.child.child;
-        
-        if (addDerivedFormula(derived, 'D.N.', [f.id])) {
-          newFormulaAdded = true;
-          
-          if (formulasEqual(derived, conclusion)) {
-            return { success: true, steps, error: null };
-          }
-        }
-      }
-    }
-    
-    // Priority 3: Biconditional Elimination (productive)
-    for (const f of formulas) {
-      if (f.formulaNode.type === 'iff') {
-        const left = f.formulaNode.left;
-        const right = f.formulaNode.right;
-        
-        const derived1 = { type: 'implies', left, right };
-        if (addDerivedFormula(derived1, 'Bicond. Elim.', [f.id])) {
-          newFormulaAdded = true;
-          
-          if (formulasEqual(derived1, conclusion)) {
-            return { success: true, steps, error: null };
-          }
-        }
-        
-        const derived2 = { type: 'implies', left: right, right: left };
-        if (addDerivedFormula(derived2, 'Bicond. Elim.', [f.id])) {
-          newFormulaAdded = true;
-          
-          if (formulasEqual(derived2, conclusion)) {
-            return { success: true, steps, error: null };
-          }
-        }
-      }
-    }
-    
-    // Priority 4: Modus Ponens (highly productive)
+    // Priority 3: Modus Ponens (most common inference)
     for (const f1 of formulas) {
       if (f1.formulaNode.type === 'implies') {
         const antecedent = f1.formulaNode.left;
@@ -265,7 +286,6 @@ export function runProof(premisesArray, conclusionString) {
             if (addDerivedFormula(consequent, 'M.P.', [f1.id, f2.id])) {
               newFormulaAdded = true;
               
-              // Check if we derived the conclusion
               if (formulasEqual(consequent, conclusion)) {
                 return { success: true, steps, error: null };
               }
@@ -275,7 +295,7 @@ export function runProof(premisesArray, conclusionString) {
       }
     }
     
-    // Priority 5: Modus Tollens
+    // Priority 4: Modus Tollens
     for (const f1 of formulas) {
       if (f1.formulaNode.type === 'implies') {
         const antecedent = f1.formulaNode.left;
@@ -285,6 +305,29 @@ export function runProof(premisesArray, conclusionString) {
           if (f2.formulaNode.type === 'not' && formulasEqual(f2.formulaNode.child, consequent)) {
             const derived = { type: 'not', child: antecedent };
             if (addDerivedFormula(derived, 'M.T.', [f1.id, f2.id])) {
+              newFormulaAdded = true;
+              
+              if (formulasEqual(derived, conclusion)) {
+                return { success: true, steps, error: null };
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Priority 5: Hypothetical Syllogism
+    for (const f1 of formulas) {
+      if (f1.formulaNode.type === 'implies') {
+        const p = f1.formulaNode.left;
+        const q = f1.formulaNode.right;
+        
+        for (const f2 of formulas) {
+          if (f2.formulaNode.type === 'implies' && formulasEqual(f2.formulaNode.left, q)) {
+            const r = f2.formulaNode.right;
+            const derived = { type: 'implies', left: p, right: r };
+            
+            if (addDerivedFormula(derived, 'H.S.', [f1.id, f2.id])) {
               newFormulaAdded = true;
               
               if (formulasEqual(derived, conclusion)) {
@@ -329,78 +372,27 @@ export function runProof(premisesArray, conclusionString) {
       }
     }
     
-    // Priority 7: Hypothetical Syllogism
-    for (const f1 of formulas) {
-      if (f1.formulaNode.type === 'implies') {
-        const p = f1.formulaNode.left;
-        const q = f1.formulaNode.right;
+    // Priority 7: Biconditional Elimination (last resort)
+    for (const f of formulas) {
+      if (f.formulaNode.type === 'iff') {
+        const left = f.formulaNode.left;
+        const right = f.formulaNode.right;
         
-        for (const f2 of formulas) {
-          if (f2.formulaNode.type === 'implies' && formulasEqual(f2.formulaNode.left, q)) {
-            const r = f2.formulaNode.right;
-            const derived = { type: 'implies', left: p, right: r };
-            
-            if (addDerivedFormula(derived, 'H.S.', [f1.id, f2.id])) {
-              newFormulaAdded = true;
-              
-              if (formulasEqual(derived, conclusion)) {
-                return { success: true, steps, error: null };
-              }
-            }
+        const derived1 = { type: 'implies', left, right };
+        if (addDerivedFormula(derived1, 'Bicond. Elim.', [f.id])) {
+          newFormulaAdded = true;
+          
+          if (formulasEqual(derived1, conclusion)) {
+            return { success: true, steps, error: null };
           }
         }
-      }
-    }
-    
-    // Priority 8: Conjunction (only for atoms or very simple formulas, and only if needed)
-    // Only apply if the conclusion is a conjunction or we have very few formulas
-    if (conclusion.type === 'and' || knowledgeBase.size < 15) {
-      for (const f1 of formulas) {
-        if (getDepth(f1.formulaNode) > 1) continue;
         
-        for (const f2 of formulas) {
-          if (f1.id === f2.id) continue;
-          if (getDepth(f2.formulaNode) > 1) continue;
+        const derived2 = { type: 'implies', left: right, right: left };
+        if (addDerivedFormula(derived2, 'Bicond. Elim.', [f.id])) {
+          newFormulaAdded = true;
           
-          const derived = { type: 'and', left: f1.formulaNode, right: f2.formulaNode };
-          
-          if (addDerivedFormula(derived, 'Conj.', [f1.id, f2.id])) {
-            newFormulaAdded = true;
-            
-            if (formulasEqual(derived, conclusion)) {
-              return { success: true, steps, error: null };
-            }
-          }
-        }
-      }
-    }
-    
-    // Priority 9: Addition (only if conclusion is a disjunction and we have one of the disjuncts)
-    if (conclusion.type === 'or') {
-      const atoms = formulas.filter(f => isAtom(f.formulaNode));
-      
-      for (const f1 of formulas) {
-        for (const f2 of atoms) {
-          if (f1.id === f2.id) continue;
-          
-          // P ⊢ P∨Q
-          const derived1 = { type: 'or', left: f1.formulaNode, right: f2.formulaNode };
-          if (addDerivedFormula(derived1, 'Add.', [f1.id])) {
-            newFormulaAdded = true;
-            
-            if (formulasEqual(derived1, conclusion)) {
-              return { success: true, steps, error: null };
-            }
-          }
-          
-          // P ⊢ Q∨P
-          const derived2 = { type: 'or', left: f2.formulaNode, right: f1.formulaNode };
-          if (addDerivedFormula(derived2, 'Add.', [f1.id])) {
-            newFormulaAdded = true;
-            
-            if (formulasEqual(derived2, conclusion)) {
-              return { success: true, steps, error: null };
-            }
+          if (formulasEqual(derived2, conclusion)) {
+            return { success: true, steps, error: null };
           }
         }
       }
@@ -420,7 +412,7 @@ export function runProof(premisesArray, conclusionString) {
   return {
     success: false,
     steps,
-    error: 'Proof too complex'
+    error: 'Proof too long or conclusion not reachable with available rules'
   };
 }
 
@@ -429,11 +421,14 @@ export function runProof(premisesArray, conclusionString) {
   const assert = (cond, msg) => { if (!cond) throw new Error(`TEST FAILED: ${msg}`); };
   
   // Test 1: Premises: ["¬S∧C", "¬S→¬W", "¬W→A", "A→E"], conclusion: "E"
-  // Should succeed via Simp, M.P., M.P., M.P.
+  // Should succeed via Simp, M.P., M.P., M.P. (exactly 8 steps: 4 premises + 4 derived)
   const t1 = runProof(['¬S∧C', '¬S→¬W', '¬W→A', 'A→E'], 'E');
   assert(t1.success === true, '1: should succeed');
   assert(t1.error === null, '1: no error');
-  assert(t1.steps.length > 4, '1: has multiple steps');
+  const derivedSteps1 = t1.steps.filter(s => !s.isPremise);
+  assert(derivedSteps1.length === 4, `1: should have exactly 4 derived steps, got ${derivedSteps1.length}`);
+  assert(derivedSteps1[0].rule === 'Simp.', '1: first derived step should be Simp.');
+  assert(derivedSteps1.slice(1).every(s => s.rule === 'M.P.'), '1: remaining steps should be M.P.');
   
   // Test 2: Premises: ["P→Q", "Q→R"], conclusion: "P→R"
   // Should succeed via H.S.
@@ -454,7 +449,7 @@ export function runProof(premisesArray, conclusionString) {
   const t4 = runProof(['P'], 'R');
   assert(t4.success === false, '4: should fail');
   assert(t4.error !== null, '4: has error message');
-  assert(t4.error.includes('Could not derive'), '4: correct error message');
+  assert(t4.error.includes('Could not derive') || t4.error.includes('not reachable'), '4: correct error message');
   
   console.log('[proofEngine] all tests passed ✓');
 })();

@@ -1,201 +1,217 @@
-// ProofTreeCanvas - Handwritten notebook style proof tree renderer
+// ProofTreeCanvas - Sequential top-to-bottom proof tree renderer with live edge updates
 import { useRef, useEffect, useState, useMemo } from 'react'
 import { motion } from 'motion/react'
 import styles from './ProofTreeCanvas.module.css'
 
-const LEVEL_HEIGHT = 80
-const HORIZONTAL_SPACING = 160
+const ROW_HEIGHT = 70
 
 /**
- * Calculates layout positions for proof steps
- * Premises at top, tree grows downward
+ * Calculates initial node positions for proof tree in sequential order
+ * Each step appears in the exact order it was solved, one row per step
+ * X positions show which formulas feed into which (parent averaging)
+ * Returns only positions object - edges are computed at render time
  */
-function calculateLayout(steps, viewportWidth = 1000) {
-  const positions = new Map()
-  const levels = new Map() // level -> array of step ids
+function calculateInitialPositions(steps, viewportWidth = 1000) {
+  const positions = {}
+  const centerX = viewportWidth / 2
   
-  // Separate premises from derived steps
-  const premises = steps.filter(s => s.isPremise)
-  const derived = steps.filter(s => !s.isPremise)
-  
-  // Position premises horizontally at top
-  const premiseSpacing = Math.min(HORIZONTAL_SPACING, (viewportWidth - 200) / Math.max(premises.length, 1))
-  const premisesWidth = (premises.length - 1) * premiseSpacing
-  const premisesStartX = (viewportWidth - premisesWidth) / 2
-  
-  premises.forEach((step, index) => {
-    positions.set(step.id, {
-      x: premisesStartX + index * premiseSpacing,
-      y: 50,
-      level: 0
-    })
+  // Process steps in the order they appear in the array
+  // Each step gets its own row: Y = rowIndex * ROW_HEIGHT
+  steps.forEach((step, index) => {
+    const rowY = (index + 1) * ROW_HEIGHT
+    
+    if (step.isPremise) {
+      // Premises all start at center X
+      positions[step.id] = { x: centerX, y: rowY }
+    } else {
+      // Derived step: X = average of parent X positions
+      const parents = (step.fromIds || [])
+        .map(pid => positions[pid])
+        .filter(Boolean)
+      
+      if (parents.length === 0) {
+        // No parents positioned yet (shouldn't happen in valid proof)
+        positions[step.id] = { x: centerX, y: rowY }
+      } else if (parents.length === 1) {
+        // One parent: sit directly below it (same X)
+        positions[step.id] = { x: parents[0].x, y: rowY }
+      } else {
+        // Multiple parents: sit at midpoint X between them
+        const avgX = parents.reduce((sum, p) => sum + p.x, 0) / parents.length
+        positions[step.id] = { x: avgX, y: rowY }
+      }
+    }
   })
   
-  // Position derived steps level by level
-  let currentLevel = 1
-  const positioned = new Set(premises.map(p => p.id))
+  // Apply horizontal repulsion to spread nodes at same Y level
+  const MIN_DISTANCE = 150
+  const REPULSION_STRENGTH = 0.6
+  const ITERATIONS = 30
   
-  while (positioned.size < steps.length) {
-    const levelSteps = derived.filter(step => {
-      // A step can be positioned if all its dependencies are positioned
-      return !positioned.has(step.id) && 
-             step.fromIds.every(id => positioned.has(id))
+  for (let iter = 0; iter < ITERATIONS; iter++) {
+    // Group nodes by Y position
+    const nodesByY = {}
+    Object.entries(positions).forEach(([id, pos]) => {
+      if (!nodesByY[pos.y]) nodesByY[pos.y] = []
+      nodesByY[pos.y].push({ id, pos })
     })
     
-    if (levelSteps.length === 0) break // No more steps can be positioned
-    
-    // Position steps in this level
-    levelSteps.forEach((step, index) => {
-      // Calculate x position based on parent positions
-      let parentX = 0
-      let parentCount = 0
+    // For each Y level, push apart nodes that are too close
+    Object.values(nodesByY).forEach(nodesAtLevel => {
+      if (nodesAtLevel.length < 2) return
       
-      step.fromIds.forEach(fromId => {
-        const parentPos = positions.get(fromId)
-        if (parentPos) {
-          parentX += parentPos.x
-          parentCount++
+      // Check all pairs
+      for (let i = 0; i < nodesAtLevel.length; i++) {
+        for (let j = i + 1; j < nodesAtLevel.length; j++) {
+          const node1 = nodesAtLevel[i]
+          const node2 = nodesAtLevel[j]
+          
+          const distance = Math.abs(node2.pos.x - node1.pos.x)
+          
+          if (distance < MIN_DISTANCE) {
+            const pushAmount = (MIN_DISTANCE - distance) * REPULSION_STRENGTH / 2
+            
+            // Push apart symmetrically
+            if (node1.pos.x < node2.pos.x) {
+              positions[node1.id].x -= pushAmount
+              positions[node2.id].x += pushAmount
+            } else {
+              positions[node1.id].x += pushAmount
+              positions[node2.id].x -= pushAmount
+            }
+          }
         }
-      })
-      
-      const x = parentCount > 0 ? parentX / parentCount : viewportWidth / 2
-      const y = 50 + currentLevel * LEVEL_HEIGHT
-      
-      positions.set(step.id, { x, y, level: currentLevel })
-      positioned.add(step.id)
+      }
     })
-    
-    currentLevel++
   }
   
-  // Calculate bounds
-  let minX = Infinity
-  let maxX = -Infinity
-  let maxY = 0
-  
-  positions.forEach(pos => {
-    minX = Math.min(minX, pos.x)
-    maxX = Math.max(maxX, pos.x)
-    maxY = Math.max(maxY, pos.y)
-  })
-  
-  return {
-    positions,
-    totalWidth: maxX - minX + 200,
-    totalHeight: maxY + 100
-  }
+  return positions
 }
 
 /**
- * Renders V-shaped branches connecting parent formulas to derived formula
+ * Renders edges (lines from parents to children) and rule labels
+ * Computed at render time from current positions - NOT stored in state
+ * Lines always flow downward (parents in earlier rows have lower Y)
  */
-function VBranches({ steps, positions }) {
-  const branches = []
-  
-  steps.forEach(step => {
-    if (step.isPremise || step.fromIds.length === 0) return
+function Edges({ steps, positions }) {
+  // Compute edges from current positions
+  const edges = steps.flatMap(step => {
+    const fromIds = step.fromIds || []
+    if (fromIds.length === 0) return []
     
-    const targetPos = positions.get(step.id)
-    if (!targetPos) return
+    const childPos = positions[step.id]
+    if (!childPos) return []
     
-    // Get parent positions
-    const parentPositions = step.fromIds
-      .map(id => ({ id, pos: positions.get(id) }))
-      .filter(p => p.pos)
-    
-    if (parentPositions.length === 0) return
-    
-    if (parentPositions.length === 1) {
-      // Single parent - draw vertical line
-      const parentPos = parentPositions[0].pos
-      branches.push({
-        type: 'vertical',
-        x1: parentPos.x,
-        y1: parentPos.y + 20,
-        x2: targetPos.x,
-        y2: targetPos.y - 10,
-        rule: step.rule,
-        ruleX: parentPos.x - 30,
-        ruleY: (parentPos.y + targetPos.y) / 2
-      })
-    } else {
-      // Multiple parents - draw V-shape
-      const junctionY = targetPos.y - 20
+    return fromIds.map(parentId => {
+      const parentPos = positions[parentId]
+      if (!parentPos) return null
       
-      parentPositions.forEach(parent => {
-        branches.push({
-          type: 'diagonal',
-          x1: parent.pos.x,
-          y1: parent.pos.y + 20,
-          x2: targetPos.x,
-          y2: junctionY,
-          rule: step.rule,
-          ruleX: targetPos.x - 40,
-          ruleY: junctionY - 5
-        })
-      })
-    }
+      return {
+        x1: parentPos.x,
+        y1: parentPos.y,
+        x2: childPos.x,
+        y2: childPos.y,
+        rule: step.rule,
+        stepId: step.id
+      }
+    }).filter(Boolean)
   })
   
   return (
     <g>
-      {branches.map((branch, index) => {
-        const isVertical = branch.type === 'vertical'
-        const strokeColor = isVertical ? '#fff' : '#22c55e'
-        const strokeWidth = isVertical ? 1 : 1.5
-        
-        return (
-          <g key={index}>
-            <line
-              x1={branch.x1}
-              y1={branch.y1}
-              x2={branch.x2}
-              y2={branch.y2}
-              stroke={strokeColor}
-              strokeWidth={strokeWidth}
-            />
-            {/* Rule label - only show once per derivation */}
-            {index === branches.findIndex(b => b.rule === branch.rule && b.ruleX === branch.ruleX) && (
-              <text
-                x={branch.ruleX}
-                y={branch.ruleY}
-                className={styles.ruleLabel}
-                textAnchor="end"
-              >
-                {branch.rule}
-              </text>
-            )}
-          </g>
-        )
-      })}
+      {edges.map((edge, index) => (
+        <g key={`${edge.stepId}-${index}`}>
+          {/* Subtle glow effect - soft blurred line underneath */}
+          <line
+            x1={edge.x1}
+            y1={edge.y1 + 10}
+            x2={edge.x2}
+            y2={edge.y2 - 10}
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth={4}
+            filter="url(#glow)"
+          />
+          {/* Main line */}
+          <line
+            x1={edge.x1}
+            y1={edge.y1 + 10}
+            x2={edge.x2}
+            y2={edge.y2 - 10}
+            stroke="rgba(255, 255, 255, 0.4)"
+            strokeWidth={2}
+          />
+          {edge.rule && edge.rule !== 'Premise' && (
+            <text
+              x={edge.x2 - 24}
+              y={(edge.y1 + edge.y2) / 2}
+              className={styles.ruleLabel}
+              textAnchor="end"
+              dominantBaseline="middle"
+            >
+              {edge.rule}
+            </text>
+          )}
+        </g>
+      ))}
     </g>
   )
 }
 
 /**
- * Renders formula text nodes
+ * Renders formula text nodes with drag support and floating animation
  */
-function FormulaNodes({ steps, positions, conclusionId }) {
+function FormulaNodes({ steps, positions, floatOffsets, conclusionId, onNodeDragStart, draggingNodeId }) {
   return (
     <g>
-      {steps.map(step => {
-        const pos = positions.get(step.id)
+      {steps.map((step, index) => {
+        const pos = positions[step.id]
         if (!pos) return null
         
         const isConclusion = step.id === conclusionId
+        const isDragging = step.id === draggingNodeId
         const className = isConclusion ? styles.conclusionText : styles.formulaText
         
+        // Apply float offset to Y position
+        const floatOffset = floatOffsets[step.id] || 0
+        
+        // Calculate rectangle dimensions based on text length
+        // Approximate width: each character is ~9px, add padding
+        const textWidth = step.formula.length * 9
+        const rectWidth = textWidth + 24
+        const rectHeight = 32
+        const rectX = pos.x - rectWidth / 2
+        const rectY = pos.y + floatOffset - rectHeight / 2
+        
         return (
-          <text
-            key={step.id}
-            x={pos.x}
-            y={pos.y}
-            className={className}
-            textAnchor="middle"
-            dominantBaseline="middle"
-          >
-            {step.formula}
-          </text>
+          <g key={step.id}>
+            {/* Rounded rectangle outline */}
+            <rect
+              x={rectX}
+              y={rectY}
+              width={rectWidth}
+              height={rectHeight}
+              rx={8}
+              ry={8}
+              fill="transparent"
+              stroke="#8B5CF6"
+              strokeWidth={1.5}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              onMouseDown={(e) => onNodeDragStart(e, step.id)}
+            />
+            
+            {/* Formula text */}
+            <text
+              x={pos.x}
+              y={pos.y + floatOffset}
+              className={className}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              onMouseDown={(e) => onNodeDragStart(e, step.id)}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab', pointerEvents: 'none' }}
+            >
+              {step.formula}
+            </text>
+          </g>
         )
       })}
     </g>
@@ -210,6 +226,15 @@ export default function ProofTreeCanvas({ steps }) {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  
+  // Store only node positions - edges computed at render time
+  const [positions, setPositions] = useState({})
+  const [draggingNodeId, setDraggingNodeId] = useState(null)
+  
+  // Float offsets for gentle animation - stored in ref to avoid re-renders
+  const floatOffsetsRef = useRef({})
+  const [, forceUpdate] = useState(0)
+  const animationFrameRef = useRef(null)
   
   // Update dimensions on mount and resize
   useEffect(() => {
@@ -227,27 +252,89 @@ export default function ProofTreeCanvas({ steps }) {
     return () => window.removeEventListener('resize', updateDimensions)
   }, [])
   
-  // Calculate layout - memoized
-  const layout = useMemo(() => {
-    return steps && steps.length > 0 ? calculateLayout(steps, dimensions.width) : null
-  }, [steps, dimensions.width])
-  
-  // Reset pan when steps change
+  // Calculate initial positions when steps change
   useEffect(() => {
     if (steps && steps.length > 0) {
+      const initialPositions = calculateInitialPositions(steps, dimensions.width)
+      setPositions(initialPositions)
       setPanOffset({ x: 0, y: 0 })
+    }
+  }, [steps, dimensions.width])
+  
+  // Gentle floating animation
+  useEffect(() => {
+    if (!steps || steps.length === 0) return
+    
+    const animate = () => {
+      const now = Date.now()
+      
+      steps.forEach((step, index) => {
+        // Each node floats with a sine wave, phase-shifted by index
+        // Increased amplitude from 4 to 12 for more noticeable effect
+        const offset = Math.sin((now / 2000) + index * 0.8) * 12
+        floatOffsetsRef.current[step.id] = offset
+      })
+      
+      // Force a re-render to apply new offsets
+      forceUpdate(prev => prev + 1)
+      
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(animate)
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
     }
   }, [steps])
   
-  // Pan handlers
+  // Node drag handlers
+  const handleNodeDragStart = (e, nodeId) => {
+    e.stopPropagation()
+    setDraggingNodeId(nodeId)
+  }
+  
+  const handleNodeDrag = (e) => {
+    if (!draggingNodeId) return
+    
+    e.stopPropagation()
+    
+    // Get SVG coordinates
+    const svg = svgRef.current
+    const pt = svg.createSVGPoint()
+    pt.x = e.clientX
+    pt.y = e.clientY
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse())
+    
+    // Update only the dragged node's position
+    setPositions(prev => ({
+      ...prev,
+      [draggingNodeId]: { x: svgP.x, y: svgP.y }
+    }))
+  }
+  
+  const handleNodeDragEnd = () => {
+    setDraggingNodeId(null)
+  }
+  
+  // Pan handlers - only when not dragging a node
   const handleMouseDown = (e) => {
-    if (e.button !== 0) return
+    if (e.button !== 0 || draggingNodeId) return
     setIsPanning(true)
     setPanStart({ x: e.clientX, y: e.clientY })
     e.preventDefault()
   }
   
   const handleMouseMove = (e) => {
+    // Handle node dragging
+    if (draggingNodeId) {
+      handleNodeDrag(e)
+      return
+    }
+    
+    // Handle panning
     if (!isPanning) return
     
     const dx = (e.clientX - panStart.x) / zoom
@@ -262,6 +349,9 @@ export default function ProofTreeCanvas({ steps }) {
   }
   
   const handleMouseUp = () => {
+    if (draggingNodeId) {
+      handleNodeDragEnd()
+    }
     setIsPanning(false)
   }
   
@@ -318,16 +408,26 @@ export default function ProofTreeCanvas({ steps }) {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        {layout && (
-          <>
-            <VBranches steps={steps} positions={layout.positions} />
-            <FormulaNodes 
-              steps={steps} 
-              positions={layout.positions}
-              conclusionId={conclusionId}
-            />
-          </>
-        )}
+        {/* SVG filter for subtle glow effect */}
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <Edges steps={steps} positions={positions} />
+        <FormulaNodes 
+          steps={steps} 
+          positions={positions}
+          floatOffsets={floatOffsetsRef.current}
+          conclusionId={conclusionId}
+          onNodeDragStart={handleNodeDragStart}
+          draggingNodeId={draggingNodeId}
+        />
       </motion.svg>
     </div>
   )

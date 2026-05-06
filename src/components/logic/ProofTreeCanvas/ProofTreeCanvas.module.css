@@ -24,23 +24,23 @@
   font-size: 1.125rem;
 }
 
-/* Formula text - plain white monospace on transparent background */
+/* Formula text - white monospace, bold */
 .formulaText {
   fill: #fff;
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: 15px;
-  font-weight: 400;
-  pointer-events: none;
+  font-weight: 700;
+  pointer-events: all;
   user-select: none;
 }
 
-/* Conclusion text - purple and slightly larger */
+/* Conclusion text - green, bold, slightly larger */
 .conclusionText {
-  fill: #8B5CF6;
+  fill: #22c55e;
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: 17px;
-  font-weight: 500;
-  pointer-events: none;
+  font-weight: 700;
+  pointer-events: all;
   user-select: none;
 }
 
@@ -62,4 +62,13 @@
   font-weight: 400;
   pointer-events: none;
   user-select: none;
+}
+
+/* Cursor styles for draggable nodes */
+.grab {
+  cursor: grab;
+}
+
+.grabbing {
+  cursor: grabbing;
 }

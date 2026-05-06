@@ -99,6 +99,22 @@
   background-color: rgba(139, 92, 246, 0.15);
 }
 
+.rulesButton {
+  padding: 6px 14px;
+  background-color: transparent;
+  color: #8B5CF6;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #8B5CF6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rulesButton:hover {
+  background-color: rgba(139, 92, 246, 0.15);
+}
+
 .resultBadge {
   padding: 6px 12px;
   font-size: 13px;

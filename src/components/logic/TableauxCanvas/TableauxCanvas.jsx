@@ -51,7 +51,7 @@ function calculateLayout(tree, viewportWidth = 1000) {
       // Single child - same x position, move down
       positionNodes(node.children[0], x, y + NODE_HEIGHT + NODE_SPACING_Y, availableWidth)
     } else {
-      // Two children - split horizontally
+      // Two children - split horizontally with increased spacing
       const leftMeasure = measureTree(node.children[0])
       const rightMeasure = measureTree(node.children[1])
       const totalWidth = leftMeasure.width + rightMeasure.width
@@ -59,8 +59,10 @@ function calculateLayout(tree, viewportWidth = 1000) {
       const leftWidth = (leftMeasure.width / totalWidth) * availableWidth
       const rightWidth = (rightMeasure.width / totalWidth) * availableWidth
       
-      const leftX = x - availableWidth / 4
-      const rightX = x + availableWidth / 4
+      // Increase branch separation to prevent overlap
+      const branchSeparation = availableWidth / 3
+      const leftX = x - branchSeparation
+      const rightX = x + branchSeparation
       
       positionNodes(node.children[0], leftX, y + NODE_HEIGHT + NODE_SPACING_Y, leftWidth)
       positionNodes(node.children[1], rightX, y + NODE_HEIGHT + NODE_SPACING_Y, rightWidth)
@@ -68,10 +70,52 @@ function calculateLayout(tree, viewportWidth = 1000) {
   }
   
   const measure = measureTree(tree)
-  const totalWidth = measure.width * BRANCH_SPACING_X
+  const totalWidth = measure.width * BRANCH_SPACING_X * 1.5 // Increase base width
   
   // Start positioning from x=0
   positionNodes(tree, 0, 0, totalWidth)
+  
+  // Apply horizontal repulsion to prevent overlaps
+  const MIN_DISTANCE = 180
+  const REPULSION_ITERATIONS = 20
+  
+  for (let iter = 0; iter < REPULSION_ITERATIONS; iter++) {
+    // Group nodes by Y position (same depth level)
+    const nodesByY = new Map()
+    positions.forEach((pos, id) => {
+      if (!nodesByY.has(pos.y)) {
+        nodesByY.set(pos.y, [])
+      }
+      nodesByY.get(pos.y).push({ id, pos })
+    })
+    
+    // Apply repulsion within each level
+    nodesByY.forEach(nodesAtLevel => {
+      if (nodesAtLevel.length < 2) return
+      
+      // Sort by X position
+      nodesAtLevel.sort((a, b) => a.pos.x - b.pos.x)
+      
+      // Push apart nodes that are too close
+      for (let i = 0; i < nodesAtLevel.length - 1; i++) {
+        const node1 = nodesAtLevel[i]
+        const node2 = nodesAtLevel[i + 1]
+        
+        const distance = node2.pos.x - node1.pos.x
+        
+        if (distance < MIN_DISTANCE) {
+          const pushAmount = (MIN_DISTANCE - distance) * 0.5
+          
+          // Update positions in the map
+          const pos1 = positions.get(node1.id)
+          const pos2 = positions.get(node2.id)
+          
+          positions.set(node1.id, { x: pos1.x - pushAmount, y: pos1.y })
+          positions.set(node2.id, { x: pos2.x + pushAmount, y: pos2.y })
+        }
+      }
+    })
+  }
   
   // Find bounding box of all nodes
   let minX = Infinity
@@ -106,6 +150,11 @@ function calculateLayout(tree, viewportWidth = 1000) {
 function TableauNode({ node, position, isHighlighted }) {
   const { x, y } = position
   
+  // Calculate dynamic width based on formula length
+  // Approximate: each character is ~9px in monospace font, add padding
+  const textWidth = node.formula.length * 9
+  const dynamicWidth = Math.max(NODE_WIDTH, textWidth + 32) // Minimum NODE_WIDTH, or text + padding
+  
   // Determine node styling
   let nodeClass = styles.node
   let markerClass = null
@@ -127,11 +176,11 @@ function TableauNode({ node, position, isHighlighted }) {
   
   return (
     <g transform={`translate(${x}, ${y})`}>
-      {/* Node background */}
+      {/* Node background - dynamic width */}
       <rect
-        x={-NODE_WIDTH / 2}
+        x={-dynamicWidth / 2}
         y={0}
-        width={NODE_WIDTH}
+        width={dynamicWidth}
         height={NODE_HEIGHT}
         className={nodeClass}
         rx={8}
