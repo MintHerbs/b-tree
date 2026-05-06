@@ -1,0 +1,226 @@
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+.canvasArea {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.svg:active {
+  cursor: grabbing;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 16px;
+}
+
+/* Knowledge Base Panel */
+.kbPanel {
+  width: 300px;
+  background: #0a0a0a;
+  border-right: 1px solid #222;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.kbTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kbContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kbClause {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+}
+
+.kbId {
+  color: #8B5CF6;
+  font-weight: 700;
+  min-width: 30px;
+}
+
+.kbFormula {
+  color: #e0e0e0;
+  flex: 1;
+}
+
+/* Clause Boxes */
+.clauseBox {
+  fill: #1a1a1a;
+  stroke: #333;
+  stroke-width: 2;
+  transition: all 0.2s ease;
+}
+
+.clauseBox:hover {
+  fill: #222;
+  stroke: #8B5CF6;
+}
+
+.highlighted {
+  fill: #2a1a3a !important;
+  stroke: #8B5CF6 !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
+}
+
+.contradiction {
+  fill: #2a1a1a !important;
+  stroke: #ef4444 !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.5));
+}
+
+.clauseText {
+  fill: #e0e0e0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.contradictionText {
+  fill: #ef4444 !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+}
+
+/* V-connector lines */
+.vLine {
+  stroke: #8B5CF6;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Resolved literal label */
+.literalLabel {
+  fill: #1a1a1a;
+  stroke: #8B5CF6;
+  stroke-width: 1;
+}
+
+.literalText {
+  fill: #8B5CF6;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Result badge */
+.resultBadge {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.resultLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.resultValue {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.resultValue.contradiction {
+  color: #ef4444;
+}
+
+.resultValue.satisfiable {
+  color: #22c55e;
+}
+
+/* Zoom controls */
+.zoomControls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.zoomButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #8B5CF6;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoomButton:hover {
+  background: #222;
+  border-color: #8B5CF6;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+.zoomLevel {
+  font-size: 13px;
+  color: #888;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}

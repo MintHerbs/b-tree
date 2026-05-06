@@ -11,6 +11,10 @@ const TreePage = lazy(() => import('./pages/TreePage'))
 const ERDPage = lazy(() => import('./pages/ERDPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
+const TranslatePage = lazy(() => import('./pages/logic/TranslatePage'))
+const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
+const TableauxPage = lazy(() => import('./pages/logic/TableauxPage'))
+const ResolutionPage = lazy(() => import('./pages/logic/ResolutionPage'))
 
 function App() {
   const { onlineCount } = usePresence()
@@ -64,6 +68,10 @@ function App() {
           <Route path="/" element={<Navigate to="/tree" replace />} />
           <Route path="/tree" element={<TreePage onAIStateChange={setAIState} />} />
           <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} />} />
+          <Route path="/logic/translate" element={<TranslatePage onAIStateChange={setAIState} />} />
+          <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={setAIState} />} />
+          <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} />} />
+          <Route path="/logic/resolution" element={<ResolutionPage onAIStateChange={setAIState} />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/disclaimer" element={<DisclaimerPage />} />
         </Routes>

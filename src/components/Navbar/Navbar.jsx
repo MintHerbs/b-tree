@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import moonLogo from '../../img/moon.svg'
 import styles from './Navbar.module.css'
 
-function Navbar({ order, onOrderChange }) {
+function Navbar({ order, onOrderChange, showNewFormula, onNewFormula, resultBadge }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isTreePage = location.pathname === '/tree'
@@ -72,6 +72,16 @@ function Navbar({ order, onOrderChange }) {
         {isTreePage && (
           <button className={styles.resetButton} onClick={handleReset}>
             Reset / New Tree
+          </button>
+        )}
+        {resultBadge && (
+          <span className={`${styles.resultBadge} ${styles[resultBadge.toLowerCase()]}`}>
+            {resultBadge}
+          </span>
+        )}
+        {showNewFormula && (
+          <button className={styles.resetButton} onClick={onNewFormula}>
+            ← New Formula
           </button>
         )}
         <a href="/disclaimer" onClick={handleDisclaimerClick} className={styles.aboutLink}>Disclaimer</a>

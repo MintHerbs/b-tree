@@ -23,7 +23,7 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GitBranch, Table2, Layers } from 'lucide-react'
+import { GitBranch, Table2, Layers, Languages } from 'lucide-react'
 import NavGroup from './NavGroup/NavGroup'
 import NavChildIcon from './NavChildIcon/NavChildIcon'
 import styles from './Sidebar.module.css'
@@ -75,12 +75,18 @@ export default function Sidebar({
 
   /**
    * Handle Logic child icon clicks
-   * Shows "coming soon" message for all Logic tools
+   * Navigates to the appropriate logic tool route
    */
-  const handleLogicChildClick = () => {
-    // TODO: Replace with proper toast notification when toast library is added
-    console.info('Coming soon: English to Logic, Proof Tree, Semantic Tableaux, Resolution Method')
-    alert('Coming soon: English to Logic, Proof Tree, Semantic Tableaux, Resolution Method')
+  const handleLogicChildClick = (childId) => {
+    if (childId === 'translate') {
+      navigate('/logic/translate')
+    } else if (childId === 'proof') {
+      navigate('/logic/proof')
+    } else if (childId === 'tableaux') {
+      navigate('/logic/tableaux')
+    } else if (childId === 'resolution') {
+      navigate('/logic/resolution')
+    }
   }
 
   /**
@@ -159,12 +165,21 @@ export default function Sidebar({
           onToggle={() => handleGroupToggle('logic')}
         >
           <NavChildIcon
-            lucideIcon={<GitBranch />}
-            tooltip="Proof Tree"
+            lucideIcon={<Languages />}
+            tooltip="English to Logic"
             isActive={false}
             hoverColor="#6A4BCB"
             activeColor="#DB7FF7"
-            onClick={handleLogicChildClick}
+            onClick={() => handleLogicChildClick('translate')}
+          />
+          
+          <NavChildIcon
+            lucideIcon={<GitBranch />}
+            tooltip="Logical Equivalence"
+            isActive={false}
+            hoverColor="#6A4BCB"
+            activeColor="#DB7FF7"
+            onClick={() => handleLogicChildClick('proof')}
           />
           
           <NavChildIcon
@@ -173,7 +188,7 @@ export default function Sidebar({
             isActive={false}
             hoverColor="#6A4BCB"
             activeColor="#DB7FF7"
-            onClick={handleLogicChildClick}
+            onClick={() => handleLogicChildClick('tableaux')}
           />
           
           <NavChildIcon
@@ -182,7 +197,7 @@ export default function Sidebar({
             isActive={false}
             hoverColor="#6A4BCB"
             activeColor="#DB7FF7"
-            onClick={handleLogicChildClick}
+            onClick={() => handleLogicChildClick('resolution')}
           />
         </NavGroup>
 

@@ -1,0 +1,89 @@
+.container {
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.englishText {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  margin: 0;
+}
+
+.formalLogic {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 32px;
+  font-weight: 600;
+  color: #8B5CF6;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.breakdownTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.breakdownTable thead {
+  border-bottom: 1px solid #333;
+}
+
+.breakdownTable th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+
+.breakdownTable tbody tr {
+  border-bottom: 1px solid #222;
+}
+
+.breakdownTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.breakdownTable td {
+  padding: 12px 16px;
+}
+
+.symbolCell {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #8B5CF6;
+  width: 120px;
+}
+
+.meaningCell {
+  color: #e0e0e0;
+  line-height: 1.5;
+}
