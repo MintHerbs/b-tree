@@ -26,28 +26,6 @@
   position: relative;
 }
 
-.backButton {
-  position: fixed;
-  top: 100px;
-  left: 100px;
-  z-index: 90;
-  padding: 12px 24px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-  color: #8B5CF6;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.backButton:hover {
-  background: #222;
-  border-color: #8B5CF6;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-}
-
 .errorContainer {
   position: absolute;
   top: 50%;

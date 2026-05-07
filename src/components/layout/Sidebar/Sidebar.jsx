@@ -23,7 +23,7 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GitBranch, Table2, Layers, Languages } from 'lucide-react'
+import { GitBranch, Table2 } from 'lucide-react'
 import NavGroup from './NavGroup/NavGroup'
 import NavChildIcon from './NavChildIcon/NavChildIcon'
 import styles from './Sidebar.module.css'
@@ -75,17 +75,16 @@ export default function Sidebar({
 
   /**
    * Handle Logic child icon clicks
-   * Navigates to the appropriate logic tool route
+   * Navigates to the appropriate logic tool route or shows coming soon toast
    */
   const handleLogicChildClick = (childId) => {
-    if (childId === 'translate') {
-      navigate('/logic/translate')
-    } else if (childId === 'proof') {
+    if (childId === 'proof') {
       navigate('/logic/proof')
     } else if (childId === 'tableaux') {
       navigate('/logic/tableaux')
-    } else if (childId === 'resolution') {
-      navigate('/logic/resolution')
+    } else {
+      // Coming soon toast for other tools
+      alert('Coming soon')
     }
   }
 
@@ -165,15 +164,6 @@ export default function Sidebar({
           onToggle={() => handleGroupToggle('logic')}
         >
           <NavChildIcon
-            lucideIcon={<Languages />}
-            tooltip="English to Logic"
-            isActive={false}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
-            onClick={() => handleLogicChildClick('translate')}
-          />
-          
-          <NavChildIcon
             lucideIcon={<GitBranch />}
             tooltip="Logical Equivalence"
             isActive={false}
@@ -189,15 +179,6 @@ export default function Sidebar({
             hoverColor="#6A4BCB"
             activeColor="#DB7FF7"
             onClick={() => handleLogicChildClick('tableaux')}
-          />
-          
-          <NavChildIcon
-            lucideIcon={<Layers />}
-            tooltip="Resolution Method"
-            isActive={false}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
-            onClick={() => handleLogicChildClick('resolution')}
           />
         </NavGroup>
 

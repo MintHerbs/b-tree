@@ -168,12 +168,12 @@ export default function LogicalEquivalencePage({ onAIStateChange }) {
           transition={{ duration: 0.4 }}
         >
           <h1 className={styles.title}>
-            <ScrambleText duration={500} speed={40}>
+            <ScrambleText duration={500} speed={125}>
               Logical Equivalence
             </ScrambleText>
           </h1>
           <p className={styles.subtitle}>
-            <ScrambleText duration={500} speed={40}>
+            <ScrambleText duration={500} speed={125}>
               enter your formula, add a comma followed by the conclusion if any
             </ScrambleText>
           </p>

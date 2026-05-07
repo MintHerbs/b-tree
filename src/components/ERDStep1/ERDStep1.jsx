@@ -14,12 +14,12 @@ function ERDStep1({ initialQuestion, onSubmit, onAIStateChange, currentStep, tot
       transition={{ duration: 0.4 }}
     >
       <h1 className={styles.title}>
-        <ScrambleText duration={500} speed={40}>
+        <ScrambleText duration={500} speed={125}>
           ER Diagram Builder
         </ScrambleText>
       </h1>
       <p className={styles.subtitle}>
-        <ScrambleText duration={500} speed={40}>
+        <ScrambleText duration={500} speed={125}>
           describe your scenario below
         </ScrambleText>
       </p>

@@ -46,12 +46,12 @@ export default function LogicInputPage({
           transition={{ duration: 0.4 }}
         >
           <h1 className={styles.title}>
-            <ScrambleText duration={500} speed={40}>
+            <ScrambleText duration={500} speed={125}>
               {title}
             </ScrambleText>
           </h1>
           <p className={styles.subtitle}>
-            <ScrambleText duration={500} speed={40}>
+            <ScrambleText duration={500} speed={125}>
               {subtitle}
             </ScrambleText>
           </p>

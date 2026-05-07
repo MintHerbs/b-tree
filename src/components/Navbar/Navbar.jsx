@@ -9,6 +9,8 @@ function Navbar({ order, onOrderChange, showNewFormula, onNewFormula, resultBadg
   const isTreePage = location.pathname === '/tree'
   const isERDPage = location.pathname === '/erd'
   const isLandingPage = location.pathname === '/'
+  const isLogicProofPage = location.pathname === '/logic/proof'
+  const isLogicTableauxPage = location.pathname === '/logic/tableaux'
 
   const handleReset = () => {
     navigate('/')
@@ -35,7 +37,14 @@ function Navbar({ order, onOrderChange, showNewFormula, onNewFormula, resultBadg
   }
 
   // Determine title based on page
-  const title = isERDPage ? 'ER Diagram Builder' : 'B+ Tree Visualizer'
+  let title = 'B+ Tree Visualizer'
+  if (isERDPage) {
+    title = 'ER Diagram Builder'
+  } else if (isLogicProofPage) {
+    title = 'Logical Equivalence'
+  } else if (isLogicTableauxPage) {
+    title = 'Semantic Tableaux'
+  }
 
   // On tree or ERD page, render full navbar
   return (

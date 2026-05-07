@@ -148,6 +148,13 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* Resolution-specific result badges */
+.resultBadge.contradiction {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 .aboutLink {
   color: #8B5CF6;
   text-decoration: none;
