@@ -29,3 +29,4 @@ dist-ssr
 !README.md
 .vercel
 .env*.local
+.env

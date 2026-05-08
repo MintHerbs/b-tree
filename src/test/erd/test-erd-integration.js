@@ -1,6 +1,6 @@
 // Test ERD JSON parsing and layout generation
-import { parseERD } from './src/lib/erdParser.js'
-import { calculateERDLayout } from './src/lib/erdLayout.js'
+import { parseERD } from '../../lib/erdParser.js'
+import { calculateERDLayout } from '../../lib/erdLayout.js'
 
 console.log('=== Testing ERD JSON Parsing & Layout ===\n')
 
