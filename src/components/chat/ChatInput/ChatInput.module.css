@@ -1,0 +1,83 @@
+.container {
+  width: min(800px, 90vw);
+  margin: 0 auto;
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 12px 16px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 22px;
+  max-height: 176px;
+  height: auto;
+  overflow-y: hidden;
+  resize: none;
+  line-height: 22px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  padding: 0;
+  font-size: 14px;
+  font-family: inherit;
+  transition: height 0.1s ease;
+}
+
+.textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.textarea::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.bottomRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 32px;
+}
+
+.sendButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sendButton:hover {
+  background: #e0e0e0;
+  transform: scale(1.05);
+}
+
+.sendButton:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: 95vw;
+  }
+}

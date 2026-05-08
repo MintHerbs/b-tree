@@ -138,7 +138,14 @@ function ERDPage({ onAIStateChange }) {
       <Starfield />
       
       {/* Navbar */}
-      <Navbar />
+      {parsedERD ? (
+        <Navbar 
+          showNewFormula={true}
+          onNewFormula={handleReset}
+        />
+      ) : (
+        <Navbar />
+      )}
       
       {/* Main content */}
       <main className={styles.erdMain}>
@@ -146,13 +153,6 @@ function ERDPage({ onAIStateChange }) {
         {(step === 2 || (step === 3 && !parsedERD)) && (
           <button className={styles.previousButton} onClick={handlePrevious}>
             Previous
-          </button>
-        )}
-        
-        {/* Reset button - only show when canvas is visible */}
-        {parsedERD && (
-          <button className={styles.resetButton} onClick={handleReset}>
-            Reset ERD
           </button>
         )}
         

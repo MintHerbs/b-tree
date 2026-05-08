@@ -22,10 +22,11 @@
  * @param {Function} props.onChildSelect - Callback when a child icon is clicked
  */
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { GitBranch, Table2 } from 'lucide-react'
 import NavGroup from './NavGroup/NavGroup'
 import NavChildIcon from './NavChildIcon/NavChildIcon'
+import ChatAvatar from '../../chat/ChatAvatar/ChatAvatar'
 import styles from './Sidebar.module.css'
 
 // Import SVG icons
@@ -42,14 +43,25 @@ import downOff from '../../../img/left nav/Down_off.svg'
 import downOn from '../../../img/left nav/Down_on.svg'
 import calculatorOff from '../../../img/calculator_off.svg'
 import calculatorOn from '../../../img/calculator_on.svg'
+import chatOff from '../../../img/social/chat_off.svg'
+import chatHover from '../../../img/social/chat_hover.svg'
+import chatOn from '../../../img/social/chat_on.svg'
 
 export default function Sidebar({
   defaultOpenGroup = 'database',
   activeChild,
-  onChildSelect
+  onChildSelect,
+  isChatOpen,
+  setIsChatOpen
 }) {
   const [openGroup, setOpenGroup] = useState(defaultOpenGroup)
   const navigate = useNavigate()
+  const location = useLocation()
+  const sessionId = localStorage.getItem('session_id') || 'anonymous'
+  
+  // Determine which child is active based on current route
+  const isProofActive = location.pathname === '/logic/proof'
+  const isTableauxActive = location.pathname === '/logic/tableaux'
 
   /**
    * Toggle a navigation group open/closed
@@ -61,9 +73,10 @@ export default function Sidebar({
 
   /**
    * Handle Database child icon clicks
-   * Navigates to the appropriate route and notifies parent
+   * Closes chat, navigates to the appropriate route, and notifies parent
    */
   const handleDatabaseChildClick = (childId) => {
+    setIsChatOpen?.(false)
     onChildSelect?.(childId)
     
     if (childId === 'btree') {
@@ -75,12 +88,14 @@ export default function Sidebar({
 
   /**
    * Handle Logic child icon clicks
-   * Navigates to the appropriate logic tool route or shows coming soon toast
+   * Closes chat and navigates to the appropriate logic tool route or shows coming soon toast
    */
   const handleLogicChildClick = (childId) => {
     if (childId === 'proof') {
+      setIsChatOpen?.(false)
       navigate('/logic/proof')
     } else if (childId === 'tableaux') {
+      setIsChatOpen?.(false)
       navigate('/logic/tableaux')
     } else {
       // Coming soon toast for other tools
@@ -96,13 +111,31 @@ export default function Sidebar({
     window.open('https://lazy-grades.vercel.app/', '_blank')
   }
 
+  /**
+   * Handle moon logo click
+   * Navigates to B+ Tree landing page
+   */
+  const handleMoonClick = (e) => {
+    e.preventDefault()
+    setIsChatOpen?.(false)
+    onChildSelect?.('btree')
+    navigate('/tree')
+  }
+
+  /**
+   * Handle chat icon click
+   * Toggles the chat panel open/closed
+   */
+  const handleChatClick = () => {
+    setIsChatOpen?.(prev => !prev)
+  }
+
   return (
     <aside className={styles.sidebar}>
-      {/* Moon logo - links to LinkedIn */}
+      {/* Moon logo - navigates to B+ Tree landing page */}
       <a 
-        href="https://www.linkedin.com/in/offrian/" 
-        target="_blank" 
-        rel="noreferrer"
+        href="/tree"
+        onClick={handleMoonClick}
         className={styles.moonLink}
       >
         <img 
@@ -133,8 +166,8 @@ export default function Sidebar({
             iconOn={btreeOn}
             tooltip="B+ Tree Visualizer"
             isActive={activeChild === 'btree'}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
             onClick={() => handleDatabaseChildClick('btree')}
           />
           
@@ -143,8 +176,8 @@ export default function Sidebar({
             iconOn={erdOn}
             tooltip="ER Diagram Builder"
             isActive={activeChild === 'erd'}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
             onClick={() => handleDatabaseChildClick('erd')}
           />
         </NavGroup>
@@ -166,18 +199,18 @@ export default function Sidebar({
           <NavChildIcon
             lucideIcon={<GitBranch />}
             tooltip="Logical Equivalence"
-            isActive={false}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
+            isActive={isProofActive}
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
             onClick={() => handleLogicChildClick('proof')}
           />
           
           <NavChildIcon
             lucideIcon={<Table2 />}
             tooltip="Semantic Tableaux"
-            isActive={false}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
+            isActive={isTableauxActive}
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
             onClick={() => handleLogicChildClick('tableaux')}
           />
         </NavGroup>
@@ -201,11 +234,29 @@ export default function Sidebar({
             iconOn={calculatorOn}
             tooltip="GPA Calculator"
             isActive={false}
-            hoverColor="#6A4BCB"
-            activeColor="#DB7FF7"
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
             onClick={handleCalculatorClick}
           />
         </NavGroup>
+      </div>
+
+      {/* Chat icon and avatar at bottom */}
+      <div className={styles.bottomSection}>
+        <NavChildIcon
+          iconOff={chatOff}
+          iconHover={chatHover}
+          iconOn={chatOn}
+          tooltip="Community Chat"
+          isActive={isChatOpen}
+          hoverColor="#8B5CF6"
+          activeColor="#8B5CF6"
+          onClick={handleChatClick}
+        />
+        
+        <div className={styles.avatarContainer}>
+          <ChatAvatar sessionId={sessionId} size={28} />
+        </div>
       </div>
     </aside>
   )

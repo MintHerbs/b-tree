@@ -15,6 +15,10 @@
   --color-surface: #0f0f0f;
   --color-border: #222222;
 
+  /* Chat colors */
+  --color-chat-own: #1A1A1A;
+  --color-chat-other: #1a1a2e;
+
   /* Tree page colors */
   --bg-dark: #0d0d0d;
   --bg-card: #1a1a2e;

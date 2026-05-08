@@ -10,7 +10,7 @@ import OperationsPanel from '../components/OperationsPanel/OperationsPanel'
 import { useBPlusTree } from '../hooks/useBPlusTree'
 import styles from './TreePage.module.css'
 
-function TreePage({ onAIStateChange }) {
+function TreePage({ onAIStateChange, onChatOpen }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { values = [], order: initialOrder = 3 } = location.state || {}
@@ -134,7 +134,18 @@ function TreePage({ onAIStateChange }) {
       {/* Show visualizer when tree exists */}
       {hasTree && (
         <>
-          <Navbar order={order} />
+          <Navbar 
+            showTitle={true}
+            title="B+ Tree Visualizer"
+            showReset={true}
+            onReset={() => {
+              setHasTree(false)
+              if (typeof onAIStateChange === 'function') {
+                onAIStateChange('idle')
+              }
+            }}
+            showDisclaimer={true}
+          />
           
           <div className={styles.mainContent}>
             <TreeCanvas tree={tree} />

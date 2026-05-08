@@ -1,108 +1,48 @@
-// Top navigation bar - displays app name, order input, and about link
-import { useNavigate, useLocation } from 'react-router-dom'
-import moonLogo from '../../img/moon.svg'
+// Top navigation bar - fully prop-controlled with no hardcoded content
 import styles from './Navbar.module.css'
 
-function Navbar({ order, onOrderChange, showNewFormula, onNewFormula, resultBadge, showRulesButton, onRulesClick }) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const isTreePage = location.pathname === '/tree'
-  const isERDPage = location.pathname === '/erd'
-  const isLandingPage = location.pathname === '/'
-  const isLogicProofPage = location.pathname === '/logic/proof'
-  const isLogicTableauxPage = location.pathname === '/logic/tableaux'
-
-  const handleReset = () => {
-    navigate('/')
-  }
-
-  const handleAboutClick = (e) => {
-    e.preventDefault()
-    navigate('/about')
-  }
-
-  const handleDisclaimerClick = (e) => {
-    e.preventDefault()
-    navigate('/disclaimer')
-  }
-
-  // On landing page, render only the Disclaimer and About links in top-right corner
-  if (isLandingPage) {
-    return (
-      <nav className={styles.navbarLanding}>
-        <a href="/disclaimer" onClick={handleDisclaimerClick} className={styles.aboutLink}>Disclaimer</a>
-        <a href="/about" onClick={handleAboutClick} className={styles.aboutLink}>About</a>
-      </nav>
-    )
-  }
-
-  // Determine title based on page
-  let title = 'B+ Tree Visualizer'
-  if (isERDPage) {
-    title = 'ER Diagram Builder'
-  } else if (isLogicProofPage) {
-    title = 'Logical Equivalence'
-  } else if (isLogicTableauxPage) {
-    title = 'Semantic Tableaux'
-  }
-
-  // On tree or ERD page, render full navbar
+export default function Navbar({
+  showTitle = false,
+  title = '',
+  showReset = false,
+  onReset = null,
+  showResult = false,
+  resultText = '',
+  showNewFormula = false,
+  onNewFormula = null,
+  showAbout = true,
+  showDisclaimer = false
+}) {
   return (
     <nav className={styles.navbar}>
       <div className={styles.left}>
-        <a 
-          href="https://www.linkedin.com/in/offrian/" 
-          target="_blank" 
-          rel="noreferrer"
-          className={styles.logoLink}
-        >
-          <img 
-            src={moonLogo} 
-            alt="Moon logo" 
-            className={styles.logo}
-          />
-        </a>
-        <h2 className={styles.title}>{title}</h2>
+        {showTitle && title && (
+          <h2 className={styles.title}>{title}</h2>
+        )}
       </div>
       <div className={styles.right}>
-        {onOrderChange && (
-          <div className={styles.orderInput}>
-            <label htmlFor="order">Order (t):</label>
-            <input
-              id="order"
-              type="number"
-              min="3"
-              max="10"
-              value={order}
-              onChange={(e) => onOrderChange(parseInt(e.target.value) || 3)}
-            />
-          </div>
-        )}
-        {isTreePage && (
-          <button className={styles.resetButton} onClick={handleReset}>
+        {showReset && onReset && (
+          <button className={styles.resetButton} onClick={onReset}>
             Reset / New Tree
           </button>
         )}
-        {resultBadge && (
-          <span className={`${styles.resultBadge} ${styles[resultBadge.toLowerCase()]}`}>
-            {resultBadge}
+        {showResult && resultText && (
+          <span className={`${styles.resultBadge} ${styles[resultText.toLowerCase()]}`}>
+            {resultText}
           </span>
         )}
-        {showNewFormula && (
+        {showNewFormula && onNewFormula && (
           <button className={styles.resetButton} onClick={onNewFormula}>
             ← New Formula
           </button>
         )}
-        {showRulesButton && (
-          <button className={styles.rulesButton} onClick={onRulesClick}>
-            Rules
-          </button>
+        {showDisclaimer && (
+          <a href="/disclaimer" className={styles.aboutLink}>Disclaimer</a>
         )}
-        <a href="/disclaimer" onClick={handleDisclaimerClick} className={styles.aboutLink}>Disclaimer</a>
-        <a href="/about" onClick={handleAboutClick} className={styles.aboutLink}>About</a>
+        {showAbout && (
+          <a href="/about" className={styles.aboutLink}>About</a>
+        )}
       </div>
     </nav>
   )
 }
-
-export default Navbar

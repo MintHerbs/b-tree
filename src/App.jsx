@@ -5,6 +5,7 @@ import { usePresence } from './hooks/usePresence'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import DynamicIsland from './components/dynamic-island'
 import Sidebar from './components/layout/Sidebar'
+import { ChatPanel } from './components/chat'
 
 // Lazy load route components for code splitting
 const TreePage = lazy(() => import('./pages/TreePage'))
@@ -21,6 +22,8 @@ function App() {
   const [aiState, setAIState] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [activeChild, setActiveChild] = useState('btree')
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const sessionId = localStorage.getItem('session_id') || 'anonymous'
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -59,17 +62,25 @@ function App() {
         defaultOpenGroup="database"
         activeChild={activeChild}
         onChildSelect={setActiveChild}
+        isChatOpen={isChatOpen}
+        setIsChatOpen={setIsChatOpen}
+      />
+      {/* Global chat panel */}
+      <ChatPanel 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+        sessionId={sessionId}
       />
       <Suspense fallback={null}>
         <Routes>
           {/* Default route redirects to /tree */}
           <Route path="/" element={<Navigate to="/tree" replace />} />
-          <Route path="/tree" element={<TreePage onAIStateChange={setAIState} />} />
-          <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} />} />
-          <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={setAIState} />} />
-          <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/disclaimer" element={<DisclaimerPage />} />
+          <Route path="/tree" element={<TreePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/disclaimer" element={<DisclaimerPage onChatOpen={() => setIsChatOpen(true)} />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -132,8 +132,6 @@ export default function LogicalEquivalencePage({ onAIStateChange }) {
         <Navbar 
           showNewFormula={true}
           onNewFormula={handleReset}
-          showRulesButton={true}
-          onRulesClick={() => setIsRulesDrawerOpen(true)}
         />
         
         <main className={styles.main}>

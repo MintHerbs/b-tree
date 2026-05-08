@@ -76,6 +76,8 @@ export default function TableauxPage({ onAIStateChange }) {
       <div className={styles.page}>
         <Starfield />
         <Navbar 
+          showResult={true}
+          resultText={result.conclusion}
           showNewFormula={true}
           onNewFormula={handleReset}
         />

@@ -23,6 +23,7 @@ import styles from './NavChildIcon.module.css'
 export default function NavChildIcon({
   iconOff,
   iconOn,
+  iconHover,
   lucideIcon,
   tooltip,
   isActive,
@@ -36,14 +37,20 @@ export default function NavChildIcon({
   const effectiveHoverColor = hoverColor || activeColor
   
   // Determine which icon to show
-  const shouldShowActive = isActive || isHovered
+  const shouldShowActive = isActive
+  const shouldShowHover = isHovered && !isActive
   
   // Determine opacity: full when active or hovered, reduced otherwise
-  const opacity = shouldShowActive ? 1.0 : 0.5
+  const opacity = shouldShowActive || shouldShowHover ? 1.0 : 0.5
 
   // Render SVG-based icon
   if (iconOff && iconOn) {
-    const currentIcon = shouldShowActive ? iconOn : iconOff
+    let currentIcon = iconOff
+    if (shouldShowActive) {
+      currentIcon = iconOn
+    } else if (shouldShowHover && iconHover) {
+      currentIcon = iconHover
+    }
     
     return (
       <div 
