@@ -1,33 +1,12 @@
 // Disclaimer page with open source info and usage warnings
-import { useNavigate } from 'react-router-dom'
 import Starfield from '../components/Starfield/Starfield'
-import Sidebar from '../components/Sidebar/Sidebar'
 import styles from './DisclaimerPage.module.css'
 
 function DisclaimerPage() {
-  const navigate = useNavigate()
-
-  // Handle tool switching from sidebar
-  const handleToolChange = (tool) => {
-    if (tool === 'btree') {
-      navigate('/')
-    } else if (tool === 'erd') {
-      navigate('/')
-    } else if (tool === 'calculator') {
-      window.open('https://lazy-grades.vercel.app/', '_blank')
-    }
-  }
-
   return (
     <div className={styles.disclaimerPage}>
       {/* Starfield background */}
       <Starfield />
-      
-      {/* Sidebar */}
-      <Sidebar 
-        activeTool={null}
-        onToolChange={handleToolChange}
-      />
       
       {/* Main content */}
       <main className={styles.content}>

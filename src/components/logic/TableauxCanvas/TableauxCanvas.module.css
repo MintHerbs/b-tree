@@ -1,0 +1,98 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  background: transparent;
+}
+
+.svg:active {
+  cursor: grabbing;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 16px;
+}
+
+/* Edges */
+.edges {
+  stroke: #333;
+  stroke-width: 2;
+  fill: none;
+}
+
+.edge {
+  stroke: #333;
+  stroke-width: 2;
+}
+
+/* Nodes */
+.node {
+  fill: #1a1a1a;
+  stroke: #333;
+  stroke-width: 2;
+  transition: all 0.2s ease;
+}
+
+.node:hover {
+  fill: #222;
+  stroke: #8B5CF6;
+}
+
+.closedNode {
+  fill: #2a1a1a;
+  stroke: #ef4444;
+}
+
+.openNode {
+  fill: #1a2a1a;
+  stroke: #22c55e;
+}
+
+.highlighted {
+  fill: #2a1a3a !important;
+  stroke: #8B5CF6 !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
+}
+
+/* Text */
+.formulaText {
+  fill: #e0e0e0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.closedMarker {
+  fill: #ef4444;
+  font-size: 24px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+.openMarker {
+  fill: #22c55e;
+  font-size: 24px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}

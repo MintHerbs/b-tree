@@ -5,11 +5,12 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { parseERD } from './erdParser.js';
 
 /**
- * Calls Gemini API to generate ERD JSON from a prompt
- * @param {string} prompt - The full prompt string from erdPromptBuilder
+ * Generic Gemini API caller with custom parser
+ * @param {string} prompt - The full prompt string
+ * @param {Function} parser - Parser function that takes jsonString and returns {valid, data, error}
  * @returns {Promise<{success: true, data: Object} | {success: false, error: string}>}
  */
-export async function callGemini(prompt) {
+export async function callGeminiWithParser(prompt, parser) {
   try {
     // Initialize Gemini API
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -55,8 +56,8 @@ export async function callGemini(prompt) {
     // Log 3: After stripping fences
     console.log('[Gemini] After stripping fences:', text);
 
-    // Parse and validate the ERD JSON
-    const parseResult = parseERD(text);
+    // Parse and validate using provided parser
+    const parseResult = parser(text);
 
     // Log 4: Parse result
     console.log('[Gemini] Parse result:', parseResult);
@@ -64,7 +65,7 @@ export async function callGemini(prompt) {
     if (!parseResult.valid) {
       return {
         success: false,
-        error: `Invalid ERD format: ${parseResult.error}`
+        error: `Invalid format: ${parseResult.error}`
       };
     }
 
@@ -79,7 +80,16 @@ export async function callGemini(prompt) {
     console.error('[Gemini] Exception caught:', error);
     return {
       success: false,
-      error: error.message || 'Failed to generate ERD'
+      error: error.message || 'Failed to generate response'
     };
   }
+}
+
+/**
+ * Calls Gemini API to generate ERD JSON from a prompt
+ * @param {string} prompt - The full prompt string from erdPromptBuilder
+ * @returns {Promise<{success: true, data: Object} | {success: false, error: string}>}
+ */
+export async function callGemini(prompt) {
+  return callGeminiWithParser(prompt, parseERD);
 }

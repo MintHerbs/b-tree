@@ -1,0 +1,47 @@
+.container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: flex-end;
+}
+
+.container.own {
+  flex-direction: row-reverse;
+  margin-left: auto;
+  justify-content: flex-start;
+}
+
+.bubbleWrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
+.bubble {
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.ownBubble {
+  background: #1A1A1A;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.otherBubble {
+  background: #1a1a2e;
+  border-radius: 18px 18px 18px 4px;
+}
+
+.timestamp {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.own .timestamp {
+  text-align: right;
+}

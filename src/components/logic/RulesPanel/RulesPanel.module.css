@@ -1,0 +1,169 @@
+.toggleButton {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #8B5CF6;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggleButton:hover {
+  background: #222;
+  border-color: #8B5CF6;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  transform: scale(1.05);
+}
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 998;
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 500px;
+  max-width: 90vw;
+  background: #0a0a0a;
+  border-left: 1px solid #222;
+  border-radius: 12px 0 0 12px;
+  z-index: 999;
+  overflow-y: auto;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  background: #0a0a0a;
+  border-bottom: 1px solid #222;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background: #1a1a1a;
+  border-color: #8B5CF6;
+  color: #8B5CF6;
+}
+
+.content {
+  padding: 24px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sectionDescription {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.rulesTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.rulesTable thead {
+  border-bottom: 1px solid #222;
+}
+
+.rulesTable th {
+  text-align: left;
+  padding: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+
+.rulesTable tbody tr {
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.rulesTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.rulesTable tbody tr:hover {
+  background: #111;
+}
+
+.rulesTable td {
+  padding: 12px;
+}
+
+.formulaCell {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: #8B5CF6;
+}
+
+.resultCell {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  color: #e0e0e0;
+}

@@ -2,9 +2,13 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './PillInput.module.css'
 
-function PillInput({ activeTool, onSubmit, onAIStateChange, placeholder, defaultValue = '' }) {
+function PillInput({ activeTool, onSubmit, onAIStateChange, placeholder, defaultValue = '', inputRef }) {
   const [value, setValue] = useState(defaultValue)
+  const internalRef = useRef(null)
   const hasTriggeredObserving = useRef(false)
+  
+  // Use provided ref or internal ref
+  const effectiveRef = inputRef || internalRef
 
   // Update value if defaultValue changes
   useEffect(() => {
@@ -53,8 +57,9 @@ function PillInput({ activeTool, onSubmit, onAIStateChange, placeholder, default
     setValue('')
   }
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
+      e.preventDefault()
       handleSubmit()
     }
   }
@@ -71,6 +76,7 @@ function PillInput({ activeTool, onSubmit, onAIStateChange, placeholder, default
   return (
     <div className={styles.container}>
       <input
+        ref={effectiveRef}
         type="text"
         className={styles.input}
         placeholder={inputPlaceholder}
@@ -78,7 +84,7 @@ function PillInput({ activeTool, onSubmit, onAIStateChange, placeholder, default
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        onKeyPress={handleKeyPress}
+        onKeyDown={handleKeyDown}
       />
       
       {/* Send button - only visible when input has content */}

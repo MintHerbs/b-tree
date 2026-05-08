@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react'
 import styles from './Starfield.module.css'
 
-function Starfield() {
+function Starfield({ opacity = 1.0 }) {
   const canvasRef = useRef(null)
   const starsRef = useRef([])
   const cometsRef = useRef([])
@@ -103,8 +103,8 @@ function Starfield() {
           star.x = Math.random() * canvas.width
         }
 
-        // Draw star as white circle with 90% opacity
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+        // Draw star as white circle with opacity adjusted by prop
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * opacity})`
         ctx.beginPath()
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
         ctx.fill()
@@ -134,8 +134,8 @@ function Starfield() {
           comet.x, comet.y,
           tailEndX, tailEndY
         )
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${comet.life})`)
-        gradient.addColorStop(0.5, `rgba(200, 220, 255, ${comet.life * 0.5})`)
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${comet.life * opacity})`)
+        gradient.addColorStop(0.5, `rgba(200, 220, 255, ${comet.life * 0.5 * opacity})`)
         gradient.addColorStop(1, 'rgba(150, 180, 255, 0)')
 
         ctx.strokeStyle = gradient
@@ -147,7 +147,7 @@ function Starfield() {
         ctx.stroke()
 
         // Draw comet head (bright white dot)
-        ctx.fillStyle = `rgba(255, 255, 255, ${comet.life})`
+        ctx.fillStyle = `rgba(255, 255, 255, ${comet.life * opacity})`
         ctx.beginPath()
         ctx.arc(comet.x, comet.y, 2, 0, Math.PI * 2)
         ctx.fill()
@@ -172,7 +172,7 @@ function Starfield() {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [])
+  }, [opacity])
 
   return <canvas ref={canvasRef} className={styles.canvas} />
 }

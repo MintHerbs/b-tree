@@ -1,0 +1,74 @@
+.container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.svg {
+  cursor: grab;
+  background: transparent;
+}
+
+.svg:active {
+  cursor: grabbing;
+}
+
+.emptyState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.125rem;
+}
+
+/* Formula text - white monospace, bold */
+.formulaText {
+  fill: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: all;
+  user-select: none;
+}
+
+/* Conclusion text - green, bold, slightly larger */
+.conclusionText {
+  fill: #22c55e;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 17px;
+  font-weight: 700;
+  pointer-events: all;
+  user-select: none;
+}
+
+/* Rule labels - red, small, positioned at junctions */
+.ruleLabel {
+  fill: #ef4444;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Component grouping text - red curly braces */
+.componentText {
+  fill: #ef4444;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 400;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Cursor styles for draggable nodes */
+.grab {
+  cursor: grab;
+}
+
+.grabbing {
+  cursor: grabbing;
+}

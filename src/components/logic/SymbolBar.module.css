@@ -1,0 +1,54 @@
+/* SymbolBar component styles */
+
+.symbolBar {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.symbolButton {
+  width: 40px;
+  height: 40px;
+  background-color: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #8B5CF6;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.symbolButton:hover {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  background-color: rgba(139, 92, 246, 0.05);
+}
+
+.symbolButton:active {
+  transform: scale(0.95);
+}
+
+.symbolButton:focus-visible {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+/* Responsive - smaller screens */
+@media (max-width: 640px) {
+  .symbolButton {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .symbolBar {
+    gap: 6px;
+  }
+}

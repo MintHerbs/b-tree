@@ -94,14 +94,14 @@ function HeroText({ activeTool, order, onOrderChange }) {
   return (
     <div className={styles.container}>
       <h1 className={`${styles.title} ${isVisible ? styles.fadeIn : styles.fadeOut}`}>
-        <ScrambleText key={activeTool} duration={500} speed={80} skipInitialAnimation={true}>
+        <ScrambleText key={activeTool} duration={500} speed={125} skipInitialAnimation={true}>
           {content.title}
         </ScrambleText>
       </h1>
       <p className={`${styles.subtitle} ${isVisible ? styles.fadeIn : styles.fadeOut}`}>
         {activeTool === 'btree' ? (
           <>
-            <ScrambleText key={`${activeTool}-subtitle`} duration={500} speed={80} skipInitialAnimation={true}>
+            <ScrambleText key={`${activeTool}-subtitle`} duration={500} speed={125} skipInitialAnimation={true}>
               insert your values separated by a comma
             </ScrambleText>
             {' | '}
@@ -122,7 +122,7 @@ function HeroText({ activeTool, order, onOrderChange }) {
             </span>
           </>
         ) : (
-          <ScrambleText key={`${activeTool}-subtitle`} duration={500} speed={80} skipInitialAnimation={true}>
+          <ScrambleText key={`${activeTool}-subtitle`} duration={500} speed={125} skipInitialAnimation={true}>
             {content.subtitle}
           </ScrambleText>
         )}
