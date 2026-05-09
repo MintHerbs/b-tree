@@ -1,4 +1,4 @@
-import { lazy } from "react"
+import { useState } from 'react'
 
 function Lazy() {
   const [rows, setRows] = useState([
@@ -173,4 +173,4 @@ function Lazy() {
   )
 }
 
-export default lazy
+export default Lazy
