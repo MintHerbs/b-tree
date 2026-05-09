@@ -4,7 +4,8 @@
       "Bash(node --input-type=module)",
       "Bash(node -e ' *)",
       "Bash(npm install *)",
-      "Bash(findstr /R /I \"\\\\.env\")"
+      "Bash(findstr /R /I \"\\\\.env\")",
+      "Bash(gh issue *)"
     ]
   }
 }
