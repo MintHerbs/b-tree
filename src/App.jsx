@@ -10,6 +10,11 @@ import { ChatPanel } from './components/chat'
 // Lazy load route components for code splitting
 const TreePage = lazy(() => import('./pages/TreePage'))
 const ERDPage = lazy(() => import('./pages/ERDPage'))
+const ComplexityPage = lazy(() =>
+  new Promise(resolve =>
+    setTimeout(() => resolve(import('./pages/ComplexityPage')), 1500)
+  )
+)
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
 const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
@@ -77,6 +82,7 @@ function App() {
           <Route path="/" element={<Navigate to="/tree" replace />} />
           <Route path="/tree" element={<TreePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/algo/complexity" element={<ComplexityPage onAIStateChange={setAIState} />} />
           <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />

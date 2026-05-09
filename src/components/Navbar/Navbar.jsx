@@ -10,6 +10,7 @@ export default function Navbar({
   resultText = '',
   showNewFormula = false,
   onNewFormula = null,
+  newFormulaText = '← New Formula',
   showAbout = true,
   showDisclaimer = false
 }) {
@@ -33,7 +34,7 @@ export default function Navbar({
         )}
         {showNewFormula && onNewFormula && (
           <button className={styles.resetButton} onClick={onNewFormula}>
-            ← New Formula
+            {newFormulaText}
           </button>
         )}
         {showDisclaimer && (

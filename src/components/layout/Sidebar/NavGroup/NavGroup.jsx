@@ -52,12 +52,12 @@ export default function NavGroup({
         }}
         transition={{ 
           type: 'spring', 
-          stiffness: 300, 
-          damping: 25 
+          stiffness: 500, 
+          damping: 30 
         }}
         style={{ 
           pointerEvents: isOpen ? 'auto' : 'none',
-          overflow: 'hidden'
+          overflow: isOpen ? 'visible' : 'hidden'
         }}
       >
         {children}

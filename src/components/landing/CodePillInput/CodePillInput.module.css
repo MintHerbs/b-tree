@@ -1,0 +1,163 @@
+/* CodePillInput component styles - expanding pill for code input */
+
+.container {
+  position: relative;
+  width: min(680px, 90vw);
+  min-height: 56px;
+  background-color: #0f0f0f;
+  border: 1px solid #222222;
+  border-radius: 9999px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-radius 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, min-height 0.2s ease;
+}
+
+/* Expanded state - rounded rect instead of pill */
+.container.expanded {
+  border-radius: 20px;
+  align-items: flex-start;
+  min-height: calc(1.6em * 5 + 28px);
+}
+
+.container:focus-within {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+.textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+  caret-color: #8B5CF6;
+  resize: none;
+  padding-right: 56px;
+  min-height: 28px;
+  height: 28px;
+  max-height: calc(1.6em * 10);
+  overflow-y: auto;
+  transition: height 0.2s ease;
+}
+
+/* Expanded state - grow to show 5 lines */
+.container.expanded .textarea {
+  height: calc(1.6em * 5);
+}
+
+/* Empty state - single line height, centered placeholder */
+.textarea:placeholder-shown {
+  overflow-y: hidden;
+  height: 28px;
+}
+
+.textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+  font-family: inherit;
+  line-height: 28px;
+}
+
+/* Custom scrollbar for expanded state */
+.textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.textarea::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+
+.textarea::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* Send button - purple circle with arrow */
+.sendButton {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  background-color: #8B5CF6;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  animation: scaleIn 0.15s ease;
+  z-index: 1;
+}
+
+.sendButton:hover {
+  background-color: #7c3aed;
+  transform: scale(1.05);
+}
+
+.sendButton:active {
+  transform: scale(0.95);
+}
+
+/* Arrow chevron SVG */
+.arrow {
+  width: 16px;
+  height: 16px;
+  color: #ffffff;
+}
+
+/* Scale-in animation for send button */
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .container {
+    width: 95vw;
+    min-height: 52px;
+    padding: 12px 18px;
+  }
+
+  .container.expanded {
+    min-height: calc(1.6em * 5 + 24px);
+  }
+
+  .textarea {
+    font-size: 12px;
+    padding-right: 50px;
+  }
+
+  .sendButton {
+    top: 12px;
+    right: 18px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .arrow {
+    width: 14px;
+    height: 14px;
+  }
+}
