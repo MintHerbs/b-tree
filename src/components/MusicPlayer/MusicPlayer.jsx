@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle, useEffect, useRef } from 'react'
 import styles from './MusicPlayer.module.css'
 
-const MusicPlayer = forwardRef((props, ref) => {
+const MusicPlayer = forwardRef(({ videoId = 'wjJ3-SzxhCk' }, ref) => {
   const playerRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
@@ -24,11 +24,11 @@ const MusicPlayer = forwardRef((props, ref) => {
 
     const initPlayer = () => {
       playerRef.current = new window.YT.Player('yt-player', {
-        videoId: 'wjJ3-SzxhCk',
+        videoId: videoId,
         playerVars: {
           autoplay: 1,
           loop: 1,
-          playlist: 'wjJ3-SzxhCk',
+          playlist: videoId,
           controls: 0,
           mute: 0,
           origin: window.location.origin
@@ -51,6 +51,16 @@ const MusicPlayer = forwardRef((props, ref) => {
       }
     }
   }, [])
+
+  // Load new video when videoId prop changes
+  useEffect(() => {
+    if (!videoId) return
+    
+    // If the YouTube player is ready, load the new video
+    if (playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+      playerRef.current.loadVideoById(videoId)
+    }
+  }, [videoId])
 
   return <div id="yt-player" className={styles.hidden} />
 })

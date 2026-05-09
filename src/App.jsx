@@ -1,6 +1,6 @@
 // Router setup - defines application routes
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useRef, useState, lazy, Suspense } from 'react'
+import { useRef, useState, lazy, Suspense, useEffect } from 'react'
 import { usePresence } from './hooks/usePresence'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import DynamicIsland from './components/dynamic-island'
@@ -12,7 +12,7 @@ const TreePage = lazy(() => import('./pages/TreePage'))
 const ERDPage = lazy(() => import('./pages/ERDPage'))
 const ComplexityPage = lazy(() =>
   new Promise(resolve =>
-    setTimeout(() => resolve(import('./pages/ComplexityPage')), 1500)
+    setTimeout(() => resolve(import('./pages/ComplexityPage')), 300)
   )
 )
 const AboutPage = lazy(() => import('./pages/AboutPage'))
@@ -28,7 +28,21 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('')
   const [activeChild, setActiveChild] = useState('btree')
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [currentSongId, setCurrentSongId] = useState('wjJ3-SzxhCk')
   const sessionId = localStorage.getItem('session_id') || 'anonymous'
+
+  // Background preload pages after initial mount
+  useEffect(() => {
+    const preload = setTimeout(() => {
+      import('./pages/TreePage')
+      import('./pages/ERDPage')
+      import('./pages/logic/LogicalEquivalencePage')
+      import('./pages/logic/TableauxPage')
+      import('./pages/ComplexityPage')
+    }, 3000)
+    
+    return () => clearTimeout(preload)
+  }, [])
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -54,13 +68,14 @@ function App() {
 
   return (
     <BrowserRouter>
-      <MusicPlayer ref={musicPlayerRef} />
+      <MusicPlayer ref={musicPlayerRef} videoId={currentSongId} />
       <DynamicIsland
         onlineCount={onlineCount}
         isPlaying={isPlaying}
         onPlayPause={handlePlayPause}
         aiState={aiState}
         errorMessage={errorMessage}
+        onSongChange={setCurrentSongId}
       />
       {/* Global sidebar - persists across all routes */}
       <Sidebar

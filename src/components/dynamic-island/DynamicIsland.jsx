@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react'
 import AIStateContent from './AIStateContent'
+import { songs } from '../../config/songs'
 import styles from './DynamicIsland.module.css'
 
 export default function DynamicIsland({ 
@@ -9,12 +10,16 @@ export default function DynamicIsland({
   isPlaying, 
   onPlayPause,
   aiState = 'idle',
-  errorMessage = ''
+  errorMessage = '',
+  onSongChange
 }) {
   const [isVisible, setIsVisible] = useState(false)
   const [state, setState] = useState('idle') // 'idle' | 'hover' | 'music'
+  const [currentSongIndex, setCurrentSongIndex] = useState(0)
   const pillRef = useRef(null)
   const previousAIStateRef = useRef('idle') // Store AI state before opening music
+
+  const currentSong = songs[currentSongIndex]
 
   useEffect(() => {
     // Entrance animation after 3 second delay
@@ -103,6 +108,24 @@ export default function DynamicIsland({
     onPlayPause()
   }
 
+  const handleSkipBack = (e) => {
+    e.stopPropagation()
+    const newIndex = (currentSongIndex - 1 + songs.length) % songs.length
+    setCurrentSongIndex(newIndex)
+    if (onSongChange) {
+      onSongChange(songs[newIndex].id)
+    }
+  }
+
+  const handleSkipForward = (e) => {
+    e.stopPropagation()
+    const newIndex = (currentSongIndex + 1) % songs.length
+    setCurrentSongIndex(newIndex)
+    if (onSongChange) {
+      onSongChange(songs[newIndex].id)
+    }
+  }
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.innerCenter}>
@@ -150,19 +173,20 @@ export default function DynamicIsland({
                   <div className={styles.musicPanel}>
                     {/* Album art */}
                     <div className={styles.albumArt}>
-                      🌌
+                      {currentSong.emoji}
                     </div>
 
                     {/* Song info */}
                     <div className={styles.songInfo}>
-                      <div className={styles.songTitle}>Starry Night Lofi</div>
-                      <div className={styles.artistName}>mooner.dev</div>
+                      <div className={styles.songTitle}>{currentSong.title}</div>
+                      <div className={styles.artistName}>{currentSong.artist || 'mooner.dev'}</div>
                     </div>
 
                     {/* Music controls */}
                     <div className={styles.musicControls}>
                       <motion.button
                         className={styles.controlButton}
+                        onClick={handleSkipBack}
                         aria-label="Skip back"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
@@ -184,6 +208,7 @@ export default function DynamicIsland({
 
                       <motion.button
                         className={styles.controlButton}
+                        onClick={handleSkipForward}
                         aria-label="Skip forward"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
