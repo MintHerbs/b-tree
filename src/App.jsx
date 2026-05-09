@@ -6,6 +6,7 @@ import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import DynamicIsland from './components/dynamic-island'
 import Sidebar from './components/layout/Sidebar'
 import { ChatPanel } from './components/chat'
+import { CPA, Lazy } from './pages/exam/index'
 
 // Lazy load route components for code splitting
 const TreePage = lazy(() => import('./pages/TreePage'))
@@ -102,6 +103,8 @@ function App() {
           <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/disclaimer" element={<DisclaimerPage onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/tools/lazy-grades" element={<Lazy />} />
+          <Route path="/tools/cpa-calculator" element={<CPA />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
