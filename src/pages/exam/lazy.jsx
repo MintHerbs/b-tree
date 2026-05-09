@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import './lazy.css'
 
-function Lazy() {
+export default function Lazy() {
   const [rows, setRows] = useState([
     { moduleName: '', weightage: '', marks: '' }
   ])
@@ -16,7 +18,10 @@ function Lazy() {
   const handleChange = (index, field, value) => {
     setRows(prev => {
       const updated = [...prev]
-      updated[index][field] = value
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      }
       return updated
     })
   }
@@ -29,148 +34,144 @@ function Lazy() {
   }
 
   const calculatePoints = (gradeTarget, marks, weightage) => {
-    if (!weightage || marks === '') return ''
+    if (!weightage || weightage === 0 || marks === '') return ''
 
     const result =
-      ((thresholds[gradeTarget] - marks) * 100) /
-      weightage
+      ((thresholds[gradeTarget] - marks) * 100) / weightage
 
-    return result > 100
-      ? 'Impossible'
-      : result.toFixed(2)
+    return result > 100 ? 'Impossible' : result.toFixed(2)
   }
 
-  const isImpossible = (
-    gradeTarget,
-    marks,
-    weightage
-  ) => {
-    if (!weightage || marks === '') return false
+  const isImpossible = (gradeTarget, marks, weightage) => {
+    if (!weightage || weightage === 0 || marks === '') return false
 
     return (
-      ((thresholds[gradeTarget] - marks) * 100) /
-        weightage >
+      ((thresholds[gradeTarget] - marks) * 100) / weightage >
       100
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#0f0f23] text-white px-4 py-20 sm:px-8 lg:pl-28 lg:pr-8">
-      <div className="max-w-5xl mx-auto rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-8 shadow-2xl">
+    <main className="lazyPage">
+      <div className="lazyContent">
+        <section className="lazyCard">
+          <h1 className="lazyTitle">
+            Minimum effort, maximum grades
+          </h1>
 
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-violet-300">
-          More Tools
-        </p>
+          <section className="lazyInfoBox">
+            <p>
+              <strong>
+                Coursework marks greatly affects the amount of effort you need to put in exams.
+              </strong>
+            </p>
 
-        <h1 className="mt-2 text-3xl sm:text-4xl font-extrabold">
-          Minimum effort, maximum grades
-        </h1>
+            <p>
+              Want an A? What's the minimum effort you gotta put to receive it - given you got 30% of your coursemark?
+            </p>
 
-        <div className="mt-6 rounded-2xl border-l-4 border-indigo-400 bg-indigo-950/40 p-4 text-sm sm:text-base text-indigo-50">
-          <p className="mb-2 font-semibold">
-            Coursework marks greatly affect the amount of effort you need to put into exams.
-          </p>
+            <p>
+              Example: If the exam weightage of Algorithms and Complexities is 50%, and your coursework marks is 30 - you will see that you need <strong>at least</strong> a 80/100 on the exam paper to achieve an A.
+            </p>
 
-          <p>
-            This calculates the minimum exam marks required for your target grade.
-          </p>
-        </div>
+            <p>
+              Module name is optional and is just for you to track multiple modules in 1 view.
+            </p>
+          </section>
 
-        <div className="mt-8 space-y-5">
-          {rows.map((row, index) => (
-            <section
-              key={index}
-              className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 shadow-lg"
-            >
-              <div className="grid gap-3">
-                <input
-                  type="text"
-                  placeholder="Module Name"
-                  className="w-full rounded-xl border border-white/10 bg-white/10 p-3"
-                  value={row.moduleName}
-                  onChange={(e) =>
-                    handleChange(
-                      index,
-                      'moduleName',
-                      e.target.value
-                    )
-                  }
-                />
+          <div className="lazyRows">
+            {rows.map((row, index) => {
+              const marks = parseFloat(row.marks)
+              const weightage = parseFloat(row.weightage)
 
-                <input
-                  type="number"
-                  placeholder="Exam Weightage"
-                  className="w-full rounded-xl border border-white/10 bg-white/10 p-3"
-                  value={row.weightage}
-                  onChange={(e) =>
-                    handleChange(
-                      index,
-                      'weightage',
-                      e.target.value
-                    )
-                  }
-                />
+              return (
+                <section key={index} className="lazyModuleCard">
+                  <input
+                    type="text"
+                    placeholder="Module Name"
+                    className="lazyInput"
+                    value={row.moduleName}
+                    onChange={e =>
+                      handleChange(index, 'moduleName', e.target.value)
+                    }
+                  />
 
-                <input
-                  type="number"
-                  placeholder="Coursework Marks"
-                  className="w-full rounded-xl border border-white/10 bg-white/10 p-3"
-                  value={row.marks}
-                  onChange={(e) =>
-                    handleChange(
-                      index,
-                      'marks',
-                      e.target.value
-                    )
-                  }
-                />
-              </div>
+                  <input
+                    type="number"
+                    placeholder="Exam Weightage (if your exam is worth 60% of your grade, type 60)"
+                    className="lazyInput"
+                    value={row.weightage}
+                    onChange={e =>
+                      handleChange(index, 'weightage', e.target.value)
+                    }
+                  />
 
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-                {['A+', 'A', 'B', 'C', 'D'].map(
-                  (grade) => {
-                    const impossible =
-                      isImpossible(
+                  <input
+                    type="number"
+                    placeholder="Total Coursework Marks, e.g 30"
+                    className="lazyInput"
+                    value={row.marks}
+                    onChange={e =>
+                      handleChange(index, 'marks', e.target.value)
+                    }
+                  />
+
+                  <div className="lazyGradeGrid">
+                    {['A+', 'A', 'B', 'C', 'D'].map(grade => {
+                      const impossible = isImpossible(
                         grade,
-                        parseFloat(row.marks),
-                        parseFloat(row.weightage)
+                        marks,
+                        weightage
                       )
 
-                    return (
-                      <div
-                        key={grade}
-                        className={`rounded-xl p-3 text-center font-semibold ${
-                          impossible
-                            ? 'bg-red-500 text-white'
-                            : 'bg-white text-indigo-700'
-                        }`}
-                      >
-                        {grade}:{' '}
-                        {calculatePoints(
-                          grade,
-                          parseFloat(row.marks),
-                          parseFloat(row.weightage)
-                        )}
-                      </div>
-                    )
-                  }
-                )}
-              </div>
-            </section>
-          ))}
-        </div>
+                      return (
+                        <div
+                          key={grade}
+                          className={
+                            impossible
+                              ? 'lazyGradeBox lazyGradeImpossible'
+                              : 'lazyGradeBox'
+                          }
+                          title={
+                            impossible
+                              ? 'Achieving this grade is not possible with your current marks and weightage.'
+                              : ''
+                          }
+                        >
+                          {grade}: {calculatePoints(grade, marks, weightage)}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
 
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={addRow}
-            className="rounded-2xl bg-indigo-600 px-6 py-3 font-bold"
-          >
-            + Add Row
-          </button>
+          <div className="lazyAddWrapper">
+            <button onClick={addRow} className="lazyAddButton">
+              + Add Row
+            </button>
+          </div>
+
+          <section className="lazyPrivacy">
+            <h2>🔐 Privacy Notice</h2>
+            <p>
+              This app is fully static. Your data is never sent or stored anywhere — not even on your device! No info is collected, logged, or tracked. We respect your privacy.
+            </p>
+          </section>
+
+          <p className="lazyCredit">
+            Made with love ❤️ from CS 2023
+          </p>
+        </section>
+
+        <div className="lazyBackWrapper">
+          <Link to="/tree" className="lazyBackLink">
+            ← Back
+          </Link>
         </div>
       </div>
     </main>
   )
 }
-
-export default Lazy
