@@ -18,6 +18,18 @@
   flex-direction: column;
   align-items: center;
   gap: 28px;
+  animation: swipeUp 0.6s ease-out;
+}
+
+@keyframes swipeUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .credit {

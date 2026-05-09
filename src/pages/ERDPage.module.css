@@ -11,8 +11,8 @@
 .erdMain {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
+  left: 80px;
+  width: calc(100vw - 80px);
   height: 100vh;
   z-index: 5;
   display: flex;
@@ -21,6 +21,18 @@
   justify-content: center;
   padding-top: 0;
   transform: translateY(-5vh);
+  animation: swipeUpERD 0.6s ease-out;
+}
+
+@keyframes swipeUpERD {
+  from {
+    opacity: 0;
+    transform: translateY(-2vh);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-5vh);
+  }
 }
 
 .previousButton {

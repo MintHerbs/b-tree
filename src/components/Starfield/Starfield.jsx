@@ -1,4 +1,5 @@
 // Full-screen canvas starfield animation with occasional comets
+// Optimised: batched star draws, 60fps cap, Page Visibility API pause
 import { useEffect, useRef } from 'react'
 import styles from './Starfield.module.css'
 
@@ -8,135 +9,130 @@ function Starfield({ opacity = 1.0 }) {
   const cometsRef = useRef([])
   const animationFrameRef = useRef(null)
   const lastCometTimeRef = useRef(0)
+  const lastFrameTimeRef = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d')
-    
-    // Set canvas size
+    // alpha: false tells the browser the canvas is fully opaque — faster compositing
+    const ctx = canvas.getContext('2d', { alpha: false })
+
     const resizeCanvas = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      
-      // Regenerate stars on resize
       generateStars()
     }
 
-    // Generate 126 stars (30% reduction from 180)
     const generateStars = () => {
-      starsRef.current = []
-      for (let i = 0; i < 126; i++) {
-        starsRef.current.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          radius: Math.random() * 1.5 + 0.5, // 0.5 to 2px
-          speed: Math.random() * 0.25 + 0.05 // 0.05 to 0.3
-        })
-      }
+      starsRef.current = Array.from({ length: 126 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 1.5 + 0.5,
+        speed: Math.random() * 0.25 + 0.05,
+      }))
     }
 
-    // Create a new comet
     const spawnComet = () => {
-      const side = Math.floor(Math.random() * 4) // 0=top, 1=right, 2=bottom, 3=left
+      const side = Math.floor(Math.random() * 4)
       let startX, startY, angle
-      
-      // Spawn from random edge
-      switch(side) {
+
+      switch (side) {
         case 0: // top
           startX = Math.random() * canvas.width
           startY = -20
-          angle = Math.random() * Math.PI / 3 + Math.PI / 3 // 60° to 120°
+          angle = Math.random() * Math.PI / 3 + Math.PI / 3
           break
         case 1: // right
           startX = canvas.width + 20
           startY = Math.random() * canvas.height
-          angle = Math.random() * Math.PI / 3 + 2 * Math.PI / 3 // 120° to 180°
+          angle = Math.random() * Math.PI / 3 + 2 * Math.PI / 3
           break
         case 2: // bottom
           startX = Math.random() * canvas.width
           startY = canvas.height + 20
-          angle = Math.random() * Math.PI / 3 + 4 * Math.PI / 3 // 240° to 300°
+          angle = Math.random() * Math.PI / 3 + 4 * Math.PI / 3
           break
         default: // left
           startX = -20
           startY = Math.random() * canvas.height
-          angle = Math.random() * Math.PI / 3 - Math.PI / 6 // -30° to 30°
+          angle = Math.random() * Math.PI / 3 - Math.PI / 6
           break
       }
 
       cometsRef.current.push({
         x: startX,
         y: startY,
-        angle: angle,
-        speed: Math.random() * 2.1 + 3.5, // 3.5 to 5.6 pixels per frame (30% slower)
-        tailLength: Math.random() * 40 + 60, // 60 to 100px tail
-        life: 1.0 // opacity/life
+        angle,
+        speed: Math.random() * 2.1 + 3.5,
+        tailLength: Math.random() * 40 + 60,
+        life: 1.0,
       })
     }
 
-    // Animation loop
     const animate = (timestamp) => {
+      animationFrameRef.current = requestAnimationFrame(animate)
+
+      // Cap at 60fps — skip frame if less than 16ms has passed
+      const delta = timestamp - lastFrameTimeRef.current
+      if (delta < 16) return
+      lastFrameTimeRef.current = timestamp
+
       // Clear canvas
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Spawn 1-2 comets every 10 seconds
-      if (timestamp - lastCometTimeRef.current > 10000) { // Every 10 seconds
-        const numComets = Math.random() < 0.5 ? 1 : 2 // 50% chance of 1 or 2 comets
-        for (let i = 0; i < numComets; i++) {
-          // Slight delay between multiple comets for variety
-          setTimeout(() => spawnComet(), i * 500)
+      // Spawn comets every 10 seconds
+      if (timestamp - lastCometTimeRef.current > 10000) {
+        const numComets = Math.random() < 0.5 ? 1 : 2
+        spawnComet()
+        // Use rAF-based delay instead of setTimeout to avoid tab-switch queuing
+        if (numComets === 2) {
+          const delayStart = timestamp
+          const spawnSecond = (t) => {
+            if (t - delayStart >= 500) { spawnComet(); return }
+            requestAnimationFrame(spawnSecond)
+          }
+          requestAnimationFrame(spawnSecond)
         }
         lastCometTimeRef.current = timestamp
       }
 
-      // Update and draw stars
+      // ── Stars: batched into a single fill call ─────────────────────────
+      // All stars share the same colour so we can draw one path and fill once
+      ctx.fillStyle = `rgba(255,255,255,${0.9 * opacity})`
+      ctx.beginPath()
       starsRef.current.forEach(star => {
-        // Move star upward
         star.y -= star.speed
-
-        // Reset to bottom when it exits the top
         if (star.y < -star.radius) {
           star.y = canvas.height + star.radius
           star.x = Math.random() * canvas.width
         }
-
-        // Draw star as white circle with opacity adjusted by prop
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * opacity})`
-        ctx.beginPath()
+        // moveTo before arc prevents the browser drawing connecting lines
+        ctx.moveTo(star.x + star.radius, star.y)
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
-        ctx.fill()
       })
+      ctx.fill()
 
-      // Update and draw comets
+      // ── Comets ─────────────────────────────────────────────────────────
       cometsRef.current = cometsRef.current.filter(comet => {
-        // Move comet
         comet.x += Math.cos(comet.angle) * comet.speed
         comet.y += Math.sin(comet.angle) * comet.speed
-        
-        // Fade out over distance
-        comet.life -= 0.01
+        comet.life -= 0.012
 
-        // Remove if dead or off screen
-        if (comet.life <= 0 || 
-            comet.x < -100 || comet.x > canvas.width + 100 ||
-            comet.y < -100 || comet.y > canvas.height + 100) {
-          return false
-        }
+        if (
+          comet.life <= 0 ||
+          comet.x < -100 || comet.x > canvas.width + 100 ||
+          comet.y < -100 || comet.y > canvas.height + 100
+        ) return false
 
-        // Draw comet tail (gradient from head to tail)
         const tailEndX = comet.x - Math.cos(comet.angle) * comet.tailLength
         const tailEndY = comet.y - Math.sin(comet.angle) * comet.tailLength
 
-        const gradient = ctx.createLinearGradient(
-          comet.x, comet.y,
-          tailEndX, tailEndY
-        )
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${comet.life * opacity})`)
-        gradient.addColorStop(0.5, `rgba(200, 220, 255, ${comet.life * 0.5 * opacity})`)
-        gradient.addColorStop(1, 'rgba(150, 180, 255, 0)')
+        const gradient = ctx.createLinearGradient(comet.x, comet.y, tailEndX, tailEndY)
+        gradient.addColorStop(0, `rgba(255,255,255,${comet.life * opacity})`)
+        gradient.addColorStop(0.5, `rgba(200,220,255,${comet.life * 0.5 * opacity})`)
+        gradient.addColorStop(1, 'rgba(150,180,255,0)')
 
         ctx.strokeStyle = gradient
         ctx.lineWidth = 2
@@ -146,28 +142,41 @@ function Starfield({ opacity = 1.0 }) {
         ctx.lineTo(tailEndX, tailEndY)
         ctx.stroke()
 
-        // Draw comet head (bright white dot)
-        ctx.fillStyle = `rgba(255, 255, 255, ${comet.life * opacity})`
+        // Comet head
+        ctx.fillStyle = `rgba(255,255,255,${comet.life * opacity})`
         ctx.beginPath()
         ctx.arc(comet.x, comet.y, 2, 0, Math.PI * 2)
         ctx.fill()
 
         return true
       })
-
-      animationFrameRef.current = requestAnimationFrame(animate)
     }
 
-    // Initialize
+    // ── Page Visibility API ─────────────────────────────────────────────
+    // Pauses rAF when tab is hidden, resets timers on return so there's
+    // no comet burst or accumulated star backlog when switching back
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+          animationFrameRef.current = null
+        }
+      } else {
+        const now = performance.now()
+        lastCometTimeRef.current = now  // reset — no comet burst on return
+        lastFrameTimeRef.current = now
+        animationFrameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
     resizeCanvas()
-    animate()
-
-    // Handle window resize
+    animationFrameRef.current = requestAnimationFrame(animate)
     window.addEventListener('resize', resizeCanvas)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', resizeCanvas)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }

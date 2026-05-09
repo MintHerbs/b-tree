@@ -1,0 +1,129 @@
+.container {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  justify-content: center;
+}
+
+.icon {
+  color: var(--color-orange);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-orange);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.pill {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.pill.focused {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(234, 108, 10, 0.1);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 280px;
+  max-height: 480px;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  overflow-y: auto;
+}
+
+.textarea::placeholder {
+  color: var(--color-muted);
+  opacity: 0.5;
+}
+
+.textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.textarea::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.submitButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #d96209;
+  transform: translateY(-1px);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

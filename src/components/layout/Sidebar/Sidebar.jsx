@@ -27,6 +27,8 @@ import { GitBranch, Table2 } from 'lucide-react'
 import NavGroup from './NavGroup/NavGroup'
 import NavChildIcon from './NavChildIcon/NavChildIcon'
 import ChatAvatar from '../../chat/ChatAvatar/ChatAvatar'
+import NotificationBadge from '../../smoothui/components/notification-badge'
+import useChat from '../../../hooks/useChat'
 import styles from './Sidebar.module.css'
 
 // Import SVG icons
@@ -37,6 +39,11 @@ import btreeOff from '../../../img/btree_off.svg'
 import btreeOn from '../../../img/btree_on.svg'
 import erdOff from '../../../img/erd_off.svg'
 import erdOn from '../../../img/erd_on.svg'
+import dsaOff from '../../../img/DSA_OFF.svg'
+import dsaOn from '../../../img/DSA_ON.svg'
+import complexityOff from '../../../img/COMPLEXITY_OFF.svg'
+import complexityHover from '../../../img/COMPLEXITY_HOVER.svg'
+import complexityOn from '../../../img/COMPLEXITY_ON.svg'
 import logicOff from '../../../img/left nav/Logic_off.svg'
 import logicOn from '../../../img/left nav/Logic_on.svg'
 import downOff from '../../../img/left nav/Down_off.svg'
@@ -58,10 +65,12 @@ export default function Sidebar({
   const navigate = useNavigate()
   const location = useLocation()
   const sessionId = localStorage.getItem('session_id') || 'anonymous'
+  const { unreadCount } = useChat(isChatOpen)
   
   // Determine which child is active based on current route
   const isProofActive = location.pathname === '/logic/proof'
   const isTableauxActive = location.pathname === '/logic/tableaux'
+  const isComplexityActive = location.pathname === '/algo/complexity'
 
   /**
    * Toggle a navigation group open/closed
@@ -100,6 +109,17 @@ export default function Sidebar({
     } else {
       // Coming soon toast for other tools
       alert('Coming soon')
+    }
+  }
+
+  /**
+   * Handle Algorithms child icon clicks
+   * Closes chat and navigates to the appropriate algorithm tool route
+   */
+  const handleAlgorithmsChildClick = (childId) => {
+    if (childId === 'complexity') {
+      setIsChatOpen?.(false)
+      navigate('/algo/complexity')
     }
   }
 
@@ -164,7 +184,7 @@ export default function Sidebar({
           <NavChildIcon
             iconOff={btreeOff}
             iconOn={btreeOn}
-            tooltip="B+ Tree Visualizer"
+            tooltip="B+ Tree"
             isActive={activeChild === 'btree'}
             hoverColor="#8B5CF6"
             activeColor="#8B5CF6"
@@ -174,11 +194,37 @@ export default function Sidebar({
           <NavChildIcon
             iconOff={erdOff}
             iconOn={erdOn}
-            tooltip="ER Diagram Builder"
+            tooltip="ER Diagram"
             isActive={activeChild === 'erd'}
             hoverColor="#8B5CF6"
             activeColor="#8B5CF6"
             onClick={() => handleDatabaseChildClick('erd')}
+          />
+        </NavGroup>
+
+        {/* Algorithms group */}
+        <NavGroup
+          id="algorithms"
+          icon={
+            <img 
+              src={openGroup === 'algorithms' ? dsaOn : dsaOff} 
+              alt="Algorithms" 
+              style={{ width: '22px', height: '22px' }}
+            />
+          }
+          label="Algorithms"
+          isOpen={openGroup === 'algorithms'}
+          onToggle={() => handleGroupToggle('algorithms')}
+        >
+          <NavChildIcon
+            iconOff={complexityOff}
+            iconHover={complexityHover}
+            iconOn={complexityOn}
+            tooltip="Code Complexity"
+            isActive={isComplexityActive}
+            hoverColor="#EA6C0A"
+            activeColor="#EA6C0A"
+            onClick={() => handleAlgorithmsChildClick('complexity')}
           />
         </NavGroup>
 
@@ -232,7 +278,7 @@ export default function Sidebar({
           <NavChildIcon
             iconOff={calculatorOff}
             iconOn={calculatorOn}
-            tooltip="GPA Calculator"
+            tooltip="CPA Calculator"
             isActive={false}
             hoverColor="#8B5CF6"
             activeColor="#8B5CF6"
@@ -243,16 +289,36 @@ export default function Sidebar({
 
       {/* Chat icon and avatar at bottom */}
       <div className={styles.bottomSection}>
-        <NavChildIcon
-          iconOff={chatOff}
-          iconHover={chatHover}
-          iconOn={chatOn}
-          tooltip="Community Chat"
-          isActive={isChatOpen}
-          hoverColor="#8B5CF6"
-          activeColor="#8B5CF6"
-          onClick={handleChatClick}
-        />
+        {!isChatOpen && unreadCount > 0 ? (
+          <NotificationBadge
+            count={unreadCount}
+            max={10}
+            variant="count"
+            position="top-right"
+          >
+            <NavChildIcon
+              iconOff={chatOff}
+              iconHover={chatHover}
+              iconOn={chatOn}
+              tooltip="Community Chat"
+              isActive={isChatOpen}
+              hoverColor="#8B5CF6"
+              activeColor="#8B5CF6"
+              onClick={handleChatClick}
+            />
+          </NotificationBadge>
+        ) : (
+          <NavChildIcon
+            iconOff={chatOff}
+            iconHover={chatHover}
+            iconOn={chatOn}
+            tooltip="Community Chat"
+            isActive={isChatOpen}
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
+            onClick={handleChatClick}
+          />
+        )}
         
         <div className={styles.avatarContainer}>
           <ChatAvatar sessionId={sessionId} size={28} />
