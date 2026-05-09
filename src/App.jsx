@@ -19,6 +19,8 @@ const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
 const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
 const TableauxPage = lazy(() => import('./pages/logic/TableauxPage'))
+const LazyGrades = lazy(() => import('./pages/exam/lazy'))
+const CPA = lazy(() => import('./pages/exam/cpa'))
 
 function App() {
   const { onlineCount } = usePresence()
@@ -102,6 +104,8 @@ function App() {
           <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />
           <Route path="/disclaimer" element={<DisclaimerPage onChatOpen={() => setIsChatOpen(true)} />} />
+          <Route path="/tools/lazy-grades" element={<LazyGrades />} />
+          <Route path="/tools/cpa-calculator" element={<CPA />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

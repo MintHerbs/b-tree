@@ -127,9 +127,10 @@ export default function Sidebar({
    * Handle GPA Calculator click
    * Opens external link in new tab
    */
-  const handleCalculatorClick = () => {
-    window.open('https://lazy-grades.vercel.app/', '_blank')
-  }
+ const handleCalculatorClick = () => {
+  setIsChatOpen?.(false)
+  navigate('/tools/lazy-grades')
+}
 
   /**
    * Handle moon logo click
@@ -283,6 +284,15 @@ export default function Sidebar({
             hoverColor="#8B5CF6"
             activeColor="#8B5CF6"
             onClick={handleCalculatorClick}
+          />
+          <NavChildIcon
+            iconOff={calculatorOff}
+            iconOn={calculatorOn}
+            tooltip="CPA Calculator"
+            isActive={false}
+            hoverColor="#8B5CF6"
+            activeColor="#8B5CF6"
+            onClick={() => navigate('/tools/cpa-calculator')}
           />
         </NavGroup>
       </div>
