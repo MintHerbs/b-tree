@@ -3,7 +3,8 @@
     "allow": [
       "Bash(node --input-type=module)",
       "Bash(node -e ' *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(findstr /R /I \"\\\\.env\")"
     ]
   }
 }

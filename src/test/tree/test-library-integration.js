@@ -1,5 +1,5 @@
 // Comprehensive B+ tree correctness tests (no external dependencies)
-import { BPlusTree } from './src/lib/BPlusTree.js'
+import { BPlusTree } from '../../lib/BPlusTree.js'
 
 let passed = 0
 let failed = 0
