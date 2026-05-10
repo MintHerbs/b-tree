@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useRef, useState, lazy, Suspense, useEffect } from 'react'
 import { usePresence } from './hooks/usePresence'
+import useChat from './hooks/useChat'
 import MusicPlayer from './components/MusicPlayer/MusicPlayer'
 import DynamicIsland from './components/dynamic-island'
 import Sidebar from './components/layout/Sidebar'
@@ -31,6 +32,7 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [currentSongId, setCurrentSongId] = useState('wjJ3-SzxhCk')
   const sessionId = localStorage.getItem('session_id') || 'anonymous'
+  const { unreadCount } = useChat(isChatOpen)
 
   // Background preload pages after initial mount
   useEffect(() => {
@@ -86,6 +88,7 @@ function App() {
         onChildSelect={setActiveChild}
         isChatOpen={isChatOpen}
         setIsChatOpen={setIsChatOpen}
+        unreadCount={unreadCount}
       />
       <MusicPlayer ref={musicPlayerRef} videoId={currentSongId} />
       

@@ -1,82 +1,45 @@
 /**
- * Sidebar — Minimalist always-visible navigation.
- * No expand/collapse — all tools visible at all times.
- * Groups separated by hairline dividers with subtle category dots.
+ * Sidebar — Minimalist always-visible navigation with mode switching.
+ * Two modes: Academia (tools) and Social (chat/feed).
  * Active tool has a left accent bar. Tooltips on hover.
  */
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { GitBranch, Table2, Calculator, ExternalLink } from 'lucide-react'
+import {
+  TreeStructure,      // B+ Tree
+  Database,           // ERD
+  ChartLineUp,        // Code Complexity
+  GitBranch,          // Logical Equivalence
+  Table,              // Semantic Tableaux
+  ArrowSquareOut,     // External link / CPA Calculator
+  ChatCircle,         // Chat / Social
+  House,              // Home feed
+  Globe,              // Social mode switch
+  BookOpen,           // Academia mode switch
+} from '@phosphor-icons/react'
+import { AnimatePresence, motion } from 'motion/react'
 import ChatAvatar from '../../chat/ChatAvatar/ChatAvatar'
 import NotificationBadge from '../../smoothui/components/notification-badge'
+import { colors } from '../../../constants/colors'
 import styles from './Sidebar.module.css'
 
-import moonLogo       from '../../../img/moon.svg'
-import btreeOff       from '../../../img/btree_off.svg'
-import btreeOn        from '../../../img/btree_on.svg'
-import erdOff         from '../../../img/erd_off.svg'
-import erdOn          from '../../../img/erd_on.svg'
-import complexityOff  from '../../../img/COMPLEXITY_OFF.svg'
-import complexityOn   from '../../../img/COMPLEXITY_ON.svg'
-import logicOff       from '../../../img/left nav/Logic_off.svg'
-import logicOn        from '../../../img/left nav/Logic_on.svg'
-import chatOff        from '../../../img/social/chat_off.svg'
-import chatHover      from '../../../img/social/chat_hover.svg'
-import chatOn         from '../../../img/social/chat_on.svg'
+import moonLogo from '../../../img/moon.svg'
 
 // ── Single icon button ──────────────────────────────────────────────────────
 
-function SidebarIcon({ iconOff, iconOn, lucideIcon, tooltip, isActive, activeColor = '#8B5CF6', onClick }) {
-  const icon = lucideIcon
-    ? <span style={{ color: isActive ? activeColor : 'rgba(255,255,255,0.45)', display: 'flex' }}>{lucideIcon}</span>
-    : <img src={isActive ? iconOn : iconOff} alt={tooltip} style={{ width: '20px', height: '20px', opacity: isActive ? 1 : 0.45 }} />
-
+function SidebarIcon({ lucideIcon, tooltip, isActive, activeColor = colors.iconActive, onClick }) {
   return (
     <div className={styles.iconWrapper} onClick={onClick} title={tooltip}>
       {isActive && <span className={styles.activeBar} style={{ background: activeColor }} />}
       <div className={`${styles.iconInner} ${isActive ? styles.iconActive : ''}`}
         style={{ '--hover-color': activeColor }}>
-        {icon}
+        <span style={{ color: isActive ? activeColor : colors.iconOff, display: 'flex' }}>
+          {lucideIcon}
+        </span>
       </div>
       <span className={styles.tooltip}>{tooltip}</span>
     </div>
   )
-}
-
-// ── Hover-sensitive icon for chat (3 states: off / hover / on) ──────────────
-
-function ChatIcon({ isChatOpen, onClick, unreadCount }) {
-  const showBadge = !isChatOpen && unreadCount > 0
-
-  const inner = (
-    <div className={styles.iconWrapper} onClick={onClick} title="Community Chat">
-      {isChatOpen && <span className={styles.activeBar} style={{ background: '#8B5CF6' }} />}
-      <div className={`${styles.iconInner} ${styles.chatIcon} ${isChatOpen ? styles.iconActive : ''}`}>
-        <img
-          src={isChatOpen ? chatOn : chatOff}
-          alt="Chat"
-          style={{ width: '20px', height: '20px', opacity: isChatOpen ? 1 : 0.65 }}
-          className={styles.chatImgOff}
-        />
-        <img
-          src={chatHover}
-          alt="Chat"
-          style={{ width: '20px', height: '20px' }}
-          className={styles.chatImgHover}
-        />
-      </div>
-      <span className={styles.tooltip}>Community Chat</span>
-    </div>
-  )
-
-  if (showBadge) {
-    return (
-      <NotificationBadge count={unreadCount} max={10} variant="count" position="top-right" showZero={false}>
-        {inner}
-      </NotificationBadge>
-    )
-  }
-  return inner
 }
 
 // ── Divider ─────────────────────────────────────────────────────────────────
@@ -91,6 +54,7 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
   const navigate  = useNavigate()
   const location  = useLocation()
   const sessionId = localStorage.getItem('session_id') || 'anonymous'
+  const [mode, setMode] = useState('academia')
 
   const path = location.pathname
 
@@ -105,6 +69,101 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     go('/tree', 'btree')
   }, [go])
 
+  // ── Academia Icons ──────────────────────────────────────────────────────────
+
+  function AcademiaIcons() {
+    return (
+      <>
+        {/* ── Database ── */}
+        <SidebarIcon
+          lucideIcon={<TreeStructure size={20} weight="regular" />}
+          tooltip="B+ Tree"
+          isActive={path === '/tree'}
+          activeColor={colors.iconActive}
+          onClick={() => go('/tree', 'btree')}
+        />
+        <SidebarIcon
+          lucideIcon={<Database size={20} weight="regular" />}
+          tooltip="ER Diagram"
+          isActive={path === '/erd'}
+          activeColor={colors.iconActive}
+          onClick={() => go('/erd', 'erd')}
+        />
+
+        <Divider />
+
+        {/* ── Algorithms ── */}
+        <SidebarIcon
+          lucideIcon={<ChartLineUp size={20} weight="regular" />}
+          tooltip="Complexity"
+          isActive={path === '/algo/complexity'}
+          activeColor={colors.iconActive}
+          onClick={() => go('/algo/complexity', 'complexity')}
+        />
+
+        <Divider />
+
+        {/* ── Logic ── */}
+        <SidebarIcon
+          lucideIcon={<GitBranch size={20} weight="regular" />}
+          tooltip="Logical Equivalence"
+          isActive={path === '/logic/proof'}
+          activeColor={colors.iconActive}
+          onClick={() => go('/logic/proof', 'proof')}
+        />
+        <SidebarIcon
+          lucideIcon={<Table size={20} weight="regular" />}
+          tooltip="Semantic Tableaux"
+          isActive={path === '/logic/tableaux'}
+          activeColor={colors.iconActive}
+          onClick={() => go('/logic/tableaux', 'tableaux')}
+        />
+
+        <Divider />
+
+        {/* ── External ── */}
+        <SidebarIcon
+          lucideIcon={<ArrowSquareOut size={20} weight="regular" />}
+          tooltip="GPA Calculator"
+          isActive={false}
+          activeColor={colors.iconActiveAlt}
+          onClick={() => window.open('https://lazy-grades.vercel.app/', '_blank')}
+        />
+      </>
+    )
+  }
+
+  // ── Social Icons ────────────────────────────────────────────────────────────
+
+  function SocialIcons() {
+    return (
+      <>
+        <NotificationBadge
+          count={!isChatOpen && unreadCount > 0 ? unreadCount : 0}
+          max={10}
+          variant="count"
+          position="top-right"
+          showZero={false}
+        >
+          <div className={styles.iconWrapper} onClick={() => setIsChatOpen?.(p => !p)} title="Community Chat">
+            {isChatOpen && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
+            <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
+              <ChatCircle size={20} weight="regular" style={{ color: isChatOpen ? colors.iconActive : colors.iconOff }} />
+            </div>
+            <span className={styles.tooltip}>Community Chat</span>
+          </div>
+        </NotificationBadge>
+        <SidebarIcon
+          lucideIcon={<House size={20} weight="regular" />}
+          tooltip="Home Feed"
+          isActive={false}
+          activeColor={colors.iconActive}
+          onClick={() => alert('Coming soon — Home Feed')}
+        />
+      </>
+    )
+  }
+
   return (
     <aside className={styles.sidebar}>
 
@@ -114,37 +173,51 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
       </a>
 
       <div className={styles.nav}>
-
-        {/* ── Database ── */}
-        <SidebarIcon iconOff={btreeOff}      iconOn={btreeOn}      tooltip="B+ Tree"     isActive={path === '/tree'}          onClick={() => go('/tree', 'btree')} />
-        <SidebarIcon iconOff={erdOff}        iconOn={erdOn}        tooltip="ER Diagram"   isActive={path === '/erd'}           onClick={() => go('/erd',  'erd')}   />
-
-        <Divider />
-
-        {/* ── Algorithms ── */}
-        <SidebarIcon iconOff={complexityOff} iconOn={complexityOn} tooltip="Complexity"   isActive={path === '/algo/complexity'} activeColor="#EA6C0A" onClick={() => go('/algo/complexity', 'complexity')} />
-
-        <Divider />
-
-        {/* ── Logic ── */}
-        <SidebarIcon lucideIcon={<GitBranch size={18} />} tooltip="Logical Equivalence" isActive={path === '/logic/proof'}    activeColor="#8B5CF6" onClick={() => go('/logic/proof',    'proof')}    />
-        <SidebarIcon lucideIcon={<Table2    size={18} />} tooltip="Semantic Tableaux"   isActive={path === '/logic/tableaux'} activeColor="#8B5CF6" onClick={() => go('/logic/tableaux', 'tableaux')} />
-
-        <Divider />
-
-        {/* ── External ── */}
-        <SidebarIcon
-          lucideIcon={<ExternalLink size={18} />}
-          tooltip="GPA Calculator"
-          isActive={false}
-          activeColor="#EA6C0A"
-          onClick={() => window.open('https://lazy-grades.vercel.app/', '_blank')}
-        />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={mode}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18 }}
+            className={styles.dynamicArea}
+          >
+            {mode === 'academia' && <AcademiaIcons />}
+            {mode === 'social'   && <SocialIcons />}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* ── Bottom: chat + avatar ── */}
+      {/* ── Bottom: mode switch + avatar ── */}
       <div className={styles.bottom}>
-        <ChatIcon isChatOpen={isChatOpen} onClick={() => setIsChatOpen?.(p => !p)} unreadCount={unreadCount} />
+        <div className={styles.modeSwitch}>
+          {/* Globe — switches to Social mode */}
+          <NotificationBadge
+            count={mode !== 'social' && unreadCount > 0 ? unreadCount : 0}
+            max={10}
+            variant="count"
+            position="top-right"
+            showZero={false}
+          >
+            <div className={styles.iconWrapper} onClick={() => setMode('social')} title="Social">
+              {mode === 'social' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
+              <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
+                <Globe size={20} weight="regular" style={{ color: mode === 'social' ? colors.iconActive : colors.iconOff }} />
+              </div>
+              <span className={styles.tooltip}>Social</span>
+            </div>
+          </NotificationBadge>
+
+          {/* BookOpen — switches to Academia mode */}
+          <div className={styles.iconWrapper} onClick={() => setMode('academia')} title="Academia">
+            {mode === 'academia' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
+            <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
+              <BookOpen size={20} weight="regular" style={{ color: mode === 'academia' ? colors.iconActive : colors.iconOff }} />
+            </div>
+            <span className={styles.tooltip}>Academia</span>
+          </div>
+        </div>
+
         <div className={styles.avatarContainer}>
           <ChatAvatar sessionId={sessionId} size={26} />
         </div>
