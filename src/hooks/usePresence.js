@@ -46,6 +46,12 @@ export function usePresence() {
       console.log('[Presence] Channel status:', status)
       if (status === 'SUBSCRIBED') {
         console.log('[Presence] Tracking session:', sessionId)
+        
+        // Ensure session exists in sessions table
+        await supabase
+          .from('sessions')
+          .upsert({ id: sessionId, last_seen: new Date().toISOString() })
+        
         await channel.track({ session_id: sessionId, online_at: new Date().toISOString() })
       }
       if (status === 'CHANNEL_ERROR') {
