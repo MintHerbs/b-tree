@@ -139,7 +139,7 @@ export default function CPACalculatorPage() {
     const lpa = computeLPA(year, weight, extraRow)
 
     return (
-      <section className="cpaYearCard">
+      <section className="cpaYearCard" style={{ background: '#0a0a0a' }}>
         <div className="cpaYearHeader">
           <h2 className="cpaYearTitle">{label}</h2>
 
@@ -175,15 +175,16 @@ export default function CPACalculatorPage() {
   }
 
   return (
-    <main className="cpaPage">
+    <main className="cpaPage" style={{ position: 'relative', zIndex: 5, minHeight: '100vh', background: 'transparent' }}>
       <div className="cpaContent">
-        <Link to="/tree" className="cpaBackLink">
-          ← Back
-        </Link>
+        <div className="cpaCard">
+          <Link to="/tree" className="cpaBackLink">
+            ← Back
+          </Link>
 
-        <h1 className="cpaTitle">CPA Calculator</h1>
+          <h1 className="cpaTitle">CPA Calculator</h1>
 
-        <section className="cpaInfoBox">
+          <section className="cpaInfoBox" style={{ background: '#1a1a2e' }}>
           <p>
             <strong>You know your marks and want to see what your future CPA may look like</strong>
           </p>
@@ -212,7 +213,7 @@ export default function CPACalculatorPage() {
         {renderYear('Year 2', year2, setYear2, 3)}
         {renderYear('Year 3', year3, setYear3, 5, finalProject)}
 
-        <section className="cpaFinalBox">
+        <section className="cpaFinalBox" style={{ background: '#0a0a0a' }}>
           <p className="cpaFinalText">
             <span>CPA:</span> {cpa}
           </p>
@@ -222,6 +223,7 @@ export default function CPACalculatorPage() {
           <Link to="/tree" className="cpaBackLink">
             ← Back
           </Link>
+        </div>
         </div>
       </div>
     </main>
