@@ -12,6 +12,8 @@ import {
   GitBranch,          // Logical Equivalence
   Table,              // Semantic Tableaux
   ArrowSquareOut,     // External link / CPA Calculator
+  Calculator,         // CPA Calculator
+  Sparkle,            // Min Max
   ChatCircle,         // Chat / Social
   House,              // Home feed
   Globe,              // Social mode switch
@@ -121,13 +123,20 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
 
         <Divider />
 
-        {/* ── External ── */}
+        {/* ── External Tools ── */}
         <SidebarIcon
-          lucideIcon={<ArrowSquareOut size={20} weight="regular" />}
-          tooltip="GPA Calculator"
-          isActive={false}
+          lucideIcon={<Calculator size={20} weight="regular" />}
+          tooltip="CPA Calculator"
+          isActive={path === '/tools/cpa-calculator'}
           activeColor={colors.iconActiveAlt}
-          onClick={() => window.open('https://lazy-grades.vercel.app/', '_blank')}
+          onClick={() => go('/tools/cpa-calculator', 'cpa')}
+        />
+        <SidebarIcon
+          lucideIcon={<Sparkle size={20} weight="regular" />}
+          tooltip="Min Effort & Max Results"
+          isActive={path === '/tools/lazy-grades'}
+          activeColor={colors.iconActiveAlt}
+          onClick={() => go('/tools/lazy-grades', 'minmax')}
         />
       </>
     )

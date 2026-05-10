@@ -1,5 +1,5 @@
 // Router setup - defines application routes
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useRef, useState, lazy, Suspense, useEffect } from 'react'
 import { usePresence } from './hooks/usePresence'
 import useChat from './hooks/useChat'
@@ -21,8 +21,11 @@ const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
 const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
 const TableauxPage = lazy(() => import('./pages/logic/TableauxPage'))
+const CPA  = lazy(() => import('./pages/exam/CPA'))
+const Lazy = lazy(() => import('./pages/exam/Lazy'))
 
-function App() {
+function AppContent() {
+  const location = useLocation()
   const { onlineCount } = usePresence()
   const musicPlayerRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -34,6 +37,8 @@ function App() {
   const sessionId = localStorage.getItem('session_id') || 'anonymous'
   const { unreadCount } = useChat(isChatOpen)
 
+  const isToolsRoute = location.pathname.startsWith('/tools/')
+
   // Background preload pages after initial mount
   useEffect(() => {
     const preload = setTimeout(() => {
@@ -42,8 +47,10 @@ function App() {
       import('./pages/logic/LogicalEquivalencePage')
       import('./pages/logic/TableauxPage')
       import('./pages/ComplexityPage')
+      import('./pages/exam/CPA')
+      import('./pages/exam/Lazy')
     }, 3000)
-    
+
     return () => clearTimeout(preload)
   }, [])
 
@@ -59,7 +66,7 @@ function App() {
   const handleAIStateChange = (newState, message = '') => {
     setAIState(newState)
     setErrorMessage(message)
-    
+
     // Auto-reset error state after 3 seconds
     if (newState === 'error') {
       setTimeout(() => {
@@ -70,9 +77,9 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <>
       <Starfield />
-      {isChatOpen && <ChatDimOverlay />}
+      {isChatOpen && !isToolsRoute && <ChatDimOverlay />}
       <DynamicIsland
         onlineCount={onlineCount}
         isPlaying={isPlaying}
@@ -91,7 +98,7 @@ function App() {
         unreadCount={unreadCount}
       />
       <MusicPlayer ref={musicPlayerRef} videoId={currentSongId} />
-      
+
       {/* Only routes fade — nothing else */}
       <div style={{
         opacity: isChatOpen ? 0 : 1,
@@ -109,16 +116,26 @@ function App() {
             <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
             <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />
             <Route path="/disclaimer" element={<DisclaimerPage onChatOpen={() => setIsChatOpen(true)} />} />
+            <Route path="/tools/lazy-grades"    element={<Lazy />} />
+            <Route path="/tools/cpa-calculator" element={<CPA  />} />
           </Routes>
         </Suspense>
       </div>
-      
+
       {/* Chat panel outside the fading wrapper */}
-      <ChatPanel 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
+      <ChatPanel
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
         sessionId={sessionId}
       />
+    </>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   )
 }

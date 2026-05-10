@@ -1,0 +1,250 @@
+/* CPA Calculator page — restyled to match mooner.dev theme */
+
+.cpaPage {
+  min-height: 100vh;
+  background: transparent;
+  color: #fff;
+  padding: 72px 32px 96px;
+}
+
+.cpaContent {
+  max-width: 980px;
+  margin-left: 76px;
+  margin-right: auto;
+  padding-inline: 24px;
+}
+
+.cpaCard {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(79, 70, 229, 0.05) 50%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  padding: 36px;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+}
+
+.cpaTitle {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800;
+  color: #8B5CF6;
+  margin-bottom: 32px;
+}
+
+.cpaInfoBox {
+  background: #1a1a2e;
+  border: 1px solid #222;
+  border-left: 4px solid #8B5CF6;
+  border-radius: 12px;
+  padding: 28px 32px;
+  margin-bottom: 36px;
+  line-height: 1.8;
+  color: rgba(255,255,255,0.8);
+}
+
+.cpaYearCard {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 32px;
+}
+
+.cpaYearHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.cpaYearTitle {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.cpaBadges {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cpaBadge {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.cpaRow {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.3fr);
+  gap: 32px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.cpaInput {
+  width: 100%;
+  background: #0f0f0f;
+  color: #fff;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cpaInput::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.cpaInput:focus {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.cpaInput:disabled {
+  opacity: 0.9;
+  font-weight: 700;
+}
+
+.cpaSliderBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cpaSlider {
+  width: 100%;
+  accent-color: #8B5CF6;
+}
+
+.cpaGrade {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.cpaGradeFail {
+  color: #ef4444;
+}
+
+.cpaGradeMid {
+  color: #facc15;
+}
+
+.cpaGradeGood {
+  color: #22c55e;
+}
+
+.cpaButton {
+  margin-top: 12px;
+  background: transparent;
+  color: #8B5CF6;
+  border: 1px solid #8B5CF6;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cpaButton:hover {
+  background: rgba(139, 92, 246, 0.12);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.cpaFinalBox {
+  background: #0f0f0f;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 32px;
+  margin-top: 36px;
+}
+
+.cpaFinalText {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.cpaFinalText span {
+  color: #8B5CF6;
+}
+
+.cpaBackLink::before {
+  content: none;
+}
+
+.cpaBackLink {
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.15s ease;
+}
+
+.cpaBackLink:hover {
+  color: #8B5CF6;
+}
+
+@media (max-width: 1024px) {
+  .cpaYearHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .cpaRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .cpaInfoBox,
+  .cpaYearCard,
+  .cpaFinalBox,
+  .cpaCard {
+    padding: 20px;
+  }
+  .cpaButton {
+    width: 100%;
+  }
+  .cpaPage {
+    padding: 56px 14px 80px;
+  }
+  .cpaContent {
+    margin-left: 0;
+  }
+  .cpaTitle {
+    font-size: 1.9rem;
+  }
+  .cpaInfoBox {
+    font-size: 0.82rem;
+    line-height: 1.65;
+  }
+  .cpaYearTitle {
+    font-size: 1.15rem;
+  }
+  .cpaBadge {
+    font-size: 0.68rem;
+    padding: 6px 12px;
+  }
+  .cpaInput {
+    font-size: 0.82rem;
+    padding: 14px;
+  }
+  .cpaGrade {
+    font-size: 0.8rem;
+  }
+  .cpaButton {
+    font-size: 0.82rem;
+    padding: 11px 18px;
+  }
+  .cpaFinalText {
+    font-size: 1.35rem;
+  }
+  .cpaBackLink {
+    font-size: 0.75rem;
+  }
+}

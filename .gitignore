@@ -24,9 +24,9 @@ dist-ssr
 *.sw?
 
 # Claude and documentation files
-.claude/
-*.md
-!README.md
+.claude/*
+
 .vercel
+
 .env*.local
 .env
