@@ -21,8 +21,8 @@ const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
 const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
 const TableauxPage = lazy(() => import('./pages/logic/TableauxPage'))
-const CPA  = lazy(() => import('./pages/exam/CPA'))
-const Lazy = lazy(() => import('./pages/exam/Lazy'))
+const CPA  = lazy(() => import('./pages/exam/cpa'))
+const Lazy = lazy(() => import('./pages/exam/lazy'))
 
 function AppContent() {
   const location = useLocation()
@@ -47,8 +47,8 @@ function AppContent() {
       import('./pages/logic/LogicalEquivalencePage')
       import('./pages/logic/TableauxPage')
       import('./pages/ComplexityPage')
-      import('./pages/exam/CPA')
-      import('./pages/exam/Lazy')
+      import('./pages/exam/cpa')
+      import('./pages/exam/lazy')
     }, 3000)
 
     return () => clearTimeout(preload)
