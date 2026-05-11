@@ -17,6 +17,11 @@ const ComplexityPage = lazy(() =>
     setTimeout(() => resolve(import('./pages/ComplexityPage')), 300)
   )
 )
+const RecurrencePage = lazy(() =>
+  new Promise(resolve =>
+    setTimeout(() => resolve(import('./pages/RecurrencePage')), 300)
+  )
+)
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
 const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
@@ -47,6 +52,7 @@ function AppContent() {
       import('./pages/logic/LogicalEquivalencePage')
       import('./pages/logic/TableauxPage')
       import('./pages/ComplexityPage')
+      import('./pages/RecurrencePage')
       import('./pages/exam/cpa')
       import('./pages/exam/lazy')
     }, 3000)
@@ -112,6 +118,7 @@ function AppContent() {
             <Route path="/tree" element={<TreePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
             <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
             <Route path="/algo/complexity" element={<ComplexityPage onAIStateChange={setAIState} />} />
+            <Route path="/algo/recurrence" element={<RecurrencePage onAIStateChange={setAIState} />} />
             <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
             <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
             <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />
