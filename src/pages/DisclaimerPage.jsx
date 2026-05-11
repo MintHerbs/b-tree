@@ -1,5 +1,5 @@
 // Disclaimer page with open source info and usage warnings
-import Starfield from '../components/Starfield/Starfield'
+import Starfield from '../components/effects/Starfield/Starfield'
 import styles from './DisclaimerPage.module.css'
 
 function DisclaimerPage() {

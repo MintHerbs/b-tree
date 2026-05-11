@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import Navbar from '../components/Navbar/Navbar';
-import Starfield from '../components/Starfield/Starfield';
-import { ScrambleText } from '../components/animated-text';
-import RecurrenceInput from '../components/algo/RecurrenceInput/RecurrenceInput';
-import RecurrenceTreeView from '../components/algo/RecurrenceTreeView/RecurrenceTreeView';
-import RecurrenceSubstitutionView from '../components/algo/RecurrenceSubstitutionView/RecurrenceSubstitutionView';
-import ComplexityTerminal from '../components/algo/ComplexityTerminal/ComplexityTerminal';
+import Navbar from '../components/layout/Navbar/Navbar';
+import Starfield from '../components/effects/Starfield/Starfield';
+import { ScrambleText } from '../components/ui/ScrambleText';
+import RecurrenceInput from '../features/recurrence/components/RecurrenceInput/RecurrenceInput';
+import RecurrenceTreeView from '../features/recurrence/components/RecurrenceTreeView/RecurrenceTreeView';
+import RecurrenceSubstitutionView from '../features/recurrence/components/RecurrenceSubstitutionView/RecurrenceSubstitutionView';
+import ComplexityTerminal from '../features/complexity/components/ComplexityTerminal/ComplexityTerminal';
 import { parseRecurrence } from '../lib/algo/recurrenceParser';
 import { solveByTree, solveBySubstitution } from '../lib/algo/recurrenceSolver';
 import styles from './RecurrencePage.module.css';

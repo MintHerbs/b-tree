@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 # Claude and documentation files
-.claude/*
+.claude/settings.local.json
 
 .vercel
 

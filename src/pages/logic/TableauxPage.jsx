@@ -1,12 +1,12 @@
 // TableauxPage - Semantic tableaux visualization tool
 import { useState, useCallback } from 'react'
 import { useAnimationPlayer } from '../../hooks/useAnimationPlayer'
-import LogicInputPage from '../../components/logic/LogicInputPage'
-import TableauxCanvas from '../../components/logic/TableauxCanvas'
-import RulesPanel from '../../components/logic/RulesPanel'
-import LogicStepControls from '../../components/logic/LogicStepControls'
-import Starfield from '../../components/Starfield/Starfield'
-import Navbar from '../../components/Navbar/Navbar'
+import LogicInputPage from '../../features/logic/components/LogicInputPage'
+import TableauxCanvas from '../../features/logic/components/TableauxCanvas'
+import RulesPanel from '../../features/logic/components/RulesPanel'
+import LogicStepControls from '../../features/logic/components/LogicStepControls'
+import Starfield from '../../components/effects/Starfield/Starfield'
+import Navbar from '../../components/layout/Navbar/Navbar'
 import { runTableaux } from '../../lib/logic/tableauxEngine'
 import styles from './TableauxPage.module.css'
 

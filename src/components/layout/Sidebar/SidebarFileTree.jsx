@@ -11,7 +11,7 @@ import {
   FolderContent,
   FileItem,
   SubFiles,
-} from '../../animate-ui/components/radix/files'
+} from '../../effects/animate-ui/components/radix/files'
 import styles from './SidebarFileTree.module.css'
 
 function SidebarFileTree({ onFileClick }) {

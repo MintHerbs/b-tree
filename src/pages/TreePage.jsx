@@ -1,12 +1,12 @@
 // B+ Tree page - shows landing screen or visualizer based on tree state
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import Starfield from '../components/Starfield/Starfield'
-import Navbar from '../components/Navbar/Navbar'
-import HeroText from '../components/HeroText/HeroText'
-import PillInput from '../components/PillInput/PillInput'
-import TreeCanvas from '../components/TreeCanvas/TreeCanvas'
-import OperationsPanel from '../components/OperationsPanel/OperationsPanel'
+import Starfield from '../components/effects/Starfield/Starfield'
+import Navbar from '../components/layout/Navbar/Navbar'
+import HeroText from '../components/effects/HeroText/HeroText'
+import PillInput from '../components/ui/PillInput/PillInput'
+import TreeCanvas from '../features/tree/components/TreeCanvas/TreeCanvas'
+import OperationsPanel from '../features/tree/components/OperationsPanel/OperationsPanel'
 import { useBPlusTree } from '../hooks/useBPlusTree'
 import styles from './TreePage.module.css'
 

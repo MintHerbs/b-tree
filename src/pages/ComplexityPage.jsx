@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import Navbar from '../components/Navbar/Navbar';
-import Starfield from '../components/Starfield/Starfield';
-import { ScrambleText } from '../components/animated-text';
-import CodePillInput from '../components/landing/CodePillInput/CodePillInput';
-import ComplexityCodeView from '../components/algo/ComplexityCodeView/ComplexityCodeView';
-import ComplexityTerminal from '../components/algo/ComplexityTerminal/ComplexityTerminal';
+import Navbar from '../components/layout/Navbar/Navbar';
+import Starfield from '../components/effects/Starfield/Starfield';
+import { ScrambleText } from '../components/ui/ScrambleText';
+import CodePillInput from '../components/ui/CodePillInput/CodePillInput';
+import ComplexityCodeView from '../features/complexity/components/ComplexityCodeView/ComplexityCodeView';
+import ComplexityTerminal from '../features/complexity/components/ComplexityTerminal/ComplexityTerminal';
 import { analyzeComplexity } from '../lib/algo/complexityEngine';
 import { displayComplexity } from '../lib/algo/complexityTypes';
 import styles from './ComplexityPage.module.css';
