@@ -1,0 +1,40 @@
+/**
+ * SidebarFileTree.module.css
+ * Dark theme styling overrides for animate-ui Files component
+ * Based on SIDEBAR_REDESIGN_SPEC.md section 7
+ */
+
+.fileTree {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Override animate-ui default styles for dark theme */
+.fileTree :global([data-animate-ui-files]) {
+  background: transparent;
+  border: none;
+}
+
+.fileTree :global(.file-item),
+.fileTree :global(.folder-trigger) {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.fileTree :global(.file-item:hover),
+.fileTree :global(.folder-trigger:hover) {
+  background: rgba(139, 92, 246, 0.1);
+  color: #e2e8f0;
+}
+
+.fileTree :global(.file-item.active) {
+  color: var(--color-accent);
+  background: rgba(139, 92, 246, 0.15);
+}

@@ -1,0 +1,57 @@
+/* MathSymbolBar component styles */
+
+.symbolBar {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.symbolButton {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  background-color: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.symbolButton:hover {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  background-color: rgba(139, 92, 246, 0.05);
+}
+
+.symbolButton:active {
+  transform: scale(0.95);
+}
+
+.symbolButton:focus-visible {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+/* Responsive - smaller screens */
+@media (max-width: 640px) {
+  .symbolButton {
+    min-width: 36px;
+    height: 36px;
+    font-size: 12px;
+    padding: 0 6px;
+  }
+  
+  .symbolBar {
+    gap: 6px;
+  }
+}
