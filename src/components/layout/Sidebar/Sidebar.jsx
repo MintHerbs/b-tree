@@ -102,6 +102,13 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
           activeColor={colors.iconActive}
           onClick={() => go('/algo/complexity', 'complexity')}
         />
+        <SidebarIcon
+          lucideIcon={<ChartLineUp size={20} weight="regular" />}
+          tooltip="Recurrence Relation"
+          isActive={path === '/algo/recurrence'}
+          activeColor={colors.iconActive}
+          onClick={() => go('/algo/recurrence', 'recurrence')}
+        />
 
         <Divider />
 

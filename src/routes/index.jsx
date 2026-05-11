@@ -8,6 +8,11 @@ const ComplexityPage = lazy(() =>
     setTimeout(() => resolve(import('../pages/ComplexityPage')), 300)
   )
 )
+const RecurrencePage = lazy(() =>
+  new Promise(resolve =>
+    setTimeout(() => resolve(import('../pages/RecurrencePage')), 300)
+  )
+)
 const AboutPage = lazy(() => import('../pages/AboutPage'))
 const DisclaimerPage = lazy(() => import('../pages/DisclaimerPage'))
 const LogicalEquivalencePage = lazy(() => import('../pages/logic/LogicalEquivalencePage'))
@@ -22,6 +27,7 @@ export function AppRoutes({ onAIStateChange, onChatOpen }) {
       <Route path="/tree" element={<TreePage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/erd" element={<ERDPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/algo/complexity" element={<ComplexityPage onAIStateChange={onAIStateChange} />} />
+      <Route path="/algo/recurrence" element={<RecurrencePage onAIStateChange={onAIStateChange} />} />
       <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/about" element={<AboutPage onChatOpen={onChatOpen} />} />
@@ -38,6 +44,7 @@ export function preloadRoutes() {
   import('../pages/logic/LogicalEquivalencePage')
   import('../pages/logic/TableauxPage')
   import('../pages/ComplexityPage')
+  import('../pages/RecurrencePage')
   import('../pages/exam/cpa')
   import('../pages/exam/lazy')
 }
