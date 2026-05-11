@@ -1,7 +1,7 @@
 // ERD Step 2 - Show generated prompt with copy button
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import PaginationDots from '../PaginationDots/PaginationDots'
+import PaginationDots from '../../../../components/ui/PaginationDots/PaginationDots'
 import styles from './ERDStep2.module.css'
 
 function ERDStep2({ prompt, onNext, currentStep, totalSteps }) {

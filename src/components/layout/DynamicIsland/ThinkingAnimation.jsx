@@ -1,4 +1,4 @@
-import GridLoader from '../smoothui/grid-loader/index.tsx'
+import GridLoader from '../../effects/smoothui/grid-loader/index.tsx'
 
 export default function ThinkingAnimation({ label }) {
   return (

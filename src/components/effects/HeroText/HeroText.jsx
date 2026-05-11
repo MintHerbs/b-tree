@@ -1,6 +1,6 @@
 // Large heading and subtitle that updates based on active tool
 import { useState, useEffect } from 'react'
-import { ScrambleText } from '../animated-text'
+import { ScrambleText } from '../../ui/ScrambleText'
 import styles from './HeroText.module.css'
 
 const CONTENT = {

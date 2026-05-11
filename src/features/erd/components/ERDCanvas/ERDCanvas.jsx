@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react'
-import { calculateERDLayout } from '../../lib/erdLayout'
+import { calculateERDLayout } from '../../../../lib/erdLayout'
 import {
   EntityRectangle,
   WeakEntityRectangle,

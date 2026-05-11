@@ -15,19 +15,19 @@ export default defineConfig({
           // Feature chunks
           'tree-feature': [
             './src/pages/TreePage.jsx',
-            './src/components/TreeCanvas/TreeCanvas.jsx',
-            './src/components/TreeNode/TreeNode.jsx',
-            './src/components/TreeEdge/TreeEdge.jsx',
+            './src/features/tree/components/TreeCanvas/TreeCanvas.jsx',
+            './src/features/tree/components/TreeNode/TreeNode.jsx',
+            './src/features/tree/components/TreeEdge/TreeEdge.jsx',
             './src/lib/BPlusTree.js',
             './src/lib/treeLayout.js',
             './src/hooks/useBPlusTree.js'
           ],
           'erd-feature': [
             './src/pages/ERDPage.jsx',
-            './src/components/ERDCanvas/ERDCanvas.jsx',
-            './src/components/ERDStep1/ERDStep1.jsx',
-            './src/components/ERDStep2/ERDStep2.jsx',
-            './src/components/ERDStep3/ERDStep3.jsx',
+            './src/features/erd/components/ERDCanvas/ERDCanvas.jsx',
+            './src/features/erd/components/ERDStep1/ERDStep1.jsx',
+            './src/features/erd/components/ERDStep2/ERDStep2.jsx',
+            './src/features/erd/components/ERDStep3/ERDStep3.jsx',
             './src/lib/erdLayout.js',
             './src/lib/erdParser.js',
             './src/lib/erdPromptBuilder.js'

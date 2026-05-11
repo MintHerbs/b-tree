@@ -13,10 +13,10 @@
  */
 import { useRef } from 'react'
 import { motion } from 'motion/react'
-import { ScrambleText } from '../animated-text'
-import Starfield from '../Starfield/Starfield'
-import Navbar from '../Navbar/Navbar'
-import PillInput from '../PillInput/PillInput'
+import { ScrambleText } from '../../../components/ui/ScrambleText'
+import Starfield from '../../../components/effects/Starfield/Starfield'
+import Navbar from '../../../components/layout/Navbar/Navbar'
+import PillInput from '../../../components/ui/PillInput/PillInput'
 import SymbolBar from './SymbolBar'
 import styles from './LogicInputPage.module.css'
 

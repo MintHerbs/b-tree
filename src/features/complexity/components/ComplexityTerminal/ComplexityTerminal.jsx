@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { displayComplexity } from '../../../lib/algo/complexityTypes.js';
+import { displayComplexity } from '../../../../lib/algo/complexityTypes.js';
 import styles from './ComplexityTerminal.module.css';
 
 // Step type → colour mapping

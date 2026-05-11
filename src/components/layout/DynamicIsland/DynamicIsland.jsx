@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react'
 import AIStateContent from './AIStateContent'
-import { songs } from '../../config/songs'
+import { songs } from '../../../config/songs'
 import styles from './DynamicIsland.module.css'
 
 export default function DynamicIsland({ 

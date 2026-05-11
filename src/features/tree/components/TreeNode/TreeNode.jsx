@@ -1,6 +1,6 @@
 // Renders a single B+ tree node with alternating pointer slots and key slots
 import styles from './TreeNode.module.css'
-import { getNodeSlots } from '../../lib/treeLayout'
+import { getNodeSlots } from '../../../../lib/treeLayout'
 
 function TreeNode({ node, isHighlighted, highlightedKeys = [] }) {
   const { id, x, y, keys, width, height, isLeaf, keySlotWidths = [] } = node

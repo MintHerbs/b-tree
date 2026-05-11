@@ -1,6 +1,6 @@
 // Chat input with pill-shaped textarea and send button
 import { useState, useRef, useEffect } from 'react'
-import sendIcon from '../../../img/social/send.svg'
+import sendIcon from '../../../../img/social/send.svg'
 import styles from './ChatInput.module.css'
 
 const MAX_WORDS = 500

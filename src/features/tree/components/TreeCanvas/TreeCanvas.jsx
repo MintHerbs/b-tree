@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useMemo } from 'react'
 import styles from './TreeCanvas.module.css'
 import TreeNode from '../TreeNode/TreeNode'
 import TreeEdge from '../TreeEdge/TreeEdge'
-import { calculateTreeLayout } from '../../lib/treeLayout'
+import { calculateTreeLayout } from '../../../../lib/treeLayout'
 
 function TreeCanvas({ tree }) {
   const svgRef = useRef(null)

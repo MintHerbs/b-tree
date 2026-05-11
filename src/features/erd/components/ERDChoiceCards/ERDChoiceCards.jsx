@@ -1,4 +1,4 @@
-import GlowHover from '../smoothui/glow-hover-card/index.tsx';
+import GlowHover from '../../../../components/effects/smoothui/glow-hover-card/index.tsx';
 import styles from './ERDChoiceCards.module.css';
 
 export default function ERDChoiceCards({ remainingCalls, onUseAI, onUseManual }) {

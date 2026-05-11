@@ -20,8 +20,8 @@ import {
   BookOpen,           // Academia mode switch
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
-import ChatAvatar from '../../chat/ChatAvatar/ChatAvatar'
-import NotificationBadge from '../../smoothui/components/notification-badge'
+import ChatAvatar from '../../../features/chat/components/ChatAvatar/ChatAvatar'
+import NotificationBadge from '../../effects/smoothui/components/notification-badge'
 import { colors } from '../../../constants/colors'
 import styles from './Sidebar.module.css'
 

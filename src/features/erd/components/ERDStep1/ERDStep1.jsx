@@ -1,8 +1,8 @@
 // ERD Step 1 - User describes their ER scenario
 import { motion } from 'motion/react'
-import { ScrambleText } from '../animated-text'
-import PillInput from '../PillInput/PillInput'
-import PaginationDots from '../PaginationDots/PaginationDots'
+import { ScrambleText } from '../../../../components/ui/ScrambleText'
+import PillInput from '../../../../components/ui/PillInput/PillInput'
+import PaginationDots from '../../../../components/ui/PaginationDots/PaginationDots'
 import styles from './ERDStep1.module.css'
 
 function ERDStep1({ initialQuestion, onSubmit, onAIStateChange, currentStep, totalSteps }) {

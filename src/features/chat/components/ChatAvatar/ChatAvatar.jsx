@@ -1,5 +1,5 @@
 // Wrapper around AgentAvatar - renders unique avatar for each session UUID
-import AgentAvatar from '../../smoothui/agent-avatar'
+import AgentAvatar from '../../../../components/effects/smoothui/agent-avatar'
 
 export default function ChatAvatar({ sessionId, size }) {
   return (

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { displayComplexity } from '../../../lib/algo/complexityTypes.js';
+import { displayComplexity } from '../../../../lib/algo/complexityTypes.js';
 import styles from './ComplexityCodeView.module.css';
 
 // Bracket colours by complexity key

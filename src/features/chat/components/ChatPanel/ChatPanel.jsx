@@ -2,8 +2,8 @@
 import { useEffect, useRef } from 'react'
 import ChatBubble from '../ChatBubble/ChatBubble'
 import ChatInput from '../ChatInput/ChatInput'
-import Starfield from '../../Starfield/Starfield'
-import useChat from '../../../hooks/useChat'
+import Starfield from '../../../../components/effects/Starfield/Starfield'
+import useChat from '../../../../hooks/useChat'
 import styles from './ChatPanel.module.css'
 
 export default function ChatPanel({ isOpen, onClose, sessionId }) {
