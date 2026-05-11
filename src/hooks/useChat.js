@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
+console.log('[Chat] Supabase client created')
+
 export default function useChat(isChatOpen) {
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -36,6 +38,7 @@ export default function useChat(isChatOpen) {
           return
         }
 
+        console.log('[Chat] Initial messages loaded:', (data || []).length)
         setMessages(data || [])
       } catch (err) {
         console.error('Failed to fetch messages:', err)
@@ -54,6 +57,7 @@ export default function useChat(isChatOpen) {
           table: 'messages',
         },
         (payload) => {
+          console.log('[Chat] New message received:', payload.new)
           setMessages((prev) => [...prev, payload.new])
 
           if (!isChatOpenRef.current) {
@@ -71,6 +75,8 @@ export default function useChat(isChatOpen) {
   }, [])
 
   const sendMessage = useCallback(async (content) => {
+    if (!content.trim()) return
+
     const sessionId = localStorage.getItem('session_id')
 
     if (!sessionId) {
@@ -81,10 +87,19 @@ export default function useChat(isChatOpen) {
     setIsLoading(true)
 
     try {
+      console.log('[Chat] Sending message:', content)
+      
+      // Ensure session exists in sessions table before inserting message
+      await supabase
+        .from('sessions')
+        .upsert({ id: sessionId, last_seen: new Date().toISOString() })
+
+      // Now insert the message
       const { error } = await supabase
         .from('messages')
-        .insert([{ session_id: sessionId, content }])
+        .insert({ session_id: sessionId, content: content.trim() })
 
+      console.log('[Chat] Send result:', error)
       if (error) {
         console.error('Error sending message:', error)
       }

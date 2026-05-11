@@ -19,9 +19,9 @@ export default function ChatPanel({ isOpen, onClose, sessionId }) {
 
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
-      {/* Starfield background - 40% dimmer in chat mode */}
+      {/* Starfield background */}
       <div className={styles.starfieldContainer}>
-        <Starfield opacity={0.6} />
+        <Starfield />
       </div>
 
       {/* Messages Area */}

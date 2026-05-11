@@ -1,19 +1,16 @@
-/* Sidebar component styles */
-
 .sidebar {
   position: fixed;
-  left: 0;
   top: 0;
-  bottom: 0;
+  left: 0;
   width: 56px;
-  background-color: #000000;
+  height: 100vh;
+  background: #000;
   border-right: 1px solid #1a1a1a;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding-top: 16px;
   z-index: 60;
+  padding: 12px 0;
 }
 
 /* Moon logo */
@@ -21,62 +18,127 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 16px;
   opacity: 0.7;
   transition: opacity 0.15s ease;
-  margin-bottom: 24px;
+  text-decoration: none;
 }
+.moonLink:hover { opacity: 1; }
+.moonLogo { width: 26px; height: 26px; }
 
-.moonLink:hover {
-  opacity: 1;
-}
-
-.moonLogo {
-  width: 28px;
-  height: 28px;
-}
-
-/* Navigation groups container */
-.groups {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Bottom section with chat icon and avatar */
-.bottomSection {
-  margin-top: auto;
-  width: 100%;
+/* Tool icons container */
+.nav {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
+  gap: 4px;
+  flex: 1;
+  width: 100%;
 }
 
+/* Single icon slot */
+.iconWrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  cursor: pointer;
+}
+
+/* Active left bar */
+.activeBar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.5px;
+  height: 20px;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Icon inner — handles hover colour */
+.iconInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.iconWrapper:hover .iconInner {
+  background: rgba(255, 255, 255, 0.05);
+}
+.iconWrapper:hover img { opacity: 1 !important; }
+.iconWrapper:hover span { color: var(--hover-color, rgba(255,255,255,0.75)) !important; opacity: 1 !important; }
+.iconActive img  { opacity: 1 !important; }
+.iconActive span { opacity: 1 !important; }
+
+/* Chat icon — swap on hover */
+.chatIcon .chatImgHover { display: none; }
+.iconWrapper:hover .chatIcon:not(.iconActive) .chatImgOff   { display: none; }
+.iconWrapper:hover .chatIcon:not(.iconActive) .chatImgHover { display: block; }
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1c1c1c;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 100;
+}
+.iconWrapper:hover .tooltip { opacity: 1; }
+
+/* Divider */
+.divider {
+  width: 24px;
+  height: 1px;
+  background: #1a1a1a;
+  margin: 6px 0;
+}
+
+/* Bottom section */
+.bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
 .avatarContainer {
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.8;
 }
 
-/* Responsive - smaller screens */
-@media (max-width: 640px) {
-  .sidebar {
-    width: 40px;
-  }
+/* Dynamic area for animated icon switching */
+.dynamicArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  width: 100%;
+}
 
-  .moonLogo {
-    width: 22px;
-    height: 22px;
-  }
-
-  .moonLink {
-    margin-bottom: 20px;
-  }
-
-  .bottomSection {
-    gap: 8px;
-    padding-bottom: 12px;
-  }
+/* Mode switch icons */
+.modeSwitch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding-bottom: 8px;
 }

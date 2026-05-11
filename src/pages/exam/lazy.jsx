@@ -52,7 +52,7 @@ export default function Lazy() {
   }
 
   return (
-    <main className="lazyPage">
+    <main className="lazyPage" style={{ position: 'relative', zIndex: 5, minHeight: '100vh', background: 'transparent' }}>
       <div className="lazyContent">
         <section className="lazyCard">
           <h1 className="lazyTitle">
@@ -85,7 +85,7 @@ export default function Lazy() {
               const weightage = parseFloat(row.weightage)
 
               return (
-                <section key={index} className="lazyModuleCard">
+                <section key={index} className="lazyModuleCard" style={{ background: '#0a0a0a' }}>
                   <input
                     type="text"
                     placeholder="Module Name"
