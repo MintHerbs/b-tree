@@ -24,7 +24,6 @@ dist-ssr
 *.sw?
 
 # Claude and documentation files
-.claude/*
 
 .vercel
 
