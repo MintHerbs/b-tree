@@ -1,28 +1,14 @@
-// Router setup - defines application routes
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useRef, useState, lazy, Suspense, useEffect } from 'react'
+// Router shell — global UI + state. Route table lives in src/routes/index.jsx.
+import { BrowserRouter, useLocation } from 'react-router-dom'
+import { useRef, useState, Suspense, useEffect } from 'react'
 import { usePresence } from './hooks/usePresence'
 import useChat from './hooks/useChat'
-import MusicPlayer from './components/MusicPlayer/MusicPlayer'
-import DynamicIsland from './components/dynamic-island'
+import MusicPlayer from './components/layout/MusicPlayer/MusicPlayer'
+import DynamicIsland from './components/layout/DynamicIsland'
 import Sidebar from './components/layout/Sidebar'
-import Starfield from './components/Starfield/Starfield'
-import { ChatPanel, ChatDimOverlay } from './components/chat'
-
-// Lazy load route components for code splitting
-const TreePage = lazy(() => import('./pages/TreePage'))
-const ERDPage = lazy(() => import('./pages/ERDPage'))
-const ComplexityPage = lazy(() =>
-  new Promise(resolve =>
-    setTimeout(() => resolve(import('./pages/ComplexityPage')), 300)
-  )
-)
-const AboutPage = lazy(() => import('./pages/AboutPage'))
-const DisclaimerPage = lazy(() => import('./pages/DisclaimerPage'))
-const LogicalEquivalencePage = lazy(() => import('./pages/logic/LogicalEquivalencePage'))
-const TableauxPage = lazy(() => import('./pages/logic/TableauxPage'))
-const CPA  = lazy(() => import('./pages/exam/cpa'))
-const Lazy = lazy(() => import('./pages/exam/lazy'))
+import Starfield from './components/effects/Starfield/Starfield'
+import { ChatPanel, ChatDimOverlay } from './features/chat/components'
+import { AppRoutes, preloadRoutes } from './routes'
 
 function AppContent() {
   const location = useLocation()
@@ -39,19 +25,9 @@ function AppContent() {
 
   const isToolsRoute = location.pathname.startsWith('/tools/')
 
-  // Background preload pages after initial mount
   useEffect(() => {
-    const preload = setTimeout(() => {
-      import('./pages/TreePage')
-      import('./pages/ERDPage')
-      import('./pages/logic/LogicalEquivalencePage')
-      import('./pages/logic/TableauxPage')
-      import('./pages/ComplexityPage')
-      import('./pages/exam/cpa')
-      import('./pages/exam/lazy')
-    }, 3000)
-
-    return () => clearTimeout(preload)
+    const t = setTimeout(preloadRoutes, 3000)
+    return () => clearTimeout(t)
   }, [])
 
   const handlePlayPause = () => {
@@ -106,19 +82,10 @@ function AppContent() {
         transition: 'opacity 0.3s ease'
       }}>
         <Suspense fallback={null}>
-          <Routes>
-            {/* Default route redirects to /tree */}
-            <Route path="/" element={<Navigate to="/tree" replace />} />
-            <Route path="/tree" element={<TreePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
-            <Route path="/erd" element={<ERDPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
-            <Route path="/algo/complexity" element={<ComplexityPage onAIStateChange={setAIState} />} />
-            <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
-            <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={setAIState} onChatOpen={() => setIsChatOpen(true)} />} />
-            <Route path="/about" element={<AboutPage onChatOpen={() => setIsChatOpen(true)} />} />
-            <Route path="/disclaimer" element={<DisclaimerPage onChatOpen={() => setIsChatOpen(true)} />} />
-            <Route path="/tools/lazy-grades"    element={<Lazy />} />
-            <Route path="/tools/cpa-calculator" element={<CPA  />} />
-          </Routes>
+          <AppRoutes
+            onAIStateChange={setAIState}
+            onChatOpen={() => setIsChatOpen(true)}
+          />
         </Suspense>
       </div>
 
