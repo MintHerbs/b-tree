@@ -23,9 +23,13 @@ Planned tools (not yet implemented):
 
 ```
 src/
-├── App.jsx                    Root component. Manages global state: aiState, isPlaying.
-│                              Renders DynamicIsland and MusicPlayer outside all routes.
-│                              Defines all routes and passes shared props via route elements.
+├── App.jsx                    Router shell. Manages global state: aiState, isPlaying.
+│                              Renders DynamicIsland, Sidebar, MusicPlayer, ChatPanel
+│                              outside all routes. Delegates the route table to ./routes.
+│
+├── routes/
+│   └── index.jsx              Route table. Exports <AppRoutes onAIStateChange onChatOpen />
+│                              plus preloadRoutes() for background chunk warming.
 │
 ├── main.jsx                   Vite entry point. Mounts App.
 │
@@ -40,60 +44,44 @@ src/
 │       ├── TableauxPage.jsx   Semantic tableaux solver
 │       └── ResolutionPage.jsx Resolution method solver
 │
-├── components/
-│   ├── layout/
+├── components/                # Shared, cross-feature UI
+│   ├── layout/                # App shell — visible on every route
 │   │   ├── Navbar/            Top navigation bar. Shows on /tree and /erd.
-│   │   └── Sidebar/           Two-level nav sidebar. Always visible. See Sidebar section.
-│   │       ├── NavGroup/      Collapsible navigation group with animated children.
-│   │       ├── NavGroupIcon/  Primary parent icon button with open/close state.
-│   │       └── NavChildIcon/  Child icon with tooltip and on/off SVG or Lucide icon.
-│   │
-│   ├── landing/
-│   │   ├── HeroText/          Large heading + subtitle. Updates per active tool.
-│   │   └── PillInput/         Pill-shaped text input. Triggers AI state on focus.
-│   │
-│   ├── dynamic-island/
+│   │   ├── Sidebar/           Two-level nav sidebar. Always visible. See Sidebar section.
+│   │   │   ├── NavGroup/      Collapsible navigation group with animated children.
+│   │   │   ├── NavGroupIcon/  Primary parent icon button with open/close state.
+│   │   │   └── NavChildIcon/  Child icon with tooltip and on/off SVG or Lucide icon.
 │   │   ├── DynamicIsland/     Fixed top-center pill. Online count + music + AI states.
-│   │   ├── AIStateContent/    Renders correct GridLoader animation for current aiState.
-│   │   ├── ObservingAnimation/ Blue pulse GridLoader + label.
-│   │   ├── WaitingAnimation/  White stagger GridLoader + label.
-│   │   ├── ThinkingAnimation/ Amber stagger GridLoader + label.
-│   │   └── GeneratingAnimation/ Blue pulse GridLoader + label.
-│   │
-│   ├── tree/
-│   │   ├── TreeCanvas/        SVG viewport. Renders B+ tree. Pan + zoom.
-│   │   ├── TreeNode/          Single B+ tree node SVG. Keys + pointer slots.
-│   │   ├── TreeEdge/          SVG line between parent and child nodes.
-│   │   ├── PointerArrow/      Animated arrow showing current insertion path.
-│   │   ├── OperationsPanel/   Right sidebar. Insert/delete inputs + tree info.
-│   │   └── StepControls/      Bottom bar. Play/pause/prev/next + speed + step counter.
-│   │
-│   ├── erd/
-│   │   ├── ERDCanvas/         SVG renderer for Chen notation diagrams. Pan + zoom.
-│   │   ├── ERDStep1/          Step 1: user types question. Entrance animation + scramble text.
-│   │   ├── ERDStep2/          Step 2: shows generated prompt + copy button. Entrance animation.
-│   │   ├── ERDStep3/          Step 3: user pastes JSON response. Entrance animation + scramble text.
-│   │   ├── ERDChoiceCards/    AI choice cards (inactive in current flow, kept for reuse).
-│   │   ├── shapes.jsx         SVG shape functions for Chen notation elements.
-│   │   └── edges.jsx          SVG edge functions for participation lines.
-│   │
-│   ├── logic/
-│   │   ├── LogicInputPage/    Shared input layout for all logic tools. Uses absolute positioning
-│   │   │                      (top: 50%, left: 50%, transform: translate(-50%, -50%)) to match
-│   │   │                      TreePage and ERDPage landing screens. Includes ScrambleText on
-│   │   │                      title/subtitle (500ms duration, 40ms speed) and entrance animation.
-│   │   └── SymbolBar/         Logic symbol insertion toolbar (¬, ∧, ∨, →, ↔, ∴, ⊤, ⊥).
-│   │                          Custom component built from scratch. Inserts symbols at cursor
-│   │                          position using setRangeText() API.
-│   │
-│   ├── music/
+│   │   │                      Plus AIStateContent, Observing/Waiting/Thinking/Generating animations.
 │   │   └── MusicPlayer/       Hidden YouTube IFrame API player. Controlled via ref.
 │   │
-│   ├── ui/
-│   │   └── PaginationDots/    Step indicator dots. Props: total, current.
+│   ├── ui/                    # Generic primitives (no domain knowledge)
+│   │   ├── PillInput/         Pill-shaped text input. Triggers AI state on focus.
+│   │   ├── InputBox/          Generic styled input box.
+│   │   ├── PaginationDots/    Step indicator dots. Props: total, current.
+│   │   ├── ScrambleText/      Letter-scramble animated heading text.
+│   │   └── CodePillInput/     Expanding pill for code input (used by ComplexityPage).
 │   │
-│   └── background/
-│       └── Starfield/         Full-screen canvas starfield animation. Always behind content.
+│   └── effects/               # Decorative / animated primitives
+│       ├── Starfield/         Full-screen canvas starfield animation. Always behind content.
+│       ├── HeroText/          Large heading + subtitle. Updates per active tool.
+│       └── smoothui/          Third-party animated UI library (agent-avatar, glow-hover-card,
+│                              grid-loader, scramble-hover, notification-badge).
+│
+├── features/                  # Feature-scoped code — removing a feature = rm -rf its folder
+│   ├── tree/
+│   │   └── components/        TreeCanvas, TreeNode, TreeEdge, PointerArrow,
+│   │                          OperationsPanel, StepControls
+│   ├── erd/
+│   │   └── components/        ERDCanvas (+ shapes.jsx, edges.jsx), ERDStep1/2/3, ERDChoiceCards
+│   ├── complexity/
+│   │   └── components/        ComplexityCodeView, ComplexityInput, ComplexityTerminal
+│   ├── logic/
+│   │   └── components/        LogicInputPage, LogicStepControls, SymbolBar,
+│   │                          InferenceRulesDrawer, LogicRulesPanel, ProofTreeCanvas,
+│   │                          ResolutionCanvas, RulesPanel, TableauxCanvas, TranslationResult
+│   └── chat/
+│       └── components/        ChatPanel, ChatBubble, ChatAvatar, ChatInput, ChatDimOverlay
 │
 ├── hooks/
 │   ├── usePresence.js         Session ID creation + Supabase ping + online count.
@@ -304,6 +292,8 @@ TreePage conditionally renders either a landing screen or the visualizer based o
 ---
 
 ## Routing and Shared State
+
+Routes are declared in [src/routes/index.jsx](../src/routes/index.jsx) as the `<AppRoutes>` component. `App.jsx` renders `<AppRoutes onAIStateChange={setAIState} onChatOpen={...} />` inside a `<Suspense>` boundary; lazy-loaded page chunks are warmed 3 s after first paint via `preloadRoutes()`.
 
 `App.jsx` owns:
 - `aiState` + `setAiState` → passed to `DynamicIsland` and to each page via route element props
