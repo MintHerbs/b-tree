@@ -5,8 +5,13 @@ export const colors = {
   orange:        '#EA6C0A',   // secondary orange
   bg:            '#000000',
   surface:       '#0f0f0f',
+  card:          '#0a0a0a',
+  panel:         '#1a1a2e',
   border:        '#222222',
+  text:          '#ffffff',
+  textMuted:     'rgba(255,255,255,0.6)',
   error:         '#ef4444',
+  warning:       '#facc15',
   success:       '#22c55e',
 
   // Sidebar icon states

@@ -8,6 +8,77 @@ import { fToTermShape, textToLatex } from './recurrenceParser.js';
 import { displayComplexity, shortComplexity } from './complexityTypes.js';
 
 /**
+ * Apply Master Theorem to divide-type recurrence
+ * @param {number} a - Number of subproblems
+ * @param {number} b - Factor by which problem size is divided
+ * @param {string} fComplexity - Complexity of f(n)
+ * @param {Array} steps - Steps array to append to
+ * @returns {string} Final complexity
+ */
+function applyMasterTheorem(a, b, fComplexity, steps) {
+  const logba = Math.log(a) / Math.log(b);
+  const fExponent = {
+    '1': 0,
+    'log_n': 0.05,
+    'sqrt_n': 0.5,
+    'n': 1,
+    'n_log_n': 1.05,
+    'n2': 2,
+    'n3': 3
+  }[fComplexity] ?? 1;
+
+  steps.push({ text: `a=${a}, b=${b}, f(n)=O(${fComplexity})`, type: 'info', indent: 0 });
+  steps.push({ text: `log_${b}(${a}) = ${logba.toFixed(2)}`, type: 'special', indent: 0 });
+
+  if (Math.abs(fExponent - logba) < 0.1) {
+    // Case 2: f(n) = Θ(n^log_b(a)) → multiply by log n
+    const base = exponentToComplexity(logba);
+    const result = addLogFactor(base);
+    steps.push({ text: `Case 2: f(n) = Θ(n^log_b(a)) → multiply by log n`, type: 'special', indent: 0 });
+    return result;
+  } else if (fExponent > logba) {
+    // Case 3: root work dominates (f(n) grows faster)
+    steps.push({ text: `Case 3: f(n) grows faster than n^log_b(a) → O(f(n))`, type: 'special', indent: 0 });
+    return fComplexity;
+  } else {
+    // Case 1: leaf work dominates (f(n) grows slower)
+    const result = exponentToComplexity(logba);
+    steps.push({ text: `Case 1: f(n) grows slower than n^log_b(a) → O(n^${logba.toFixed(2)})`, type: 'special', indent: 0 });
+    return result;
+  }
+}
+
+/**
+ * Convert exponent to complexity string
+ * @param {number} exp - Exponent value
+ * @returns {string} Complexity string
+ */
+function exponentToComplexity(exp) {
+  if (exp < 0.1) return '1';
+  if (Math.abs(exp - 0.5) < 0.1) return 'sqrt_n';
+  if (Math.abs(exp - 1) < 0.1) return 'n';
+  if (Math.abs(exp - 2) < 0.1) return 'n2';
+  if (Math.abs(exp - 3) < 0.1) return 'n3';
+  return 'n';
+}
+
+/**
+ * Add log factor to complexity
+ * @param {string} complexity - Base complexity
+ * @returns {string} Complexity with log factor
+ */
+function addLogFactor(complexity) {
+  const map = {
+    '1': 'log_n',
+    'sqrt_n': 'sqrt_n_log_n',
+    'n': 'n_log_n',
+    'n2': 'n2_log_n',
+    'n3': 'n3_log_n'
+  };
+  return map[complexity] ?? complexity;
+}
+
+/**
  * Solve recurrence using the substitution method
  * @param {Object} parsed - Parsed recurrence object from parseRecurrence
  * @returns {Object} { formulas, steps, finalComplexity }
@@ -229,33 +300,26 @@ function solveDivideSubstitution(parsed) {
     label: 'Set base case',
   });
   
-  // 9. Evaluate sum
+  // 9. Apply Master Theorem (formulas will be added based on the case)
+  formulas.push({
+    latex: '\\text{Apply Master Theorem}',
+    label: 'Master Theorem',
+  });
+  
+  // Build steps (Master Theorem is applied inside buildSubstitutionSteps)
   const leafTerms = collectSubstitutionTerms(f, fComplexity);
   const identity = identifySummation(leafTerms);
-  
-  if (identity && identity.id === 'repeated_n_logn_times') {
-    formulas.push({
-      latex: `T(n) = \\Theta(n) + ${f} \\times \\log_{${b}}(n)`,
-      label: 'Evaluate sum',
-    });
-    formulas.push({
-      latex: `= O(n \\log n)`,
-      label: 'Final complexity',
-    });
-  } else {
-    formulas.push({
-      latex: `T(n) = \\Theta(n \\log n)`,
-      label: 'Evaluate sum',
-    });
-    formulas.push({
-      latex: `= O(n \\log n)`,
-      label: 'Final complexity',
-    });
-  }
-  
-  // Build steps
   const steps = buildSubstitutionSteps(parsed, f, identity, 'divide');
-  const finalComplexity = identity ? identity.complexity : 'n_log_n';
+  
+  // Extract final complexity from steps
+  const finalStep = steps.find(s => s.type === 'final');
+  const finalComplexity = finalStep ? finalStep.complexity : 'n_log_n';
+  
+  // Add final complexity formula
+  formulas.push({
+    latex: `= ${displayComplexity(finalComplexity)}`,
+    label: 'Final complexity',
+  });
   
   return { formulas, steps, finalComplexity };
 }
@@ -299,7 +363,24 @@ function buildSubstitutionSteps(parsed, f, identity, type) {
     steps.push({ text: `  T(n) = T(n−k) + Σ ${f.replace(/n/g, 'n−i+1')} for i=1..k`, type: 'special' });
     steps.push({ text: `Setting base case: n − k = 0 → k = n`, type: 'special' });
     steps.push({ text: `  T(n) = T(0) + ${f.replace(/n/g, '1')} + ${f.replace(/n/g, '2')} + ... + ${f}`, type: 'special' });
+    
+    if (identity) {
+      steps.push({ text: '', type: 'divider' });
+      steps.push({ text: `Recognized: ${identity.name.toLowerCase()}`, type: 'special' });
+      
+      if (identity.id === 'log_factorial') {
+        steps.push({ text: 'Recognized: log(n!) by log product rule', type: 'special' });
+        steps.push({ text: "By Stirling: log(n!) = Θ(n log n)", type: 'special' });
+      } else {
+        steps.push({ text: identity.explanation, type: 'special' });
+      }
+    }
+    
+    steps.push({ text: '─────────────────────────────────', type: 'divider' });
+    const finalComp = identity ? identity.complexity : 'n';
+    steps.push({ text: `FINAL COMPLEXITY: ${displayComplexity(finalComp)}`, type: 'final', complexity: finalComp });
   } else {
+    // divide type
     steps.push({ text: `Substituting n → n/${b}:`, type: 'loop' });
     steps.push({ text: `  T(n/${b}) = ${parsed.a}T(n/${b * b}) + ${f.replace(/n/g, `n/${b}`)}`, type: 'combine_nested' });
     steps.push({ text: 'Back-substituting:', type: 'loop' });
@@ -308,23 +389,16 @@ function buildSubstitutionSteps(parsed, f, identity, type) {
     steps.push({ text: 'General pattern after k steps:', type: 'special' });
     steps.push({ text: `  T(n) = a^k T(n/b^k) + Σ a^i f(n/b^i) for i=0..k-1`, type: 'special' });
     steps.push({ text: `Setting base case: n/b^k = 1 → k = log_${b}(n)`, type: 'special' });
-  }
-  
-  if (identity) {
-    steps.push({ text: '', type: 'divider' });
-    steps.push({ text: `Recognized: ${identity.name.toLowerCase()}`, type: 'special' });
     
-    if (identity.id === 'log_factorial') {
-      steps.push({ text: 'Recognized: log(n!) by log product rule', type: 'special' });
-      steps.push({ text: "By Stirling: log(n!) = Θ(n log n)", type: 'special' });
-    } else {
-      steps.push({ text: identity.explanation, type: 'special' });
-    }
+    steps.push({ text: '', type: 'divider' });
+    steps.push({ text: 'Applying Master Theorem:', type: 'info' });
+    
+    // Use Master Theorem instead of summation identity
+    const finalComplexity = applyMasterTheorem(parsed.a, parsed.b, parsed.fComplexity, steps);
+    
+    steps.push({ text: '─────────────────────────────────', type: 'divider' });
+    steps.push({ text: `FINAL COMPLEXITY: ${displayComplexity(finalComplexity)}`, type: 'final', complexity: finalComplexity });
   }
-  
-  steps.push({ text: '─────────────────────────────────', type: 'divider' });
-  const finalComp = identity ? identity.complexity : (type === 'divide' ? 'n_log_n' : 'n');
-  steps.push({ text: `FINAL COMPLEXITY: ${displayComplexity(finalComp)}`, type: 'final', complexity: finalComp });
   
   return steps;
 }

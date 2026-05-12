@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
 import './cpa.css'
+import { colors } from '../../constants/colors'
 
 export default function CPACalculatorPage() {
   const initRow = () => ({ name: '', percentage: '' })
@@ -139,7 +140,7 @@ export default function CPACalculatorPage() {
     const lpa = computeLPA(year, weight, extraRow)
 
     return (
-      <section className="cpaYearCard" style={{ background: '#0a0a0a' }}>
+      <section className="cpaYearCard">
         <div className="cpaYearHeader">
           <h2 className="cpaYearTitle">{label}</h2>
 
@@ -167,24 +168,52 @@ export default function CPACalculatorPage() {
           </div>
         ))}
 
-        <button onClick={() => addRow(setter)} className="cpaButton">
+        <motion.button
+          onClick={() => addRow(setter)}
+          className="cpaButton"
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
+        >
           + Add Module
-        </button>
+        </motion.button>
       </section>
     )
   }
 
   return (
-    <main className="cpaPage" style={{ position: 'relative', zIndex: 5, minHeight: '100vh', background: 'transparent' }}>
+    <main
+      className="cpaPage"
+      style={{
+        '--tool-bg': colors.bg,
+        '--tool-surface': colors.surface,
+        '--tool-card': colors.card,
+        '--tool-panel': colors.panel,
+        '--tool-border': colors.border,
+        '--tool-accent': colors.accent,
+        '--tool-orange': colors.orange,
+        '--tool-text': colors.text,
+        '--tool-text-muted': colors.textMuted,
+        '--tool-error': colors.error,
+        '--tool-warning': colors.warning,
+        '--tool-success': colors.success,
+        position: 'relative',
+        zIndex: 5,
+        minHeight: '100vh',
+        background: 'transparent'
+      }}
+    >
       <div className="cpaContent">
-        <div className="cpaCard">
-          <Link to="/tree" className="cpaBackLink">
-            ← Back
-          </Link>
+        <motion.section
+          className="cpaCard"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
 
           <h1 className="cpaTitle">CPA Calculator</h1>
 
-          <section className="cpaInfoBox" style={{ background: '#1a1a2e' }}>
+          <section className="cpaInfoBox">
           <p>
             <strong>You know your marks and want to see what your future CPA may look like</strong>
           </p>
@@ -213,18 +242,12 @@ export default function CPACalculatorPage() {
         {renderYear('Year 2', year2, setYear2, 3)}
         {renderYear('Year 3', year3, setYear3, 5, finalProject)}
 
-        <section className="cpaFinalBox" style={{ background: '#0a0a0a' }}>
+        <section className="cpaFinalBox">
           <p className="cpaFinalText">
             <span>CPA:</span> {cpa}
           </p>
         </section>
-
-        <div className="cpaBottomBack">
-          <Link to="/tree" className="cpaBackLink">
-            ← Back
-          </Link>
-        </div>
-        </div>
+        </motion.section>
       </div>
     </main>
   )

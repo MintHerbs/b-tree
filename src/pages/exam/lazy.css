@@ -1,7 +1,7 @@
 .lazyPage {
   min-height: 100vh;
   background: transparent;
-  color: #fff;
+  color: var(--tool-text);
   padding: 64px 24px 80px;
 }
 
@@ -15,30 +15,47 @@
 
 .lazyCard {
   width: 100%;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(79, 70, 229, 0.05) 50%, rgba(139, 92, 246, 0.08) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tool-accent) 14%, transparent) 0%,
+    color-mix(in srgb, var(--tool-orange) 10%, transparent) 50%,
+    color-mix(in srgb, var(--tool-accent) 14%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--tool-accent) 26%, var(--tool-border));
   border-radius: 12px;
   padding: 36px;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--tool-accent) 18%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .lazyTitle {
   font-size: clamp(2rem, 3vw, 2.7rem);
   line-height: 1.1;
   font-weight: 900;
-  color: #8B5CF6;
+  color: var(--tool-accent);
   margin-bottom: 28px;
 }
 
 .lazyInfoBox {
-  background: #1a1a2e;
-  border-left: 4px solid #8B5CF6;
+  position: relative;
+  background: var(--tool-panel);
+  border: 1px solid var(--tool-border);
   border-radius: 6px;
   padding: 22px;
   margin-bottom: 34px;
-  color: #fff;
+  color: var(--tool-text);
   line-height: 1.75;
   font-size: 1rem;
+}
+
+.lazyInfoBox::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--tool-accent);
 }
 
 .lazyInfoBox p + p {
@@ -52,8 +69,8 @@
 }
 
 .lazyModuleCard {
-  background: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--tool-card);
+  border: 1px solid color-mix(in srgb, var(--tool-text) 10%, var(--tool-border));
   border-radius: 12px;
   padding: 18px;
   box-shadow: none;
@@ -61,23 +78,34 @@
 
 .lazyInput {
   width: 100%;
-  background: #0f0f0f;
-  border: 1px solid #222;
-  color: #fff;
+  background: var(--tool-surface);
+  border: 1px solid var(--tool-border);
+  color: var(--tool-text);
   border-radius: 7px;
   padding: 13px 14px;
   font-size: 0.95rem;
   margin-bottom: 12px;
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.lazyInput[type="number"] {
+  appearance: textfield;
+}
+
+.lazyInput[type="number"]::-webkit-outer-spin-button,
+.lazyInput[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .lazyInput::placeholder {
-  color: rgba(255, 255, 255, 0.48);
+  color: color-mix(in srgb, var(--tool-text) 48%, transparent);
 }
 
 .lazyInput:focus {
-  border-color: #8B5CF6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+  border-color: color-mix(in srgb, var(--tool-accent) 80%, var(--tool-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tool-accent) 22%, transparent);
 }
 
 .lazyGradeGrid {
@@ -87,9 +115,9 @@
 }
 
 .lazyGradeBox {
-  background: #1a1a1a;
-  border: 1px solid #222;
-  color: #8B5CF6;
+  background: color-mix(in srgb, var(--tool-surface) 72%, var(--tool-bg));
+  border: 1px solid var(--tool-border);
+  color: var(--tool-accent);
   border-radius: 7px;
   padding: 10px 8px;
   text-align: center;
@@ -98,9 +126,9 @@
 }
 
 .lazyGradeImpossible {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: white;
+  background: var(--tool-error);
+  border-color: var(--tool-error);
+  color: var(--tool-text);
 }
 
 .lazyAddWrapper {
@@ -110,34 +138,36 @@
 }
 
 .lazyAddButton {
-  background: transparent;
-  color: #8B5CF6;
-  border: 1px solid #8B5CF6;
+  background: color-mix(in srgb, var(--tool-surface) 92%, var(--tool-bg));
+  color: var(--tool-text);
+  border: 1px solid color-mix(in srgb, var(--tool-text) 14%, var(--tool-border));
   padding: 14px 26px;
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 800;
   box-shadow: none;
-  transition: 0.2s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   cursor: pointer;
 }
 
 .lazyAddButton:hover {
-  background: rgba(139, 92, 246, 0.12);
+  background: color-mix(in srgb, var(--tool-surface) 86%, var(--tool-bg));
+  border-color: color-mix(in srgb, var(--tool-accent) 45%, var(--tool-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tool-accent) 16%, transparent);
   transform: translateY(-1px);
 }
 
 .lazyPrivacy {
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--tool-border);
   margin-top: 42px;
   padding-top: 24px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--tool-text-muted);
   font-size: 0.92rem;
   line-height: 1.6;
 }
 
 .lazyPrivacy h2 {
-  color: #fff;
+  color: var(--tool-text);
   font-size: 1rem;
   margin-bottom: 8px;
 }
@@ -145,7 +175,7 @@
 .lazyCredit {
   margin-top: 26px;
   text-align: right;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--tool-text-muted);
   font-size: 0.78rem;
 }
 
@@ -159,7 +189,7 @@
 }
 
 .lazyBackLink {
-  color: #8B5CF6;
+  color: var(--tool-accent);
   font-size: 0.9rem;
   font-weight: 700;
   text-decoration: none;

@@ -3,7 +3,7 @@
 .cpaPage {
   min-height: 100vh;
   background: transparent;
-  color: #fff;
+  color: var(--tool-text);
   padding: 72px 32px 96px;
 }
 
@@ -16,34 +16,50 @@
 
 .cpaCard {
   width: 100%;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(79, 70, 229, 0.05) 50%, rgba(139, 92, 246, 0.08) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tool-accent) 14%, transparent) 0%,
+    color-mix(in srgb, var(--tool-orange) 10%, transparent) 50%,
+    color-mix(in srgb, var(--tool-accent) 14%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--tool-accent) 26%, var(--tool-border));
   border-radius: 12px;
   padding: 36px;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--tool-accent) 18%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .cpaTitle {
   font-size: clamp(2rem, 4vw, 3.5rem);
   font-weight: 800;
-  color: #8B5CF6;
+  color: var(--tool-accent);
   margin-bottom: 32px;
 }
 
 .cpaInfoBox {
-  background: #1a1a2e;
-  border: 1px solid #222;
-  border-left: 4px solid #8B5CF6;
+  position: relative;
+  background: var(--tool-panel);
+  border: 1px solid var(--tool-border);
   border-radius: 12px;
   padding: 28px 32px;
   margin-bottom: 36px;
   line-height: 1.8;
-  color: rgba(255,255,255,0.8);
+  color: color-mix(in srgb, var(--tool-text) 82%, transparent);
+}
+
+.cpaInfoBox::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--tool-accent);
 }
 
 .cpaYearCard {
-  background: #0a0a0a;
-  border: 1px solid #222;
+  background: var(--tool-card);
+  border: 1px solid var(--tool-border);
   border-radius: 12px;
   padding: 28px;
   margin-bottom: 32px;
@@ -60,7 +76,7 @@
 .cpaYearTitle {
   font-size: 1.55rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--tool-text);
 }
 
 .cpaBadges {
@@ -70,9 +86,9 @@
 }
 
 .cpaBadge {
-  background: rgba(139, 92, 246, 0.15);
-  color: #c4b5fd;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: color-mix(in srgb, var(--tool-accent) 14%, transparent);
+  color: color-mix(in srgb, var(--tool-accent) 70%, var(--tool-text));
+  border: 1px solid color-mix(in srgb, var(--tool-accent) 28%, transparent);
   padding: 8px 16px;
   border-radius: 8px;
   font-weight: 700;
@@ -89,9 +105,9 @@
 
 .cpaInput {
   width: 100%;
-  background: #0f0f0f;
-  color: #fff;
-  border: 1px solid #222;
+  background: var(--tool-surface);
+  color: var(--tool-text);
+  border: 1px solid var(--tool-border);
   border-radius: 8px;
   padding: 16px;
   font-size: 1rem;
@@ -100,12 +116,12 @@
 }
 
 .cpaInput::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: color-mix(in srgb, var(--tool-text) 38%, transparent);
 }
 
 .cpaInput:focus {
-  border-color: #8B5CF6;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  border-color: color-mix(in srgb, var(--tool-accent) 80%, var(--tool-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tool-accent) 22%, transparent);
 }
 
 .cpaInput:disabled {
@@ -121,7 +137,7 @@
 
 .cpaSlider {
   width: 100%;
-  accent-color: #8B5CF6;
+  accent-color: var(--tool-accent);
 }
 
 .cpaGrade {
@@ -131,37 +147,38 @@
 }
 
 .cpaGradeFail {
-  color: #ef4444;
+  color: var(--tool-error);
 }
 
 .cpaGradeMid {
-  color: #facc15;
+  color: var(--tool-warning);
 }
 
 .cpaGradeGood {
-  color: #22c55e;
+  color: var(--tool-success);
 }
 
 .cpaButton {
   margin-top: 12px;
-  background: transparent;
-  color: #8B5CF6;
-  border: 1px solid #8B5CF6;
+  background: color-mix(in srgb, var(--tool-accent) 10%, transparent);
+  color: var(--tool-text);
+  border: 1px solid color-mix(in srgb, var(--tool-accent) 40%, var(--tool-border));
   padding: 12px 22px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .cpaButton:hover {
-  background: rgba(139, 92, 246, 0.12);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  background: color-mix(in srgb, var(--tool-accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--tool-accent) 60%, var(--tool-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tool-accent) 18%, transparent);
 }
 
 .cpaFinalBox {
-  background: #0f0f0f;
-  border: 1px solid #222;
+  background: var(--tool-card);
+  border: 1px solid var(--tool-border);
   border-radius: 12px;
   padding: 32px;
   margin-top: 36px;
@@ -170,11 +187,11 @@
 .cpaFinalText {
   font-size: 1.5rem;
   font-weight: 900;
-  color: #fff;
+  color: var(--tool-text);
 }
 
 .cpaFinalText span {
-  color: #8B5CF6;
+  color: var(--tool-accent);
 }
 
 .cpaBackLink::before {
@@ -182,14 +199,14 @@
 }
 
 .cpaBackLink {
-  color: rgba(255,255,255,0.5);
+  color: color-mix(in srgb, var(--tool-text) 55%, transparent);
   text-decoration: none;
   font-size: 0.85rem;
   transition: color 0.15s ease;
 }
 
 .cpaBackLink:hover {
-  color: #8B5CF6;
+  color: var(--tool-accent);
 }
 
 @media (max-width: 1024px) {

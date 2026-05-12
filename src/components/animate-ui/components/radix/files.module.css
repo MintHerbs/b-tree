@@ -1,0 +1,115 @@
+.filesRoot {
+  padding: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.highlight {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.trigger {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: block;
+  appearance: none;
+  color: inherit;
+  font: inherit;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: auto;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: monospace;
+  color: #cbd5e1;
+  transition: color 0.15s ease, background 0.15s ease;
+  background: transparent;
+}
+
+.leftGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.customIcon {
+  display: flex;
+  color: currentColor;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+}
+
+.contentWrap {
+  position: relative;
+  margin-left: 24px;
+}
+
+.contentWrap::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #222222;
+}
+
+.statusLetter {
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+:global([data-slot="folder-trigger"]:hover) .row,
+:global([data-slot="motion-highlight-item-container"]:hover) .row {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global([data-slot="folder-row"][data-variant="parent"][data-open="true"]) {
+  color: #65DA7C;
+}
+
+:global([data-slot="folder-row"][data-variant="folder"]) {
+  color: #F4BA42;
+}
+
+:global([data-slot="file-item"][data-variant="tool"]) {
+  color: #EA6C0A;
+}
+
+:global([data-slot="motion-highlight-item-container"]:hover) :global([data-slot="file-item"][data-variant="tool"]) {
+  color: #EA6C0A;
+  background: rgba(234, 108, 10, 0.12);
+}
+
+:global([data-slot="motion-highlight-item-container"][data-active="true"]) .row {
+  color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+:global([data-slot="motion-highlight-item-container"][data-active="true"]) :global([data-slot="file-item"][data-variant="tool"]) {
+  color: #EA6C0A;
+  background: rgba(234, 108, 10, 0.16);
+}
