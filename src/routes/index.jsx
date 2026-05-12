@@ -19,6 +19,7 @@ const LogicalEquivalencePage = lazy(() => import('../pages/logic/LogicalEquivale
 const TableauxPage = lazy(() => import('../pages/logic/TableauxPage'))
 const CPA = lazy(() => import('../pages/exam/cpa'))
 const Lazy = lazy(() => import('../pages/exam/lazy'))
+const NotesPage = lazy(() => import('../pages/NotesPage'))
 
 export function AppRoutes({ onAIStateChange, onChatOpen }) {
   return (
@@ -27,13 +28,18 @@ export function AppRoutes({ onAIStateChange, onChatOpen }) {
       <Route path="/tree" element={<TreePage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/erd" element={<ERDPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/algo/complexity" element={<ComplexityPage onAIStateChange={onAIStateChange} />} />
+      <Route path="/algo/code-complexity" element={<ComplexityPage onAIStateChange={onAIStateChange} />} />
       <Route path="/algo/recurrence" element={<RecurrencePage onAIStateChange={onAIStateChange} />} />
+      <Route path="/algo/recurrence-relation" element={<RecurrencePage onAIStateChange={onAIStateChange} />} />
       <Route path="/logic/proof" element={<LogicalEquivalencePage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/logic/tableaux" element={<TableauxPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
+      <Route path="/logic/truth-tree" element={<TableauxPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
+      <Route path="/logic/semantic-tableaux" element={<TableauxPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/about" element={<AboutPage onChatOpen={onChatOpen} />} />
       <Route path="/disclaimer" element={<DisclaimerPage onChatOpen={onChatOpen} />} />
       <Route path="/tools/lazy-grades" element={<Lazy />} />
       <Route path="/tools/cpa-calculator" element={<CPA />} />
+      <Route path="/notes/:section/:file" element={<NotesPage />} />
     </Routes>
   )
 }

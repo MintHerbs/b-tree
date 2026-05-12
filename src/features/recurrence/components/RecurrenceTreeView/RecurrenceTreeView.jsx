@@ -21,7 +21,7 @@ function RecurrenceTreeView({ tree, formula }) {
     )
   }
 
-  const { nodes, edges } = tree
+  const { nodes, edges, levelCosts } = tree
 
   // Compute viewBox from node positions
   const nodePositions = nodes.filter(n => n.type !== 'dots').map(n => ({ x: n.x, y: n.y }))
@@ -29,7 +29,12 @@ function RecurrenceTreeView({ tree, formula }) {
   const minY = Math.min(...nodePositions.map(p => p.y)) - 40
   const maxX = Math.max(...nodePositions.map(p => p.x)) + 80
   const maxY = Math.max(...nodePositions.map(p => p.y)) + 40
-  const viewBox = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`
+  
+  // Extend maxX if we have levelCosts to make room for annotations
+  const svgWidth = levelCosts ? 800 : maxX - minX
+  const viewBox = levelCosts 
+    ? `0 ${minY} ${svgWidth} ${maxY - minY}`
+    : `${minX} ${minY} ${maxX - minX} ${maxY - minY}`
 
   // Zoom controls
   const handleZoomIn = () => {
@@ -156,6 +161,59 @@ function RecurrenceTreeView({ tree, formula }) {
     )
   }
 
+  // Helper to find rightmost node X at a given level
+  const getRightmostNodeX = (level) => {
+    const nodesAtLevel = nodes.filter(n => n.level === level && n.type !== 'dots')
+    if (nodesAtLevel.length === 0) return 0
+    return Math.max(...nodesAtLevel.map(n => n.x))
+  }
+
+  // Render level cost annotation
+  const renderLevelCost = (lc) => {
+    const COST_X = svgWidth - 20
+    const rightmostX = getRightmostNodeX(lc.level)
+    
+    return (
+      <g key={`cost-${lc.level}`}>
+        {/* Horizontal dashed line from rightmost node to cost label */}
+        <line
+          x1={rightmostX + 40}
+          y1={lc.y}
+          x2={COST_X - 60}
+          y2={lc.y}
+          stroke="#333"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+        />
+        
+        {/* Cost label box */}
+        <rect
+          x={COST_X - 55}
+          y={lc.y - 14}
+          width={50}
+          height={28}
+          rx={6}
+          fill="rgba(34,197,94,0.15)"
+          stroke="#22c55e"
+          strokeWidth="0.8"
+        />
+        
+        {/* Cost label text */}
+        <text
+          x={COST_X - 30}
+          y={lc.y + 4}
+          fill="#86efac"
+          fontSize="12"
+          fontFamily="JetBrains Mono, monospace"
+          fontWeight="700"
+          textAnchor="middle"
+        >
+          {lc.label}
+        </text>
+      </g>
+    )
+  }
+
   return (
     <div className={styles.container}>
       {/* Zoom controls */}
@@ -201,6 +259,9 @@ function RecurrenceTreeView({ tree, formula }) {
             
             {/* Render nodes */}
             {nodes.map(node => renderNode(node))}
+            
+            {/* Render level cost annotations if present */}
+            {levelCosts && levelCosts.map(lc => renderLevelCost(lc))}
           </g>
         </svg>
       </div>

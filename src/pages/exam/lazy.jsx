@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
 import './lazy.css'
+import { colors } from '../../constants/colors'
 
 export default function Lazy() {
   const [rows, setRows] = useState([
@@ -52,9 +53,34 @@ export default function Lazy() {
   }
 
   return (
-    <main className="lazyPage" style={{ position: 'relative', zIndex: 5, minHeight: '100vh', background: 'transparent' }}>
+    <main
+      className="lazyPage"
+      style={{
+        '--tool-bg': colors.bg,
+        '--tool-surface': colors.surface,
+        '--tool-card': colors.card,
+        '--tool-panel': colors.panel,
+        '--tool-border': colors.border,
+        '--tool-accent': colors.accent,
+        '--tool-orange': colors.orange,
+        '--tool-text': colors.text,
+        '--tool-text-muted': colors.textMuted,
+        '--tool-error': colors.error,
+        '--tool-warning': colors.warning,
+        '--tool-success': colors.success,
+        position: 'relative',
+        zIndex: 5,
+        minHeight: '100vh',
+        background: 'transparent'
+      }}
+    >
       <div className="lazyContent">
-        <section className="lazyCard">
+        <motion.section
+          className="lazyCard"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
           <h1 className="lazyTitle">
             Minimum effort, maximum grades
           </h1>
@@ -85,7 +111,14 @@ export default function Lazy() {
               const weightage = parseFloat(row.weightage)
 
               return (
-                <section key={index} className="lazyModuleCard" style={{ background: '#0a0a0a' }}>
+                <motion.section
+                  key={index}
+                  className="lazyModuleCard"
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
                   <input
                     type="text"
                     placeholder="Module Name"
@@ -143,15 +176,21 @@ export default function Lazy() {
                       )
                     })}
                   </div>
-                </section>
+                </motion.section>
               )
             })}
           </div>
 
           <div className="lazyAddWrapper">
-            <button onClick={addRow} className="lazyAddButton">
+            <motion.button
+              onClick={addRow}
+              className="lazyAddButton"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+            >
               + Add Row
-            </button>
+            </motion.button>
           </div>
 
           <section className="lazyPrivacy">
@@ -164,13 +203,7 @@ export default function Lazy() {
           <p className="lazyCredit">
             Made with love ❤️ from CS 2023
           </p>
-        </section>
-
-        <div className="lazyBackWrapper">
-          <Link to="/tree" className="lazyBackLink">
-            ← Back
-          </Link>
-        </div>
+        </motion.section>
       </div>
     </main>
   )

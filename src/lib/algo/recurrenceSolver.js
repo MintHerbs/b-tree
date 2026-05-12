@@ -11,6 +11,77 @@ import { displayComplexity, shortComplexity } from './complexityTypes.js';
 export { solveBySubstitution } from './recurrenceSubstitution.js';
 
 /**
+ * Apply Master Theorem to divide-type recurrence
+ * @param {number} a - Number of subproblems
+ * @param {number} b - Factor by which problem size is divided
+ * @param {string} fComplexity - Complexity of f(n)
+ * @param {Array} steps - Steps array to append to
+ * @returns {string} Final complexity
+ */
+function applyMasterTheorem(a, b, fComplexity, steps) {
+  const logba = Math.log(a) / Math.log(b);
+  const fExponent = {
+    '1': 0,
+    'log_n': 0.05,
+    'sqrt_n': 0.5,
+    'n': 1,
+    'n_log_n': 1.05,
+    'n2': 2,
+    'n3': 3
+  }[fComplexity] ?? 1;
+
+  steps.push({ text: `a=${a}, b=${b}, f(n)=O(${fComplexity})`, type: 'info', indent: 0 });
+  steps.push({ text: `log_${b}(${a}) = ${logba.toFixed(2)}`, type: 'special', indent: 0 });
+
+  if (Math.abs(fExponent - logba) < 0.1) {
+    // Case 2: f(n) = Θ(n^log_b(a)) → multiply by log n
+    const base = exponentToComplexity(logba);
+    const result = addLogFactor(base);
+    steps.push({ text: `Case 2: f(n) = Θ(n^log_b(a)) → multiply by log n`, type: 'special', indent: 0 });
+    return result;
+  } else if (fExponent > logba) {
+    // Case 3: root work dominates (f(n) grows faster)
+    steps.push({ text: `Case 3: f(n) grows faster than n^log_b(a) → O(f(n))`, type: 'special', indent: 0 });
+    return fComplexity;
+  } else {
+    // Case 1: leaf work dominates (f(n) grows slower)
+    const result = exponentToComplexity(logba);
+    steps.push({ text: `Case 1: f(n) grows slower than n^log_b(a) → O(n^${logba.toFixed(2)})`, type: 'special', indent: 0 });
+    return result;
+  }
+}
+
+/**
+ * Convert exponent to complexity string
+ * @param {number} exp - Exponent value
+ * @returns {string} Complexity string
+ */
+function exponentToComplexity(exp) {
+  if (exp < 0.1) return '1';
+  if (Math.abs(exp - 0.5) < 0.1) return 'sqrt_n';
+  if (Math.abs(exp - 1) < 0.1) return 'n';
+  if (Math.abs(exp - 2) < 0.1) return 'n2';
+  if (Math.abs(exp - 3) < 0.1) return 'n3';
+  return 'n';
+}
+
+/**
+ * Add log factor to complexity
+ * @param {string} complexity - Base complexity
+ * @returns {string} Complexity with log factor
+ */
+function addLogFactor(complexity) {
+  const map = {
+    '1': 'log_n',
+    'sqrt_n': 'sqrt_n_log_n',
+    'n': 'n_log_n',
+    'n2': 'n2_log_n',
+    'n3': 'n3_log_n'
+  };
+  return map[complexity] ?? complexity;
+}
+
+/**
  * Solve recurrence using the tree method
  * @param {Object} parsed - Parsed recurrence object from parseRecurrence
  * @returns {Object} { tree, steps, finalComplexity }
@@ -128,64 +199,93 @@ function solveDivideTree(parsed) {
   
   const nodes = [];
   const edges = [];
+  const levelCosts = [];
   
-  const ROOT_X = 340;
-  const ROOT_Y = 55;
-  const LEVEL_HEIGHT = 90;
+  const SVG_WIDTH = 800;
+  const LEVELS_SHOWN = 3;
+  const LEVEL_HEIGHT = 120;
+  
+  // Helper function to calculate x position for node i at level k
+  const getNodeX = (level, index) => {
+    const nodesAtLevel = Math.pow(a, level);
+    return (2 * index + 1) * SVG_WIDTH / (2 * nodesAtLevel);
+  };
   
   // Level 0: root
-  nodes.push({ id: 'n0', label: 'T(n)', type: 'recursive', x: ROOT_X, y: ROOT_Y, level: 0 });
-  nodes.push({ id: 'l0', label: f, type: 'leaf', x: ROOT_X + 80, y: ROOT_Y, level: 0 });
-  edges.push({ from: 'n0', to: 'l0' });
+  const level0Y = 60;
+  nodes.push({ 
+    id: 'n0', 
+    label: 'T(n)', 
+    type: 'recursive', 
+    x: getNodeX(0, 0), 
+    y: level0Y, 
+    level: 0 
+  });
+  levelCosts.push({ level: 0, label: f, y: level0Y });
   
   // Level 1: a children
-  const level1Y = ROOT_Y + LEVEL_HEIGHT;
-  const level1Spacing = 200;
-  const level1StartX = ROOT_X - (a - 1) * level1Spacing / 2;
-  
+  const level1Y = level0Y + LEVEL_HEIGHT;
   for (let i = 0; i < a; i++) {
-    const x = level1StartX + i * level1Spacing;
+    const x = getNodeX(1, i);
     const nodeId = `n1_${i}`;
-    const leafId = `l1_${i}`;
-    nodes.push({ id: nodeId, label: `T(n/${b})`, type: 'recursive', x, y: level1Y, level: 1 });
-    nodes.push({ id: leafId, label: f.replace(/n/g, `n/${b}`), type: 'leaf', x: x + 80, y: level1Y, level: 1 });
+    nodes.push({ 
+      id: nodeId, 
+      label: `T(n/${b})`, 
+      type: 'recursive', 
+      x, 
+      y: level1Y, 
+      level: 1 
+    });
     edges.push({ from: 'n0', to: nodeId });
-    edges.push({ from: nodeId, to: leafId });
   }
+  levelCosts.push({ level: 1, label: f, y: level1Y });
   
-  // Level 2: a² children (show first few)
+  // Level 2: a² children
   const level2Y = level1Y + LEVEL_HEIGHT;
-  const level2Spacing = 200 / a;
-  const showLevel2 = Math.min(a * a, 6);
-  
-  for (let i = 0; i < showLevel2; i++) {
-    const parentIdx = Math.floor(i / a);
-    const parentX = level1StartX + parentIdx * level1Spacing;
-    const x = parentX - (a - 1) * level2Spacing / 2 + (i % a) * level2Spacing;
+  const nodesAtLevel2 = Math.pow(a, 2);
+  for (let i = 0; i < nodesAtLevel2; i++) {
+    const x = getNodeX(2, i);
     const nodeId = `n2_${i}`;
-    const leafId = `l2_${i}`;
-    nodes.push({ id: nodeId, label: `T(n/${b * b})`, type: 'recursive', x, y: level2Y, level: 2 });
-    nodes.push({ id: leafId, label: f.replace(/n/g, `n/${b * b}`), type: 'leaf', x: x + 60, y: level2Y, level: 2 });
+    const parentIdx = Math.floor(i / a);
+    nodes.push({ 
+      id: nodeId, 
+      label: `T(n/${b * b})`, 
+      type: 'recursive', 
+      x, 
+      y: level2Y, 
+      level: 2 
+    });
     edges.push({ from: `n1_${parentIdx}`, to: nodeId });
-    edges.push({ from: nodeId, to: leafId });
   }
+  levelCosts.push({ level: 2, label: f, y: level2Y });
   
-  // Dots at bottom
+  // Dots below level 2
   const dotsY = level2Y + LEVEL_HEIGHT;
-  nodes.push({ id: 'dots1', type: 'dots', x: ROOT_X - 50, y: dotsY });
-  nodes.push({ id: 'dots2', type: 'dots', x: ROOT_X, y: dotsY });
-  nodes.push({ id: 'dots3', type: 'dots', x: ROOT_X + 50, y: dotsY });
+  const centerX = SVG_WIDTH / 2;
+  nodes.push({ id: 'dots1', type: 'dots', x: centerX - 50, y: dotsY });
+  nodes.push({ id: 'dots2', type: 'dots', x: centerX, y: dotsY });
+  nodes.push({ id: 'dots3', type: 'dots', x: centerX + 50, y: dotsY });
   
-  // Collect terms and identify pattern
+  // Collect terms and identify pattern (no longer used for final complexity)
   const leafTerms = collectDivideLeafTerms(f, fComplexity, a, b);
   const identity = identifySummation(leafTerms);
   
-  // Build steps
+  // Build steps (Master Theorem is applied inside buildDivideSteps)
   const steps = buildDivideSteps(parsed, f, a, b, identity);
   
-  const finalComplexity = identity ? identity.complexity : 'n_log_n';
+  // Extract final complexity from steps
+  const finalStep = steps.find(s => s.type === 'final');
+  const finalComplexity = finalStep ? finalStep.complexity : 'n_log_n';
   
-  return { tree: { nodes, edges }, steps, finalComplexity };
+  return { 
+    tree: { 
+      nodes, 
+      edges, 
+      levelCosts 
+    }, 
+    steps, 
+    finalComplexity 
+  };
 }
 
 /**
@@ -288,19 +388,13 @@ function buildDivideSteps(parsed, f, a, b, identity) {
   steps.push({ text: `Height: log₂(n) levels`, type: 'info' });
   
   steps.push({ text: '', type: 'divider' });
-  steps.push({ text: `Each level does O(${shortComplexity(parsed.fComplexity)}) work`, type: 'info' });
+  steps.push({ text: 'Applying Master Theorem:', type: 'info' });
   
-  if (identity) {
-    steps.push({ text: identity.explanation, type: 'special' });
-    steps.push({ text: `= ${identity.formula}`, type: 'special' });
-  } else {
-    steps.push({ text: `${f} repeated log(n) times`, type: 'special' });
-    steps.push({ text: `= ${f} × log n = O(n log n)`, type: 'special' });
-  }
+  // Use Master Theorem instead of summation identity
+  const finalComplexity = applyMasterTheorem(a, b, parsed.fComplexity, steps);
   
   steps.push({ text: '─────────────────────────────────', type: 'divider' });
-  const finalComp = identity ? identity.complexity : 'n_log_n';
-  steps.push({ text: `FINAL COMPLEXITY: ${displayComplexity(finalComp)}`, type: 'final', complexity: finalComp });
+  steps.push({ text: `FINAL COMPLEXITY: ${displayComplexity(finalComplexity)}`, type: 'final', complexity: finalComplexity });
   
   return steps;
 }

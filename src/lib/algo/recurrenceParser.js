@@ -102,7 +102,7 @@ export function parseRecurrence(formulaStr) {
  * @returns {string} Complexity key
  */
 function classifyFComplexity(fStr) {
-  const normalized = fStr.toLowerCase().replace(/\s+/g, '');
+  const normalized = fStr.toLowerCase().replace(/\s+/g, '').replace(/^[+\-]/, '');
   
   // Check for specific patterns
   if (/^[0-9]+$/.test(normalized) || normalized === '1') {
