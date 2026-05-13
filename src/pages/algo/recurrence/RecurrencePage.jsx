@@ -1,25 +1,50 @@
 import { useState } from 'react';
-import Navbar from '../components/layout/Navbar/Navbar';
-import Starfield from '../components/effects/Starfield/Starfield';
-import { ScrambleText } from '../components/ui/ScrambleText';
-import CodePillInput from '../components/ui/CodePillInput/CodePillInput';
-import ComplexityCodeView from '../features/complexity/components/ComplexityCodeView/ComplexityCodeView';
-import ComplexityTerminal from '../features/complexity/components/ComplexityTerminal/ComplexityTerminal';
-import { analyzeComplexity } from '../lib/algo/complexityEngine';
-import { displayComplexity } from '../lib/algo/complexityTypes';
-import styles from './ComplexityPage.module.css';
+import Navbar from '../../../components/layout/Navbar/Navbar';
+import Starfield from '../../../components/effects/Starfield/Starfield';
+import { ScrambleText } from '../../../components/ui/ScrambleText';
+import RecurrenceInput from '../../../features/recurrence/components/RecurrenceInput/RecurrenceInput';
+import RecurrenceTreeView from '../../../features/recurrence/components/RecurrenceTreeView/RecurrenceTreeView';
+import RecurrenceSubstitutionView from '../../../features/recurrence/components/RecurrenceSubstitutionView/RecurrenceSubstitutionView';
+import ComplexityTerminal from '../../../features/complexity/components/ComplexityTerminal/ComplexityTerminal';
+import { parseRecurrence } from '../../../lib/algo/recurrenceParser';
+import { solveByTree, solveBySubstitution } from '../../../lib/algo/recurrenceSolver';
+import styles from './RecurrencePage.module.css';
 
-export default function ComplexityPage({ onAIStateChange }) {
+export default function RecurrencePage({ onAIStateChange }) {
   const [view, setView] = useState('input');
-  const [code, setCode] = useState('');
+  const [formula, setFormula] = useState('');
+  const [method, setMethod] = useState('tree');
   const [result, setResult] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const handleSubmit = (submittedCode) => {
-    // Call analyzeComplexity synchronously - it's fast
-    const analysis = analyzeComplexity(submittedCode);
+  const handleSubmit = (submittedFormula, submittedMethod) => {
+    // Parse the recurrence formula
+    const parsed = parseRecurrence(submittedFormula);
     
-    setCode(submittedCode);
+    // Check for parse errors
+    if (parsed.error) {
+      setFormula(submittedFormula);
+      setMethod(submittedMethod);
+      setResult({ error: parsed.error });
+      setView('result');
+      setIsAnimating(false);
+      
+      if (onAIStateChange) {
+        onAIStateChange('idle');
+      }
+      return;
+    }
+    
+    // Solve based on method
+    let analysis;
+    if (submittedMethod === 'tree') {
+      analysis = solveByTree(parsed);
+    } else {
+      analysis = solveBySubstitution(parsed);
+    }
+    
+    setFormula(submittedFormula);
+    setMethod(submittedMethod);
     setResult(analysis);
     setView('result');
     setIsAnimating(true);
@@ -41,7 +66,8 @@ export default function ComplexityPage({ onAIStateChange }) {
 
   const handleReset = () => {
     setView('input');
-    setCode('');
+    setFormula('');
+    setMethod('tree');
     setResult(null);
     setIsAnimating(false);
     
@@ -59,16 +85,16 @@ export default function ComplexityPage({ onAIStateChange }) {
           <div className={styles.heroContainer}>
             <h1 className={styles.title}>
               <ScrambleText duration={500} speed={125} skipInitialAnimation={true}>
-                Code Complexity
+                Recurrence Relation
               </ScrambleText>
             </h1>
             <p className={styles.subtitle}>
               <ScrambleText duration={500} speed={125} skipInitialAnimation={true}>
-                Paste your Python code
+                Enter your recurrence formula
               </ScrambleText>
             </p>
           </div>
-          <CodePillInput 
+          <RecurrenceInput 
             onSubmit={handleSubmit} 
             onAIStateChange={onAIStateChange} 
           />
@@ -83,16 +109,16 @@ export default function ComplexityPage({ onAIStateChange }) {
       <Starfield />
       <Navbar 
         showTitle 
-        title="O Complexity" 
+        title="Recurrence Relation" 
         showNewFormula 
         onNewFormula={handleReset}
-        newFormulaText="New Code"
+        newFormulaText="New Formula"
       />
       
       {result?.error ? (
         <div className={styles.errorContainer}>
           <div className={styles.errorBox}>
-            <h3 className={styles.errorTitle}>Analysis Error</h3>
+            <h3 className={styles.errorTitle}>Parse Error</h3>
             <p className={styles.errorMessage}>{result.error}</p>
             <button className={styles.retryButton} onClick={handleReset}>
               ← Try Again
@@ -102,10 +128,16 @@ export default function ComplexityPage({ onAIStateChange }) {
       ) : (
         <div className={styles.splitPanel}>
           <div className={styles.leftPanel}>
-            <ComplexityCodeView 
-              code={code} 
-              annotations={result?.annotations || []} 
-            />
+            {method === 'tree' ? (
+              <RecurrenceTreeView 
+                tree={result?.tree} 
+                formula={formula} 
+              />
+            ) : (
+              <RecurrenceSubstitutionView 
+                formulas={result?.formulas || []} 
+              />
+            )}
           </div>
           <div className={styles.rightPanel}>
             <ComplexityTerminal 

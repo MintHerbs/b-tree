@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import './lazy.css'
-import { colors } from '../../constants/colors'
+import { colors } from '../../../constants/colors'
+import styles from './LazyGradesPage.module.css'
 
-export default function Lazy() {
+export default function LazyGradesPage() {
   const [rows, setRows] = useState([
     { moduleName: '', weightage: '', marks: '' }
   ])
@@ -54,7 +54,7 @@ export default function Lazy() {
 
   return (
     <main
-      className="lazyPage"
+      className={styles.lazyPage}
       style={{
         '--tool-bg': colors.bg,
         '--tool-surface': colors.surface,
@@ -74,18 +74,18 @@ export default function Lazy() {
         background: 'transparent'
       }}
     >
-      <div className="lazyContent">
+      <div className={styles.lazyContent}>
         <motion.section
-          className="lazyCard"
+          className={styles.lazyCard}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
-          <h1 className="lazyTitle">
+          <h1 className={styles.lazyTitle}>
             Minimum effort, maximum grades
           </h1>
 
-          <section className="lazyInfoBox">
+          <section className={styles.lazyInfoBox}>
             <p>
               <strong>
                 Coursework marks greatly affects the amount of effort you need to put in exams.
@@ -105,7 +105,7 @@ export default function Lazy() {
             </p>
           </section>
 
-          <div className="lazyRows">
+          <div className={styles.lazyRows}>
             {rows.map((row, index) => {
               const marks = parseFloat(row.marks)
               const weightage = parseFloat(row.weightage)
@@ -113,7 +113,7 @@ export default function Lazy() {
               return (
                 <motion.section
                   key={index}
-                  className="lazyModuleCard"
+                  className={styles.lazyModuleCard}
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -122,7 +122,7 @@ export default function Lazy() {
                   <input
                     type="text"
                     placeholder="Module Name"
-                    className="lazyInput"
+                    className={styles.lazyInput}
                     value={row.moduleName}
                     onChange={e =>
                       handleChange(index, 'moduleName', e.target.value)
@@ -132,7 +132,7 @@ export default function Lazy() {
                   <input
                     type="number"
                     placeholder="Exam Weightage (if your exam is worth 60% of your grade, type 60)"
-                    className="lazyInput"
+                    className={styles.lazyInput}
                     value={row.weightage}
                     onChange={e =>
                       handleChange(index, 'weightage', e.target.value)
@@ -142,14 +142,14 @@ export default function Lazy() {
                   <input
                     type="number"
                     placeholder="Total Coursework Marks, e.g 30"
-                    className="lazyInput"
+                    className={styles.lazyInput}
                     value={row.marks}
                     onChange={e =>
                       handleChange(index, 'marks', e.target.value)
                     }
                   />
 
-                  <div className="lazyGradeGrid">
+                  <div className={styles.lazyGradeGrid}>
                     {['A+', 'A', 'B', 'C', 'D'].map(grade => {
                       const impossible = isImpossible(
                         grade,
@@ -162,8 +162,8 @@ export default function Lazy() {
                           key={grade}
                           className={
                             impossible
-                              ? 'lazyGradeBox lazyGradeImpossible'
-                              : 'lazyGradeBox'
+                              ? `${styles.lazyGradeBox} ${styles.lazyGradeImpossible}`
+                              : styles.lazyGradeBox
                           }
                           title={
                             impossible
@@ -181,10 +181,10 @@ export default function Lazy() {
             })}
           </div>
 
-          <div className="lazyAddWrapper">
+          <div className={styles.lazyAddWrapper}>
             <motion.button
               onClick={addRow}
-              className="lazyAddButton"
+              className={styles.lazyAddButton}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.15 }}
@@ -193,14 +193,14 @@ export default function Lazy() {
             </motion.button>
           </div>
 
-          <section className="lazyPrivacy">
+          <section className={styles.lazyPrivacy}>
             <h2>🔐 Privacy Notice</h2>
             <p>
               This app is fully static. Your data is never sent or stored anywhere — not even on your device! No info is collected, logged, or tracked. We respect your privacy.
             </p>
           </section>
 
-          <p className="lazyCredit">
+          <p className={styles.lazyCredit}>
             Made with love ❤️ from CS 2023
           </p>
         </motion.section>

@@ -1,13 +1,13 @@
 // TableauxPage - Semantic tableaux visualization tool
 import { useState, useCallback } from 'react'
-import { useAnimationPlayer } from '../../hooks/useAnimationPlayer'
-import LogicInputPage from '../../features/logic/components/LogicInputPage'
-import TableauxCanvas from '../../features/logic/components/TableauxCanvas'
-import RulesPanel from '../../features/logic/components/RulesPanel'
-import LogicStepControls from '../../features/logic/components/LogicStepControls'
-import Starfield from '../../components/effects/Starfield/Starfield'
-import Navbar from '../../components/layout/Navbar/Navbar'
-import { runTableaux } from '../../lib/logic/tableauxEngine'
+import { useAnimationPlayer } from '../../../hooks/useAnimationPlayer'
+import LogicInputPage from '../../../features/logic/components/LogicInputPage'
+import TableauxCanvas from '../../../features/logic/components/TableauxCanvas'
+import RulesPanel from '../../../features/logic/components/RulesPanel'
+import LogicStepControls from '../../../features/logic/components/LogicStepControls'
+import Starfield from '../../../components/effects/Starfield/Starfield'
+import Navbar from '../../../components/layout/Navbar/Navbar'
+import { runTableaux } from '../../../lib/logic/tableauxEngine'
 import styles from './TableauxPage.module.css'
 
 export default function TableauxPage({ onAIStateChange }) {

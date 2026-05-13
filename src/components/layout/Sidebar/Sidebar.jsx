@@ -7,8 +7,8 @@
 import { memo, useCallback, useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import styles from './Sidebar.module.css'
-import CollapsedView from './CollapsedView'
-import ExpandedView from './ExpandedView'
+import CollapsedView from './CollapsedView/CollapsedView'
+import ExpandedView from './ExpandedView/ExpandedView'
 
 function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unreadCount = 0 }) {
   const navigate  = useNavigate()

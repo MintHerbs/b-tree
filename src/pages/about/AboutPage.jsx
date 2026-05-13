@@ -1,8 +1,8 @@
 // About page with Lottie animation and personal story
 import { useState, useEffect, useRef } from 'react'
 import lottie from 'lottie-web'
-import Starfield from '../components/effects/Starfield/Starfield'
-// import alienAnimation from '../img/alien.json' // Temporarily disabled
+import Starfield from '../../components/effects/Starfield/Starfield'
+// import alienAnimation from '../../img/alien.json' // Temporarily disabled
 import styles from './AboutPage.module.css'
 
 function AboutPage() {

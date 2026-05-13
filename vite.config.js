@@ -20,7 +20,7 @@ export default defineConfig({
           'motion-vendor': ['motion/react', 'framer-motion'],
           // Feature chunks
           'tree-feature': [
-            './src/pages/TreePage.jsx',
+            './src/pages/tree/TreePage.jsx',
             './src/features/tree/components/TreeCanvas/TreeCanvas.jsx',
             './src/features/tree/components/TreeNode/TreeNode.jsx',
             './src/features/tree/components/TreeEdge/TreeEdge.jsx',
@@ -29,7 +29,7 @@ export default defineConfig({
             './src/hooks/useBPlusTree.js'
           ],
           'erd-feature': [
-            './src/pages/ERDPage.jsx',
+            './src/pages/erd/ERDPage.jsx',
             './src/features/erd/components/ERDCanvas/ERDCanvas.jsx',
             './src/features/erd/components/ERDStep1/ERDStep1.jsx',
             './src/features/erd/components/ERDStep2/ERDStep2.jsx',

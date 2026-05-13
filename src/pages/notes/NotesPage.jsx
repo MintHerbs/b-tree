@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-const notes = import.meta.glob('../content/notes/**/*.md', {
+const notes = import.meta.glob('../../content/notes/**/*.md', {
   query: '?raw',
   import: 'default',
 })
@@ -13,7 +13,7 @@ function NotesPage() {
 
   const noteKey = useMemo(() => {
     if (!section || !file) return null
-    return `../content/notes/${section}/${file}`
+    return `../../content/notes/${section}/${file}`
   }, [section, file])
 
   useEffect(() => {

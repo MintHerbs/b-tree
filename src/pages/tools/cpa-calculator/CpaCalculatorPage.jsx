@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import './cpa.css'
-import { colors } from '../../constants/colors'
+import { colors } from '../../../constants/colors'
+import styles from './CpaCalculatorPage.module.css'
 
-export default function CPACalculatorPage() {
+export default function CpaCalculatorPage() {
   const initRow = () => ({ name: '', percentage: '' })
 
   const [year1, setYear1] = useState([initRow()])
@@ -45,9 +45,9 @@ export default function CPACalculatorPage() {
   const getGradeClass = percentage => {
     const value = Number(percentage) || 0
 
-    if (value < 40) return 'cpaGrade cpaGradeFail'
-    if (value < 60) return 'cpaGrade cpaGradeMid'
-    return 'cpaGrade cpaGradeGood'
+    if (value < 40) return `${styles.cpaGrade} ${styles.cpaGradeFail}`
+    if (value < 60) return `${styles.cpaGrade} ${styles.cpaGradeMid}`
+    return `${styles.cpaGrade} ${styles.cpaGradeGood}`
   }
 
   const computeTotal = (rows, weight, extraRow = null) => {
@@ -110,23 +110,23 @@ export default function CPACalculatorPage() {
   }
 
   const renderMarkRow = (row, onNameChange, onPercentageChange, disabled = false) => (
-    <div className="cpaRow">
+    <div className={styles.cpaRow}>
       <input
         value={row.name}
         placeholder="Module Name"
         disabled={disabled}
         onChange={e => onNameChange?.(e.target.value)}
-        className="cpaInput"
+        className={styles.cpaInput}
       />
 
-      <div className="cpaSliderBlock">
+      <div className={styles.cpaSliderBlock}>
         <input
           type="range"
           min="0"
           max="100"
           value={Number(row.percentage) || 0}
           onChange={e => onPercentageChange(e.target.value)}
-          className="cpaSlider"
+          className={styles.cpaSlider}
         />
 
         <span className={getGradeClass(row.percentage)}>
@@ -140,13 +140,13 @@ export default function CPACalculatorPage() {
     const lpa = computeLPA(year, weight, extraRow)
 
     return (
-      <section className="cpaYearCard">
-        <div className="cpaYearHeader">
-          <h2 className="cpaYearTitle">{label}</h2>
+      <section className={styles.cpaYearCard}>
+        <div className={styles.cpaYearHeader}>
+          <h2 className={styles.cpaYearTitle}>{label}</h2>
 
-          <div className="cpaBadges">
-            <span className="cpaBadge">LPA: {lpa}</span>
-            <span className="cpaBadge">CPA: {cpa}</span>
+          <div className={styles.cpaBadges}>
+            <span className={styles.cpaBadge}>LPA: {lpa}</span>
+            <span className={styles.cpaBadge}>CPA: {cpa}</span>
           </div>
         </div>
 
@@ -170,7 +170,7 @@ export default function CPACalculatorPage() {
 
         <motion.button
           onClick={() => addRow(setter)}
-          className="cpaButton"
+          className={styles.cpaButton}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.15 }}
@@ -183,7 +183,7 @@ export default function CPACalculatorPage() {
 
   return (
     <main
-      className="cpaPage"
+      className={styles.cpaPage}
       style={{
         '--tool-bg': colors.bg,
         '--tool-surface': colors.surface,
@@ -203,17 +203,17 @@ export default function CPACalculatorPage() {
         background: 'transparent'
       }}
     >
-      <div className="cpaContent">
+      <div className={styles.cpaContent}>
         <motion.section
-          className="cpaCard"
+          className={styles.cpaCard}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
 
-          <h1 className="cpaTitle">CPA Calculator</h1>
+          <h1 className={styles.cpaTitle}>CPA Calculator</h1>
 
-          <section className="cpaInfoBox">
+          <section className={styles.cpaInfoBox}>
           <p>
             <strong>You know your marks and want to see what your future CPA may look like</strong>
           </p>
@@ -242,8 +242,8 @@ export default function CPACalculatorPage() {
         {renderYear('Year 2', year2, setYear2, 3)}
         {renderYear('Year 3', year3, setYear3, 5, finalProject)}
 
-        <section className="cpaFinalBox">
-          <p className="cpaFinalText">
+        <section className={styles.cpaFinalBox}>
+          <p className={styles.cpaFinalText}>
             <span>CPA:</span> {cpa}
           </p>
         </section>

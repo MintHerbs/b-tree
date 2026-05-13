@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { BookOpen, Globe } from '@phosphor-icons/react'
-import ChatAvatar from '../../../features/chat/components/ChatAvatar/ChatAvatar'
-import NotificationBadge from '../../effects/smoothui/components/notification-badge'
+import ChatAvatar from '../../../../features/chat/components/ChatAvatar/ChatAvatar'
+import NotificationBadge from '../../../effects/smoothui/components/notification-badge'
 import styles from './PackageJsonPopup.module.css'
 
 const PACKAGE_JSON_TEXT = `{

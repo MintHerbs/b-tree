@@ -1,11 +1,11 @@
 import { memo, useCallback } from 'react'
 import { BookOpen, ChatCircle, Globe, House } from '@phosphor-icons/react'
-import ChatAvatar from '../../../features/chat/components/ChatAvatar/ChatAvatar'
-import NotificationBadge from '../../effects/smoothui/components/notification-badge'
-import { colors } from '../../../constants/colors'
-import styles from './Sidebar.module.css'
-import moonLogo from '../../../img/moon.svg'
-import { MODULES, STANDALONE_TOOLS, PACKAGE_JSON, findActiveModule } from './modules'
+import ChatAvatar from '../../../../features/chat/components/ChatAvatar/ChatAvatar'
+import NotificationBadge from '../../../effects/smoothui/components/notification-badge'
+import { colors } from '../../../../constants/colors'
+import styles from '../Sidebar.module.css'
+import moonLogo from '../../../../img/moon.svg'
+import { MODULES, STANDALONE_TOOLS, PACKAGE_JSON, findActiveModule, primaryTool } from '../modules'
 
 function SidebarIcon({ icon, tooltip, isActive, activeColor = colors.iconActive, onClick }) {
   return (
@@ -43,7 +43,8 @@ function CollapsedView({
   const activeModule = findActiveModule(path)
 
   const handleModuleClick = (m) => {
-    if (m.primaryRoute) return go(m.primaryRoute, m.primaryChildId)
+    const tool = primaryTool(m)
+    if (tool) return go(tool.route, tool.id)
     alert(`${m.label} — coming soon`)
   }
 
@@ -118,7 +119,7 @@ function CollapsedView({
                 tooltip={t.label}
                 isActive={path === t.route}
                 activeColor={colors.iconActiveAlt}
-                onClick={() => go(t.route, t.childId)}
+                onClick={() => go(t.route, t.id)}
               />
             ))}
           </>
