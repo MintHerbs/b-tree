@@ -55,7 +55,7 @@ function CollapsedView({
         <img src={moonLogo} alt="Home" className={styles.moonLogo} />
       </a>
 
-      {/* <div className={styles.nav}>
+      <div className={styles.nav}>
         {mode === 'social' ? (
           <>
             <NotificationBadge
@@ -92,7 +92,7 @@ function CollapsedView({
           </>
         ) : (
           <>
-            {MODULES.map((m) => (
+            {/* {MODULES.map((m) => (
               <SidebarIcon
                 key={m.id}
                 icon={<m.Icon size={20} weight="regular" />}
@@ -122,10 +122,10 @@ function CollapsedView({
                 activeColor={colors.iconActiveAlt}
                 onClick={() => go(t.route, t.id)}
               />
-            ))}
+            ))} */}
           </>
         )}
-      </div> */}
+      </div>
 
       <div className={styles.bottom}>
         <div className={styles.divider} />
