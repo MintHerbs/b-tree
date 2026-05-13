@@ -1,0 +1,63 @@
+# db/migrations.yaml
+#
+# Ordered manifest of database migrations for the b-tree project.
+# Migrations are applied top-to-bottom in the order listed under
+# `migrations:`. The SQL files under `sql/` carry only schema content;
+# this file carries ordering and metadata.
+#
+# RULES
+#   - Once a migration is applied to a shared environment (staging, prod),
+#     never edit its SQL or its entry here. Add a new migration that
+#     supersedes it.
+#   - Bump `schema_version` whenever you add a migration entry.
+#   - `applied_envs` is updated by whoever runs the migration. Empty
+#     means "not yet applied via this manifest" — note that for the
+#     migrations below, the underlying tables already exist in the
+#     Supabase project (chat, presence, and quota all work in prod);
+#     these migrations declare the schema, they do not create new state.
+#
+# See db/README.md for how to apply migrations against a Supabase project.
+
+project: b-tree
+schema_version: 5
+
+migrations:
+  - id: "0001"
+    file: sql/0001_init_messages.sql
+    description: "Create messages table for the chat feature, with RLS policies"
+    author: Atish J
+    created: 2026-05-13
+    applied_envs: []
+    related_issues: []
+
+  - id: "0002"
+    file: sql/0002_init_sessions.sql
+    description: "Create sessions table backing usePresence and the chat session upsert"
+    author: Atish J
+    created: 2026-05-13
+    applied_envs: []
+    related_issues: []
+
+  - id: "0003"
+    file: sql/0003_init_api_calls.sql
+    description: "Create api_calls table for per-session Gemini quota (10 calls / 24h)"
+    author: Atish J
+    created: 2026-05-13
+    applied_envs: []
+    related_issues: [12]
+
+  - id: "0004"
+    file: sql/0004_realtime_publications.sql
+    description: "Add messages to supabase_realtime publication (realtime config kept in one file)"
+    author: Atish J
+    created: 2026-05-13
+    applied_envs: []
+    related_issues: []
+
+  - id: "0005"
+    file: sql/0005_init_subjects.sql
+    description: "Create subjects table (IT, Economics, Social Studies, ...); admin-curated, public read"
+    author: Atish J
+    created: 2026-05-13
+    applied_envs: []
+    related_issues: []

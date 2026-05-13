@@ -1,16 +1,9 @@
 # Running Supabase locally with Docker
 
-> Status: **Not yet implemented.** This runbook describes the workflow
-> we are moving toward — none of the commands below will work until the
-> repo gains a `supabase/` config directory and the migration tooling
-> from [docs/architecture-update.md §4](../architecture-update.md#4-database-migrations-db-with-a-yaml-manifest)
-> lands. Track progress in the issue that will be filed once Phase 2 of
-> the migration plan begins.
->
-> Until then, point the app at a hosted Supabase project (the values in
-> your `.env`) and apply schema by pasting the contents of
-> [supabase_messages_table.sql](../../supabase_messages_table.sql) into
-> the Supabase SQL editor.
+> Status: **Working procedure** for everything below except §5 (CI
+> integration) and the `npm run db:migrate` helper called out in §4.3
+> and §7. The CLI is installed as a dev dependency, and the schema in
+> [db/sql/](../../db/) can be applied to a local stack today.
 
 ---
 
@@ -34,55 +27,52 @@ gets an isolated copy that matches production semantics.
 ## 2. Prerequisites
 
 - **Docker Desktop** (Windows / macOS) or Docker Engine (Linux),
-  running.
-- **Supabase CLI** ≥ 1.150 — install with:
-  - macOS: `brew install supabase/tap/supabase`
-  - Windows (Scoop): `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git && scoop install supabase`
-  - npm (cross-platform, dev-dependency): `npm i -D supabase`
-- **At least 4 GB free RAM** — Supabase boots ~10 containers.
-- **Ports free:** 54321 (Studio), 54322 (Postgres), 54323 (API), 54324
-  (Inbucket / email testing), 54327 (Realtime).
+  **running** — not just installed.
+- **Supabase CLI** — already pinned in [package.json](../../package.json)
+  as a dev dependency, invoked via `npx supabase`. No global install
+  needed.
+  - If you prefer a machine-wide CLI on Windows, Scoop also works:
+    `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git && scoop install supabase`
+    Do **not** run `npm i -g supabase` — Supabase explicitly does not
+    support global npm installs.
+- **At least 4 GB free RAM** — the local stack boots ~10 containers.
+- **Ports free on `127.0.0.1`:** `54321` (API / PostgREST), `54322`
+  (Postgres), `54323` (Studio), `54324` (Inbucket / email testing),
+  `54327` (Realtime).
 
 Confirm with:
 
+```powershell
+# PowerShell
+npx supabase --version
+docker info
+```
+
 ```bash
-supabase --version
+# bash
+npx supabase --version
 docker info
 ```
 
 ---
 
-## 3. One-time project setup *(when this lands)*
+## 3. One-time project setup
 
-From the repo root:
+Already done — installing the `supabase` dev dependency emitted
+`supabase/config.toml` (default settings, ports as listed in §2) and
+`supabase/.gitignore`. Both are committed. Re-running
+`npx supabase init` would prompt you to overwrite; don't.
 
-```bash
-supabase init
-```
+The CLI also creates `supabase/.branches/` and `supabase/.temp/` at
+runtime. They are covered by `supabase/.gitignore`, so they shouldn't
+appear in `git status`.
 
-This creates a `supabase/` directory at the repo root with `config.toml`
-and an empty `migrations/` folder. Commit `supabase/config.toml`. Add
-`supabase/.branches/`, `supabase/.temp/`, and `supabase/seed.sql`
-(generated) to `.gitignore`.
-
-Edit `supabase/config.toml` to match the project's needs:
-
-```toml
-[api]
-port = 54323
-schemas = ["public"]
-
-[db]
-port = 54322
-major_version = 15
-
-[realtime]
-enabled = true
-
-[studio]
-enabled = true
-port = 54321
-```
+**Important:** the Supabase CLI has its own `supabase/migrations/`
+system. **We are not using it.** Our schema source of truth lives in
+[db/sql/](../../db/) with a YAML manifest, per
+[architecture-update.md §4](../architecture-update.md#4-database-migrations-db-with-a-yaml-manifest).
+Don't run `supabase migration new` or `supabase db diff` — they will
+create a parallel structure and confuse the source of truth.
 
 ---
 
@@ -91,74 +81,98 @@ port = 54321
 ### 4.1 Start the stack
 
 ```bash
-supabase start
+npx supabase start
 ```
 
 First run downloads the images (~1.5 GB). Subsequent runs take
-10–20 s. When ready, the CLI prints:
+10–20 s. When ready, the CLI prints something like:
 
 ```
-API URL:        http://localhost:54323
-DB URL:         postgresql://postgres:postgres@localhost:54322/postgres
-Studio URL:     http://localhost:54321
-anon key:       eyJ…           ← copy into .env.local
-service_role:   eyJ…           ← server-only, never commit
+API URL:         http://127.0.0.1:54321
+GraphQL URL:     http://127.0.0.1:54321/graphql/v1
+DB URL:          postgresql://postgres:postgres@127.0.0.1:54322/postgres
+Studio URL:      http://127.0.0.1:54323
+Inbucket URL:    http://127.0.0.1:54324
+JWT secret:      …
+anon key:        eyJ…                ← copy into .env.local
+service_role key: eyJ…               ← server-only, never commit
 ```
 
 ### 4.2 Point the app at it
 
-Create `.env.local` (which `.gitignore` will cover via the
-`.env*.local` rule):
+Create `.env.local` at the repo root (Vite reads it after `.env` and
+overrides matching keys, so your hosted credentials in `.env` stay
+intact):
 
 ```bash
-VITE_SUPABASE_URL=http://localhost:54323
+VITE_SUPABASE_URL=http://127.0.0.1:54321
 VITE_SUPABASE_ANON_KEY=<anon key from `supabase start`>
-# After Issue #12 lands, the Gemini key is server-only:
+# Once Issue #12 lands, the Gemini key becomes server-only:
 GEMINI_API_KEY=<your dev key>
 ```
 
-`.env.local` overrides `.env` for Vite, so you can keep your hosted
-credentials in `.env` and switch to local just by starting the stack.
+`VITE_SUPABASE_URL` is the **API URL** (`54321`), not the Studio URL
+(`54323`). The browser client talks to PostgREST.
+
+Restart `npm run dev` after editing `.env.local` — Vite reads env
+once at boot.
 
 ### 4.3 Apply our migrations
 
-Until tooling around `db/migrations.yaml` is built (see
-[architecture-update.md §4.4](../architecture-update.md#44-application)),
-load the SQL files manually in order:
+Use the runner — [scripts/db-migrate.mjs](../../scripts/db-migrate.mjs)
+via `npm run db:migrate`.
 
 ```bash
-for f in db/sql/*.sql; do
-  psql postgresql://postgres:postgres@localhost:54322/postgres -f "$f"
-done
+npm run db:migrate                  # apply pending migrations
+npm run db:migrate -- --status      # list applied vs pending
+npm run db:migrate -- --dry-run     # show what would run, no writes
+npm run db:migrate -- --help
 ```
 
-Or paste each file into Studio → SQL Editor.
+(The `--` is npm's required separator so the flags reach the script
+instead of npm itself.)
 
-Once the helper script exists, the workflow becomes:
+The runner reads `SUPABASE_DB_URL` from `.env` and `.env.local` on
+every invocation via Node's `--env-file-if-exists`. For local
+development that variable should be:
 
-```bash
-npm run db:migrate -- --env local
 ```
+SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+```
+
+(`.env` already has this line.) `.env.local` overrides `.env` for the
+same keys, so you can keep hosted credentials in `.env` and put the
+local URL in `.env.local` when you want to develop against the local
+stack.
+
+Each applied migration is recorded in `public.schema_migrations` on
+the target database — re-running is fast (it skips what's already
+applied) and editing an applied migration is detected as drift and
+refused. See [db/README.md](../../db/README.md) for the bookkeeping
+schema.
+
+No host `psql` needed — the runner uses the `pg` node client over the
+DB URL.
 
 ### 4.4 Inspect data
 
-Open Studio at <http://localhost:54321>. Tables, RLS policies, and
+Open Studio at <http://127.0.0.1:54323>. Tables, RLS policies, and
 realtime publications are all browseable.
 
 ### 4.5 Reset to a clean DB
 
 ```bash
-supabase db reset
+npx supabase db reset
 ```
 
-Drops every table and re-applies migrations from
-`supabase/migrations/` (or, in our setup, re-runs the `db/sql/` loop).
-Use this between integration test runs.
+Drops every table and re-applies anything in `supabase/migrations/`
+(which for us is empty — see §3). To re-seed our schema, re-run the
+loop from §4.3 afterwards. Use this between integration test runs.
 
 ### 4.6 Stop the stack
 
 ```bash
-supabase stop
+npx supabase stop
 ```
 
 Stops containers but preserves the data volume. Add `--no-backup` to
@@ -175,7 +189,7 @@ integration tests will:
 2. Apply migrations with `npm run db:migrate -- --env ci`.
 3. Run a `tests/integration/setup.js` that resets the DB before each
    suite.
-4. Read `VITE_SUPABASE_URL=http://localhost:54323` from a test-only
+4. Read `VITE_SUPABASE_URL=http://127.0.0.1:54321` from a test-only
    `.env.test`.
 
 The CI workflow will look approximately like:
@@ -185,11 +199,11 @@ The CI workflow will look approximately like:
 - uses: supabase/setup-cli@v1
   with:
     version: latest
-- run: supabase start
+- run: npx supabase start
 - run: npm run db:migrate -- --env ci
 - run: npm test
 - if: always()
-  run: supabase stop --no-backup
+  run: npx supabase stop --no-backup
 ```
 
 ---
@@ -198,27 +212,22 @@ The CI workflow will look approximately like:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `supabase start` hangs on "Starting database…" | Port 54322 is in use | `lsof -i :54322` (macOS/Linux) or `netstat -ano \| findstr 54322` (Windows); stop the conflicting process or change the port in `config.toml` |
+| `supabase start` hangs on "Starting database…" | Port `54322` is in use | PowerShell: `Get-NetTCPConnection -LocalPort 54322`; bash: `lsof -i :54322`; stop the conflicting process or override the port in `supabase/config.toml` |
 | `Error: Cannot connect to the Docker daemon` | Docker Desktop not running | Start Docker Desktop, wait for the whale icon to settle |
-| Realtime subscription gets no events | Table not in `supabase_realtime` publication | Run `db/sql/0004_realtime_publications.sql` |
-| App says "Invalid API key" | `.env.local` still points at hosted project | Restart `npm run dev` after editing `.env.local` — Vite only reads env at boot |
+| Realtime subscription gets no events | `messages` not in `supabase_realtime` publication on the local instance | Re-apply [db/sql/0004_realtime_publications.sql](../../db/sql/0004_realtime_publications.sql) |
+| App says "Invalid API key" | `.env.local` still points at hosted project, or you used the Studio URL (`54323`) instead of the API URL (`54321`) | Fix `VITE_SUPABASE_URL`, then restart `npm run dev` — Vite only reads env at boot |
 | Containers start but Studio is blank | Browser cached old origin | Hard reload (Ctrl+Shift+R / Cmd+Shift+R) |
+| `npm run db:migrate` says "Drift detected" | A SQL file was edited after its migration was applied | Don't edit applied migrations. Add a new migration that supersedes it; commit; re-run. If this is a throwaway local DB, `npx supabase stop --no-backup && npx supabase start` and re-apply from scratch |
+| `npm run db:migrate` errors `ECONNREFUSED 127.0.0.1:54322` | Local stack not started | `npx supabase start`, then re-run |
 
 ---
 
 ## 7. What still needs to be built
 
-This runbook describes a workflow that depends on work that has not
-landed yet. Concretely:
-
-- [ ] `supabase/config.toml` checked into the repo (`supabase init`)
-- [ ] `db/sql/` populated with split migrations (architecture-update §4.2)
-- [ ] `db/migrations.yaml` manifest (architecture-update §4.2)
-- [ ] `npm run db:migrate` script that walks the manifest
+- [x] Supabase CLI installed as a dev dependency
+- [x] [db/sql/](../../db/) populated with split migrations
+- [x] [db/migrations.yaml](../../db/migrations.yaml) manifest
+- [x] `supabase/config.toml` checked into the repo
+- [x] `npm run db:migrate` walks the manifest and tracks applied state in `public.schema_migrations`
 - [ ] Vitest + integration-test scaffolding ([Issue #9](https://github.com/MintHerbs/b-tree/issues/9))
 - [ ] CI workflow that runs against local Supabase
-
-Until those land, this document is a target — not a working procedure.
-The intent of publishing it now is so contributors know what the
-local-dev story will look like, and so PRs that introduce these pieces
-have a single place to update.
