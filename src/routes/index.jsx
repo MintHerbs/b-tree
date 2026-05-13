@@ -43,6 +43,7 @@ const routeComponents = {
 export function AppRoutes({ onAIStateChange, onChatOpen }) {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/home" />} />
       {Object.entries(routeComponents).map(([path, Component]) => (
         <Route
           key={path}
