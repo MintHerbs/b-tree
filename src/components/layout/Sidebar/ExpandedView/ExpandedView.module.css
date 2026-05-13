@@ -1,0 +1,50 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rootLabel {
+  padding: 6px 10px 8px 10px;
+  font-size: 12px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: lowercase;
+}
+
+.treeArea {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.filesContainer {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.emptyState {
+  padding: 12px 10px;
+  font-size: 12px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Standalone tools section — visually separated from the active module tree */
+.standaloneSection {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Active file — matches the .iconActive color in the activity bar (#8B5CF6) */
+.activeFile {
+  color: #8B5CF6 !important;
+}

@@ -82,11 +82,6 @@
 .iconActive img  { opacity: 1 !important; }
 .iconActive span { opacity: 1 !important; }
 
-/* Chat icon — swap on hover */
-.chatIcon .chatImgHover { display: none; }
-.iconWrapper:hover .chatIcon:not(.iconActive) .chatImgOff   { display: none; }
-.iconWrapper:hover .chatIcon:not(.iconActive) .chatImgHover { display: block; }
-
 /* Tooltip */
 .tooltip {
   position: absolute;
@@ -106,7 +101,7 @@
 }
 .iconWrapper:hover .tooltip { opacity: 1; }
 
-/* Divider */
+/* Divider between module icons and standalone tools in the activity bar */
 .divider {
   width: 24px;
   height: 1px;
@@ -114,7 +109,7 @@
   margin: 6px 0;
 }
 
-/* Bottom section */
+/* Bottom section (mode switch + avatar) */
 .bottom {
   display: flex;
   flex-direction: column;
@@ -127,16 +122,6 @@
   align-items: center;
   justify-content: center;
   opacity: 0.8;
-}
-
-/* Dynamic area for animated icon switching */
-.dynamicArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-  width: 100%;
 }
 
 /* Mode switch icons */

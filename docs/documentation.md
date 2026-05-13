@@ -3,6 +3,10 @@
 This file is maintained by the development agent. Update it after every task.
 It is the single source of truth for what exists in the codebase.
 
+## How-to guides
+
+- [Adding a new page](architecture/adding-a-page.md) — use the `PageShell` wrapper (landing / result / content variants) instead of hand-rolling per-page layouts.
+
 ---
 
 ## Project Overview
