@@ -1,30 +1,22 @@
 import { memo, useCallback } from 'react'
-import {
-  Brain,
-  BookOpen,
-  ChartLineUp,
-  ChatCircle,
-  Database,
-  FileText,
-  Function as FunctionIcon,
-  Globe,
-  HardDrive,
-  House,
-} from '@phosphor-icons/react'
+import { BookOpen, ChatCircle, Globe, House } from '@phosphor-icons/react'
 import ChatAvatar from '../../../features/chat/components/ChatAvatar/ChatAvatar'
 import NotificationBadge from '../../effects/smoothui/components/notification-badge'
 import { colors } from '../../../constants/colors'
 import styles from './Sidebar.module.css'
 import moonLogo from '../../../img/moon.svg'
+import { MODULES, STANDALONE_TOOLS, PACKAGE_JSON, findActiveModule } from './modules'
 
-function SidebarIcon({ lucideIcon, tooltip, isActive, activeColor = colors.iconActive, onClick }) {
+function SidebarIcon({ icon, tooltip, isActive, activeColor = colors.iconActive, onClick }) {
   return (
     <div className={styles.iconWrapper} onClick={onClick} title={tooltip}>
       {isActive && <span className={styles.activeBar} style={{ background: activeColor }} />}
-      <div className={`${styles.iconInner} ${isActive ? styles.iconActive : ''}`}
-        style={{ '--hover-color': activeColor }}>
+      <div
+        className={`${styles.iconInner} ${isActive ? styles.iconActive : ''}`}
+        style={{ '--hover-color': activeColor }}
+      >
         <span style={{ color: isActive ? activeColor : colors.iconOff, display: 'flex' }}>
-          {lucideIcon}
+          {icon}
         </span>
       </div>
       <span className={styles.tooltip}>{tooltip}</span>
@@ -41,34 +33,18 @@ function CollapsedView({
   mode,
   setMode,
   sessionId,
-  activeModule,
+  onOpenPackageJson,
 }) {
   const handleMoonClick = useCallback((e) => {
     e.preventDefault()
     go('/tree', 'btree')
   }, [go])
 
-  const mainIcon =
-    activeModule === 'algorithms' ? <ChartLineUp size={20} weight="regular" /> :
-    activeModule === 'artificial-intelligence' ? <Brain size={20} weight="regular" /> :
-    activeModule === 'operating-systems' ? <HardDrive size={20} weight="regular" /> :
-    activeModule === 'computational-math' ? <FunctionIcon size={20} weight="regular" /> :
-    activeModule === 'notes' ? <FileText size={20} weight="regular" /> :
-    <Database size={20} weight="regular" />
+  const activeModule = findActiveModule(path)
 
-  const mainTooltip =
-    activeModule === 'algorithms' ? 'Algorithms' :
-    activeModule === 'artificial-intelligence' ? 'Artificial Intelligence' :
-    activeModule === 'operating-systems' ? 'Operating Systems' :
-    activeModule === 'computational-math' ? 'Computational Math' :
-    activeModule === 'notes' ? 'Notes' :
-    'Database'
-
-  const mainOnClick = () => {
-    if (activeModule === 'algorithms') return go('/algo/code-complexity', 'complexity')
-    if (activeModule === 'artificial-intelligence') return go('/logic/truth-tree', 'truth-tree')
-    if (activeModule === 'notes') return go(path, 'notes')
-    return go('/tree', 'btree')
+  const handleModuleClick = (m) => {
+    if (m.primaryRoute) return go(m.primaryRoute, m.primaryChildId)
+    alert(`${m.label} — coming soon`)
   }
 
   return (
@@ -87,17 +63,25 @@ function CollapsedView({
               position="top-right"
               showZero={false}
             >
-              <div className={styles.iconWrapper} onClick={() => setIsChatOpen?.(p => !p)} title="Community Chat">
+              <div
+                className={styles.iconWrapper}
+                onClick={() => setIsChatOpen?.((p) => !p)}
+                title="Community Chat"
+              >
                 {isChatOpen && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
                 <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
-                  <ChatCircle size={20} weight="regular" style={{ color: isChatOpen ? colors.iconActive : colors.iconOff }} />
+                  <ChatCircle
+                    size={20}
+                    weight="regular"
+                    style={{ color: isChatOpen ? colors.iconActive : colors.iconOff }}
+                  />
                 </div>
                 <span className={styles.tooltip}>Community Chat</span>
               </div>
             </NotificationBadge>
 
             <SidebarIcon
-              lucideIcon={<House size={20} weight="regular" />}
+              icon={<House size={20} weight="regular" />}
               tooltip="Home Feed"
               isActive={false}
               activeColor={colors.iconActive}
@@ -105,13 +89,39 @@ function CollapsedView({
             />
           </>
         ) : (
-          <SidebarIcon
-            lucideIcon={mainIcon}
-            tooltip={mainTooltip}
-            isActive={true}
-            activeColor={colors.iconActive}
-            onClick={mainOnClick}
-          />
+          <>
+            {MODULES.map((m) => (
+              <SidebarIcon
+                key={m.id}
+                icon={<m.Icon size={20} weight="regular" />}
+                tooltip={m.label}
+                isActive={activeModule?.id === m.id}
+                activeColor={colors.iconActive}
+                onClick={() => handleModuleClick(m)}
+              />
+            ))}
+
+            <div className={styles.divider} />
+
+            <SidebarIcon
+              icon={<PACKAGE_JSON.Icon size={20} weight="regular" />}
+              tooltip={PACKAGE_JSON.label}
+              isActive={false}
+              activeColor={colors.iconActiveAlt}
+              onClick={() => onOpenPackageJson?.()}
+            />
+
+            {STANDALONE_TOOLS.map((t) => (
+              <SidebarIcon
+                key={t.id}
+                icon={<t.Icon size={20} weight="regular" />}
+                tooltip={t.label}
+                isActive={path === t.route}
+                activeColor={colors.iconActiveAlt}
+                onClick={() => go(t.route, t.childId)}
+              />
+            ))}
+          </>
         )}
       </div>
 
@@ -127,7 +137,11 @@ function CollapsedView({
             <div className={styles.iconWrapper} onClick={() => setMode('social')} title="Social">
               {mode === 'social' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
               <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
-                <Globe size={20} weight="regular" style={{ color: mode === 'social' ? colors.iconActive : colors.iconOff }} />
+                <Globe
+                  size={20}
+                  weight="regular"
+                  style={{ color: mode === 'social' ? colors.iconActive : colors.iconOff }}
+                />
               </div>
               <span className={styles.tooltip}>Social</span>
             </div>
@@ -136,7 +150,11 @@ function CollapsedView({
           <div className={styles.iconWrapper} onClick={() => setMode('academia')} title="Academia">
             {mode === 'academia' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
             <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
-              <BookOpen size={20} weight="regular" style={{ color: mode === 'academia' ? colors.iconActive : colors.iconOff }} />
+              <BookOpen
+                size={20}
+                weight="regular"
+                style={{ color: mode === 'academia' ? colors.iconActive : colors.iconOff }}
+              />
             </div>
             <span className={styles.tooltip}>Academia</span>
           </div>

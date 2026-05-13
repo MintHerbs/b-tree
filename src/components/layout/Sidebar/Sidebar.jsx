@@ -1,9 +1,10 @@
 /**
- * Sidebar — Minimalist always-visible navigation with mode switching.
- * Two modes: Academia (tools) and Social (chat/feed).
- * Active tool has a left accent bar. Tooltips on hover.
+ * Sidebar — collapsed activity bar OR expanded side panel.
+ *
+ * Module definitions live in modules.js; CollapsedView and ExpandedView
+ * both read from that single source so they cannot drift in content.
  */
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import styles from './Sidebar.module.css'
 import CollapsedView from './CollapsedView'
@@ -24,18 +25,6 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     onChildSelect?.(childId)
     navigate(route)
   }, [navigate, onChildSelect, setIsChatOpen])
-
-  const defaultOpen = useMemo(() => {
-    if (path === '/tree' || path === '/erd') return ['database']
-    if (path.startsWith('/algo')) return ['algorithms']
-    if (path.startsWith('/logic')) return ['artificial-intelligence']
-    return []
-  }, [path])
-
-  const activeModule = useMemo(() => {
-    if (path.startsWith('/notes/')) return 'notes'
-    return defaultOpen[0] ?? 'database'
-  }, [defaultOpen, path])
 
   useEffect(() => {
     if (!isExpanded) setIsPackageJsonOpen(false)
@@ -58,12 +47,8 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     >
       {mode === 'academia' && isExpanded ? (
         <ExpandedView
-          defaultOpen={defaultOpen}
+          path={path}
           go={go}
-          activeChild={activeChild}
-          onChildSelect={onChildSelect}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
           isPackageJsonOpen={isPackageJsonOpen}
           onOpenPackageJson={() => setIsPackageJsonOpen(true)}
           onClosePackageJson={() => setIsPackageJsonOpen(false)}
@@ -84,7 +69,7 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
           mode={mode}
           setMode={setMode}
           sessionId={sessionId}
-          activeModule={activeModule}
+          onOpenPackageJson={() => setIsPackageJsonOpen(true)}
         />
       )}
     </aside>
