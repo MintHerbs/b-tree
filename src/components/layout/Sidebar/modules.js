@@ -75,6 +75,15 @@ export const MODULES = [
       { id: 'erd',   label: 'ERD Visualizer.js', route: '/erd' },
     ],
   },
+  {
+    id: 'Miscellaneous',
+    label: 'Miscellaneous',
+    Icon: FileCode,
+    tools: [
+      {id: 'cpa',    label: 'CPA Calculator.js',        route: '/tools/cpa-calculator' },
+      { id: 'minmax', label: 'Min Effort Max Result.js', route: '/tools/lazy-grades' },
+    ]
+  },
 
   // Coming soon — declare with just { id, label, Icon }. Add `tools` to activate.
   { id: 'computational-math',    label: 'Computational Math',    Icon: FunctionIcon },
@@ -90,8 +99,9 @@ export const MODULES = [
 // ── Standalone tools (below the divider) ────────────────────────────────────
 
 export const STANDALONE_TOOLS = [
-  { id: 'cpa',    label: 'CPA Calculator.js',        Icon: Calculator, route: '/tools/cpa-calculator' },
-  { id: 'minmax', label: 'Min Effort Max Result.js', Icon: Sparkle,    route: '/tools/lazy-grades' },
+  // { id: 'cpa',    label: 'CPA Calculator.js',        Icon: Calculator, route: '/tools/cpa-calculator' },
+  // { id: 'minmax', label: 'Min Effort Max Result.js', Icon: Sparkle,    route: '/tools/lazy-grades' },
+  {id: 'Home', label: 'homePage.js', Icon: Sparkle, route: '/home' },
 ]
 
 // ── Easter-egg pinned at the divider ────────────────────────────────────────

@@ -49,12 +49,13 @@ function CollapsedView({
   }
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-between h-full">
+
       <a href="/tree" onClick={handleMoonClick} className={styles.moonLink}>
         <img src={moonLogo} alt="Home" className={styles.moonLogo} />
       </a>
 
-      <div className={styles.nav}>
+      {/* <div className={styles.nav}>
         {mode === 'social' ? (
           <>
             <NotificationBadge
@@ -124,9 +125,10 @@ function CollapsedView({
             ))}
           </>
         )}
-      </div>
+      </div> */}
 
       <div className={styles.bottom}>
+        <div className={styles.divider} />
         <div className={styles.modeSwitch}>
           <NotificationBadge
             count={mode !== 'social' && unreadCount > 0 ? unreadCount : 0}
@@ -165,7 +167,7 @@ function CollapsedView({
           <ChatAvatar sessionId={sessionId} size={26} />
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

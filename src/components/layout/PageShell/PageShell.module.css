@@ -1,0 +1,200 @@
+/* Shared page shell styles — landing & result variants */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.landingCenter {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 90%;
+  max-width: 800px;
+  animation: swipeUp 0.6s ease-out;
+}
+
+@keyframes swipeUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.heroContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  min-height: 140px;
+  justify-content: center;
+}
+
+.title {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
+  animation: softGlow 3s ease-in-out infinite;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+@keyframes softGlow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.3),
+                 0 0 20px rgba(139, 92, 246, 0.2),
+                 0 0 30px rgba(139, 92, 246, 0.1);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.5),
+                 0 0 30px rgba(139, 92, 246, 0.3),
+                 0 0 40px rgba(139, 92, 246, 0.2);
+  }
+}
+
+.subtitle {
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.resultPage {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-left: 80px;
+}
+
+.contentPage {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-left: 80px;
+  z-index: 5;
+}
+
+.contentMain {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 32px 80px;
+  box-sizing: border-box;
+}
+
+.splitPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px 24px 24px 24px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.leftPanel {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.rightPanel {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #020409;
+  border: 1px solid #1a2535;
+  border-radius: 14px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.errorContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.errorBox {
+  max-width: 500px;
+  padding: 32px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.errorTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: var(--color-muted);
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+}
+
+.retryButton {
+  padding: 10px 20px;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background: #d96209;
+  transform: translateY(-1px);
+}
+
+.retryButton:active {
+  transform: translateY(0);
+}
