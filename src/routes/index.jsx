@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 
 const TreePage = lazy(() => import('../pages/TreePage'))
@@ -20,6 +20,20 @@ const TableauxPage = lazy(() => import('../pages/logic/TableauxPage'))
 const CPA = lazy(() => import('../pages/exam/cpa'))
 const Lazy = lazy(() => import('../pages/exam/lazy'))
 const NotesPage = lazy(() => import('../pages/NotesPage'))
+const HomeFeedPage = lazy(() =>
+  new Promise(resolve =>
+    setTimeout(() => resolve(import('../pages/HomeFeedPage')), 300)
+  )
+)
+const GuidelinesPage = lazy(() => import('../pages/social/guidelines'))
+
+function SocialChatRoute({ onChatOpen }) {
+  useEffect(() => {
+    onChatOpen?.()
+  }, [onChatOpen])
+
+  return <Navigate to="/social/feed" replace />
+}
 
 export function AppRoutes({ onAIStateChange, onChatOpen }) {
   return (
@@ -40,6 +54,9 @@ export function AppRoutes({ onAIStateChange, onChatOpen }) {
       <Route path="/tools/lazy-grades" element={<Lazy />} />
       <Route path="/tools/cpa-calculator" element={<CPA />} />
       <Route path="/notes/:section/:file" element={<NotesPage />} />
+      <Route path="/social/feed" element={<HomeFeedPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
+      <Route path="/social/chat" element={<SocialChatRoute onChatOpen={onChatOpen} />} />
+      <Route path="/social/guidelines" element={<GuidelinesPage />} />
     </Routes>
   )
 }
@@ -53,4 +70,6 @@ export function preloadRoutes() {
   import('../pages/RecurrencePage')
   import('../pages/exam/cpa')
   import('../pages/exam/lazy')
+  import('../pages/HomeFeedPage')
+  import('../pages/social/guidelines')
 }

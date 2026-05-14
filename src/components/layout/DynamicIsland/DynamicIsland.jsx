@@ -127,7 +127,7 @@ export default function DynamicIsland({
   }
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} data-navbar>
       <div className={styles.innerCenter}>
         <motion.div
           ref={pillRef}

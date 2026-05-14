@@ -1,0 +1,73 @@
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.voteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+  font-size: 0.78rem;
+}
+
+.voteBtn:hover {
+  color: white;
+}
+
+.upActive {
+  color: white;
+}
+
+.downActive {
+  color: white;
+}
+
+.commentBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+  font-size: 0.78rem;
+}
+
+.commentBtn:hover {
+  color: white;
+}
+
+.hexFlagBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+  font-size: 0.78rem;
+}
+
+.hexFlagBtn:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.flagged {
+  color: #ef4444;
+}
+
+.flagged:hover {
+  color: #f87171;
+}

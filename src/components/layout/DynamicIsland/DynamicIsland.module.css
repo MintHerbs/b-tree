@@ -3,12 +3,14 @@
 /* Wrapper: handles fixed positioning + full width */
 .wrapper {
   position: fixed;
-  top: 8px;
+  top: 0;
   left: 0;
   width: 100vw;
+  height: 64px;
+  padding-top: 8px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 9999;
   pointer-events: none; /* doesn't block clicks on the page */
 }

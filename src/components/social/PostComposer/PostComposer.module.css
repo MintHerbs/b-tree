@@ -1,0 +1,157 @@
+.composer {
+  width: 100%;
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shake {
+  animation: composerShake 0.45s ease-in-out;
+}
+
+.shake textarea {
+  color: rgba(255, 180, 180, 0.92);
+}
+
+@keyframes composerShake {
+  0% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-8px);
+  }
+  36% {
+    transform: translateX(7px);
+  }
+  54% {
+    transform: translateX(-6px);
+  }
+  72% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.inputs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textarea {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 0;
+  padding: 4px 0 8px;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  resize: none;
+  outline: none;
+  overflow-y: hidden;
+}
+
+.textarea::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.textareaExpanded {
+  border-radius: 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.features {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.featureBtn {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s ease;
+  font-size: 0.78rem;
+}
+
+.featureBtn:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.featureBtnActive {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.charCount {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.01em;
+}
+
+.charCountWarn {
+  color: #ff6464;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.postBtn {
+  background: #6d28d9;
+  color: white;
+  border-radius: 50px;
+  padding: 7px 18px;
+  font-size: 0.82rem;
+  font-weight: 400;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.postBtn:disabled {
+  opacity: 0.6;
+}
+
+.error {
+  color: #ff6464;
+  font-size: 12px;
+}

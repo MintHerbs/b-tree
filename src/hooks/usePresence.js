@@ -1,28 +1,11 @@
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-)
-
-console.log('[Presence] Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
-console.log('[Presence] Anon key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
-
-// Test basic connection
-supabase.from('sessions').select('count', { count: 'exact', head: true })
-  .then(({ count, error }) => {
-    if (error) {
-      console.error('[Presence] Supabase connection failed:', error.message)
-    } else {
-      console.log('[Presence] Supabase connected. Sessions count:', count)
-    }
-  })
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 
 export function usePresence() {
   const [onlineCount, setOnlineCount] = useState(1)
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return undefined
     // Get or create session ID
     let sessionId = localStorage.getItem('session_id')
     if (!sessionId) {
@@ -43,22 +26,13 @@ export function usePresence() {
 
     // Subscribe and track this user
     channel.subscribe(async (status) => {
-      console.log('[Presence] Channel status:', status)
       if (status === 'SUBSCRIBED') {
-        console.log('[Presence] Tracking session:', sessionId)
-        
         // Ensure session exists in sessions table
         await supabase
           .from('sessions')
           .upsert({ id: sessionId, last_seen: new Date().toISOString() })
         
         await channel.track({ session_id: sessionId, online_at: new Date().toISOString() })
-      }
-      if (status === 'CHANNEL_ERROR') {
-        console.error('[Presence] Channel error — check Supabase Realtime is enabled')
-      }
-      if (status === 'TIMED_OUT') {
-        console.error('[Presence] Channel timed out')
       }
     })
 

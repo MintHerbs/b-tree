@@ -99,9 +99,9 @@ function CollapsedView({
             <SidebarIcon
               lucideIcon={<House size={20} weight="regular" />}
               tooltip="Home Feed"
-              isActive={false}
+              isActive={path.startsWith('/social/feed')}
               activeColor={colors.iconActive}
-              onClick={() => alert('Coming soon — Home Feed')}
+              onClick={() => go('/social/feed', 'social-feed')}
             />
           </>
         ) : (
@@ -124,7 +124,14 @@ function CollapsedView({
             position="top-right"
             showZero={false}
           >
-            <div className={styles.iconWrapper} onClick={() => setMode('social')} title="Social">
+            <div
+              className={styles.iconWrapper}
+              onClick={() => {
+                setMode('social')
+                go('/social/feed', 'social-feed')
+              }}
+              title="Social"
+            >
               {mode === 'social' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
               <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
                 <Globe size={20} weight="regular" style={{ color: mode === 'social' ? colors.iconActive : colors.iconOff }} />

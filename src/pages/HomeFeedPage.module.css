@@ -1,0 +1,105 @@
+.page {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: transparent;
+}
+
+.feedColumn {
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  background: #0a0a0a;
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 0 auto;
+  padding-top: var(--nav-offset, 64px);
+  padding-bottom: 80px;
+  isolation: isolate;
+}
+
+.feedColumn::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 50%;
+  width: min(100vw, 680px);
+  height: calc(var(--nav-offset, 64px) + 48px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    #0a0a0a 0,
+    #0a0a0a var(--nav-offset, 64px),
+    rgba(10, 10, 10, 0) 100%
+  );
+}
+
+.main {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  text-align: center;
+  padding: 30px 0;
+}
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skeletonCard {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 16px 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.pulseLine {
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.pulseLine:last-child {
+  margin-bottom: 0;
+}
+
+.shimmer {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-60%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-60%);
+  }
+  to {
+    transform: translateX(60%);
+  }
+}

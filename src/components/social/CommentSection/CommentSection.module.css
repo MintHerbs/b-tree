@@ -1,0 +1,85 @@
+.section {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.toggle {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.content {
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.newComment {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 9999px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 20px;
+  resize: none;
+  outline: none;
+  overflow-y: hidden;
+}
+
+.textareaExpanded {
+  border-radius: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btnPrimary {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: white;
+}
+
+.error {
+  color: #ff6464;
+  font-size: 12px;
+}

@@ -1,0 +1,43 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.counter {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 18px;
+  font-family: var(--font-mono);
+  resize: vertical;
+  outline: none;
+  min-height: 120px;
+  max-height: 360px;
+}
