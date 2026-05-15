@@ -1,26 +1,112 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'motion/react'
+import { Code2, MessageSquareText, ShieldCheck, Vote, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RippleButton, RippleButtonRipples } from '@/components/animate-ui/primitives/buttons/ripple'
-import { MessageCircleHeart } from '@/components/animate-ui/icons/message-circle-heart'
 import styles from './OnboardingCarousel.module.css'
+
+const slides = [
+  {
+    eyebrow: 'Global Feed',
+    title: 'Speak freely. Stay anonymous.',
+    body: 'Share what you think, ask for help, or say what is hard about studying right now. Your name never appears here.',
+    icon: MessageSquareText,
+  },
+  {
+    eyebrow: 'Study Tools',
+    title: 'Questions can carry context.',
+    body: 'Use polls when you need a quick read from classmates, or attach code when the answer depends on the exact snippet.',
+    icon: Code2,
+    secondaryIcon: Vote,
+  },
+  {
+    eyebrow: 'Safety',
+    title: 'The hexagon keeps the room clean.',
+    body: 'Tap the hexagon to flag posts that cross the line. It changes color immediately so you know your report was counted.',
+    icon: ShieldCheck,
+  },
+]
 
 export default function OnboardingCarousel({ onComplete }) {
   const [slide, setSlide] = useState(0)
-  const [flagActive, setFlagActive] = useState(false)
   const touchStartRef = useRef(null)
-  const hasAnimatedWelcomeRef = useRef(false)
 
-  const goTo = (idx) => setSlide(Math.max(0, Math.min(2, idx)))
-  const goNext = () => setSlide((s) => Math.min(2, s + 1))
+  const current = slides[slide]
+  const Icon = current.icon
+  const SecondaryIcon = current.secondaryIcon
+
+  const goTo = (idx) => setSlide(Math.max(0, Math.min(slides.length - 1, idx)))
+  const goNext = () => setSlide((s) => Math.min(slides.length - 1, s + 1))
   const goBack = () => setSlide((s) => Math.max(0, s - 1))
 
-  useEffect(() => {
-    if (slide === 0) hasAnimatedWelcomeRef.current = true
-    setFlagActive(false)
-    if (slide !== 2) return undefined
-    const t = window.setTimeout(() => setFlagActive(true), 600)
-    return () => window.clearTimeout(t)
+  const isLast = slide === slides.length - 1
+  const isFirst = slide === 0
+
+  const preview = useMemo(() => {
+    if (slide === 1) {
+      return (
+        <motion.div 
+          className={styles.preview}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <div className={styles.previewRow}>
+            <span className={styles.previewLabel}>Poll Example</span>
+          </div>
+          <div className={styles.previewQuestion}>Which topic should we review next?</div>
+          <motion.div 
+            className={styles.pollLine}
+            initial={{ width: 0 }}
+            animate={{ width: '68%' }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          />
+          <div className={styles.pollOption}>Recursion - 68%</div>
+        </motion.div>
+      )
+    }
+
+    if (slide === 2) {
+      return (
+        <motion.div 
+          className={styles.flagPreview}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <motion.div 
+            className={styles.hexagon}
+            animate={{ 
+              rotate: [0, -10, 10, -10, 0],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ 
+              duration: 0.6,
+              delay: 0.3
+            }}
+          />
+          <span>Flagged posts go to review.</span>
+        </motion.div>
+      )
+    }
+
+    return (
+      <motion.div 
+        className={styles.preview}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <div className={styles.previewMeta}>anon · just now</div>
+        <div className={styles.previewText}>Does anyone else find recursion easier after drawing the stack?</div>
+      </motion.div>
+    )
   }, [slide])
+
+  const finish = () => {
+    localStorage.setItem('social_onboarded', 'true')
+    onComplete?.()
+  }
 
   const handleTouchStart = (e) => {
     const touch = e.touches?.[0]
@@ -42,129 +128,152 @@ export default function OnboardingCarousel({ onComplete }) {
     else goBack()
   }
 
-  const content = useMemo(() => {
-    if (slide === 0) {
-      return (
-        <>
-          <div className={styles.iconWrap}>
-            <MessageCircleHeart
-              size={56}
-              animate={hasAnimatedWelcomeRef.current ? false : 'default'}
-              animateOnHover="default"
-              className={styles.welcomeIcon}
-            />
-          </div>
-
-          <div className={styles.heading}>Welcome to the Global Feed</div>
-
-          <div className={styles.body}>
-            You are completely anonymous here. No names, no accounts — just ideas.
-            <br />
-            <br />
-            Your session ID is randomly generated. Nobody knows who you are, not even us.
-          </div>
-
-          <RippleButton type="button" className={styles.primaryBtn} onClick={goNext}>
-            Continue
-            <RippleButtonRipples />
-          </RippleButton>
-        </>
-      )
-    }
-
-    if (slide === 1) {
-      return (
-        <>
-          <div className={styles.heading}>Be Respectful</div>
-          <div className={styles.subheading}>This is a shared space for students.</div>
-
-          <div className={styles.rules}>
-            <div className={styles.ruleGroup}>
-              <div className={styles.ruleTitle}>Do:</div>
-              <div className={styles.ruleLine}>✓ Ask genuine questions</div>
-              <div className={styles.ruleLine}>✓ Share study tips &amp; resources</div>
-              <div className={styles.ruleLine}>✓ Support your fellow students</div>
-            </div>
-
-            <div className={styles.ruleGroup}>
-              <div className={styles.ruleTitle}>Don&apos;t:</div>
-              <div className={styles.ruleLine}>✗ Harass or target others</div>
-              <div className={styles.ruleLine}>✗ Spam or post off-topic</div>
-              <div className={styles.ruleLine}>✗ Share personal information</div>
-            </div>
-          </div>
-
-          <Link className={styles.guidelinesLink} to="/social/guidelines">
-            Read full guidelines
-          </Link>
-
-          <RippleButton type="button" className={styles.primaryBtn} onClick={goNext}>
-            Continue
-            <RippleButtonRipples />
-          </RippleButton>
-        </>
-      )
-    }
-
-    return (
-      <>
-        <div className={`${styles.flagIcon} ${flagActive ? styles.flagIconActive : ''}`}>
-          <svg width="48" height="48" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M8 1L14.06 4.5V11.5L8 15L1.94 11.5V4.5L8 1Z"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              fill="none"
-            />
-          </svg>
-        </div>
-
-        <div className={styles.heading}>Community Safety</div>
-
-        <div className={styles.body}>
-          Every post has a flag button — the hexagon icon you just saw.
-          <br />
-          <br />
-          If 10 people flag a post, it&apos;s automatically removed for review.
-          <br />
-          <br />
-          Use it to keep this space safe. Use it responsibly.
-        </div>
-
-        <RippleButton
-          type="button"
-          className={styles.primaryBtn}
-          onClick={() => {
-            localStorage.setItem('social_onboarded', 'true')
-            onComplete?.()
-          }}
-        >
-          Got it
-          <RippleButtonRipples />
-        </RippleButton>
-      </>
-    )
-  }, [flagActive, goNext, onComplete, slide])
-
   return (
     <div className={styles.overlay}>
-      <div className={styles.backdrop} />
+      <motion.div 
+        className={styles.backdrop}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      />
       <div className={styles.center}>
-        <div className={styles.card} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-          <div className={styles.slide}>{content}</div>
+        <motion.div 
+          className={styles.card} 
+          onTouchStart={handleTouchStart} 
+          onTouchEnd={handleTouchEnd}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ 
+            type: 'spring',
+            stiffness: 300,
+            damping: 30
+          }}
+        >
+          <motion.button
+            className={styles.skipBtn}
+            onClick={finish}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <X size={18} />
+            Skip
+          </motion.button>
 
-          <div className={styles.dots}>
-            {[0, 1, 2].map((i) => (
-              <button
-                key={i}
-                type="button"
-                className={`${styles.dot} ${slide === i ? styles.dotActive : ''}`}
-                onClick={() => goTo(i)}
-                aria-label={`Go to slide ${i + 1}`}
-              />
-            ))}
+          <motion.div 
+            className={styles.iconStack}
+            key={slide}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ 
+              type: 'spring',
+              stiffness: 400,
+              damping: 25
+            }}
+          >
+            <Icon size={34} />
+            {SecondaryIcon && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <SecondaryIcon size={24} className={styles.secondaryIcon} />
+              </motion.div>
+            )}
+          </motion.div>
+
+          <motion.div 
+            className={styles.eyebrow}
+            key={`eyebrow-${slide}`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            {current.eyebrow}
+          </motion.div>
+          
+          <motion.h2 
+            className={styles.heading}
+            key={`heading-${slide}`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+          >
+            {current.title}
+          </motion.h2>
+          
+          <motion.p 
+            className={styles.body}
+            key={`body-${slide}`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            {current.body}
+          </motion.p>
+
+          <AnimatePresence mode="wait">
+            {preview}
+          </AnimatePresence>
+
+          <div className={styles.footer}>
+            <div className={styles.dots}>
+              {slides.map((_, i) => (
+                <motion.button
+                  key={i}
+                  type="button"
+                  className={`${styles.dot} ${slide === i ? styles.dotActive : ''}`}
+                  onClick={() => goTo(i)}
+                  aria-label={`Go to slide ${i + 1}`}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                />
+              ))}
+            </div>
+
+            <div className={styles.actions}>
+              {!isFirst && (
+                <motion.button 
+                  type="button" 
+                  className={styles.backBtn} 
+                  onClick={goBack}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  whileHover={{ x: -4 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ChevronLeft size={16} />
+                  Back
+                </motion.button>
+              )}
+
+              <RippleButton 
+                type="button" 
+                className={styles.primaryBtn} 
+                onClick={isLast ? finish : goNext}
+                hoverScale={1.02}
+                tapScale={0.98}
+              >
+                {isLast ? 'Enter feed' : 'Continue'}
+                {!isLast && <ChevronRight size={16} />}
+                <RippleButtonRipples color="rgba(255, 255, 255, 0.3)" />
+              </RippleButton>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Link className={styles.guidelinesLink} to="/social/guidelines">
+                Community guidelines
+              </Link>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

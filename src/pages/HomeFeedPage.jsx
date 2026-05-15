@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import Starfield from '../components/effects/Starfield/Starfield'
 import PostComposer from '../components/social/PostComposer/PostComposer'
 import PostCard from '../components/social/PostCard/PostCard'
@@ -11,7 +12,13 @@ function FeedSkeleton() {
   return (
     <div className={styles.skeletonList}>
       {[0, 1, 2].map((i) => (
-        <div key={i} className={styles.skeletonCard}>
+        <motion.div 
+          key={i} 
+          className={styles.skeletonCard}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: i * 0.1 }}
+        >
           <div className={styles.pulseLine} style={{ width: '45%' }}>
             <div className={styles.shimmer} />
           </div>
@@ -24,7 +31,7 @@ function FeedSkeleton() {
           <div className={styles.pulseLine} style={{ width: '78%' }}>
             <div className={styles.shimmer} />
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
   )
@@ -88,22 +95,34 @@ export default function HomeFeedPage({ onAIStateChange }) {
 
           {isLoading && <FeedSkeleton />}
 
-          {!isLoading && feedPosts.length === 0 && (
-            <div className={styles.empty}>No posts yet. Be the first to share something.</div>
-          )}
+          <AnimatePresence mode="wait">
+            {!isLoading && feedPosts.length === 0 && (
+              <motion.div 
+                className={styles.empty}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                No posts yet. Be the first to share something.
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {!isLoading &&
-            feedPosts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                sessionId={sessionId}
-                onVote={(postId, voteType) => votePost?.(postId, voteType)}
-                onFlag={(postId) => flagPost?.(postId)}
-                onEdit={(postId, data) => updatePost?.(postId, data)}
-                onDelete={(postId) => deletePost?.(postId)}
-              />
-            ))}
+          <AnimatePresence mode="popLayout">
+            {!isLoading &&
+              feedPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  sessionId={sessionId}
+                  onVote={(postId, voteType) => votePost?.(postId, voteType)}
+                  onFlag={(postId) => flagPost?.(postId)}
+                  onEdit={(postId, data) => updatePost?.(postId, data)}
+                  onDelete={(postId) => deletePost?.(postId)}
+                />
+              ))}
+          </AnimatePresence>
         </main>
       </div>
 

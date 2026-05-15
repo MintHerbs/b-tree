@@ -62,7 +62,13 @@ export function usePosts() {
 
       const { data, error } = await supabase
         .from('posts')
-        .select('*, sessions(id)')
+        .select(`
+          *,
+          sessions(id),
+          upvotes:post_votes(count).eq(vote_type, 'up'),
+          downvotes:post_votes(count).eq(vote_type, 'down'),
+          comment_count:comments(count)
+        `)
         .eq('is_deleted', false)
         .eq('is_flagged', false)
         .order('created_at', { ascending: false })
@@ -76,7 +82,14 @@ export function usePosts() {
         return
       }
 
-      const nextPosts = data || []
+      // Transform the count aggregates into simple numbers
+      const nextPosts = (data || []).map(post => ({
+        ...post,
+        upvotes: post.upvotes?.[0]?.count ?? 0,
+        downvotes: post.downvotes?.[0]?.count ?? 0,
+        comment_count: post.comment_count?.[0]?.count ?? 0
+      }))
+      
       setPosts(nextPosts)
 
       const sessionId = getOrCreateSessionId()
@@ -101,16 +114,26 @@ export function usePosts() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
-        (payload) => {
+        async (payload) => {
           const next = payload.new
           if (!next || next.is_deleted || next.is_flagged) return
-          setPosts((prev) => sortByCreatedAtDesc([next, ...prev]).slice(0, 50))
+          
+          // Fetch vote counts for the new post
+          const { data: voteCounts } = await supabase
+            .from('post_votes')
+            .select('vote_type')
+            .eq('post_id', next.id)
+          
+          const upvotes = (voteCounts || []).filter(v => v.vote_type === 'up').length
+          const downvotes = (voteCounts || []).filter(v => v.vote_type === 'down').length
+          
+          setPosts((prev) => sortByCreatedAtDesc([{ ...next, upvotes, downvotes }, ...prev]).slice(0, 50))
         }
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'posts' },
-        (payload) => {
+        async (payload) => {
           const next = payload.new
           if (!next) return
 
@@ -119,9 +142,20 @@ export function usePosts() {
             return
           }
 
+          // Fetch vote counts for the updated post
+          const { data: voteCounts } = await supabase
+            .from('post_votes')
+            .select('vote_type')
+            .eq('post_id', next.id)
+          
+          const upvotes = (voteCounts || []).filter(v => v.vote_type === 'up').length
+          const downvotes = (voteCounts || []).filter(v => v.vote_type === 'down').length
+
           setPosts((prev) => {
             const exists = prev.some((p) => p.id === next.id)
-            const updated = exists ? prev.map((p) => (p.id === next.id ? next : p)) : [next, ...prev]
+            const updated = exists 
+              ? prev.map((p) => (p.id === next.id ? { ...next, upvotes, downvotes } : p)) 
+              : [{ ...next, upvotes, downvotes }, ...prev]
             return sortByCreatedAtDesc(updated).slice(0, 50)
           })
         }
@@ -133,6 +167,27 @@ export function usePosts() {
           const oldRow = payload.old
           if (!oldRow?.id) return
           setPosts((prev) => prev.filter((p) => p.id !== oldRow.id))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'post_votes' },
+        async (payload) => {
+          // When votes change, update the affected post's vote counts
+          const postId = payload.new?.post_id || payload.old?.post_id
+          if (!postId) return
+          
+          const { data: voteCounts } = await supabase
+            .from('post_votes')
+            .select('vote_type')
+            .eq('post_id', postId)
+          
+          const upvotes = (voteCounts || []).filter(v => v.vote_type === 'up').length
+          const downvotes = (voteCounts || []).filter(v => v.vote_type === 'down').length
+          
+          setPosts((prev) => prev.map(p => 
+            p.id === postId ? { ...p, upvotes, downvotes } : p
+          ))
         }
       )
       .subscribe()
@@ -221,8 +276,17 @@ export function usePosts() {
   }, [])
 
   const deletePost = useCallback(async (id) => {
-    const { error } = await supabase.from('posts').update({ is_deleted: true }).eq('id', id)
-    if (error) return { error: 'Failed to delete post' }
+    const sessionId = getOrCreateSessionId()
+    const { error } = await supabase
+      .from('posts')
+      .update({ is_deleted: true })
+      .eq('id', id)
+      .eq('session_id', sessionId)
+    
+    if (error) {
+      console.error('Delete post error:', error)
+      return { error: 'Failed to delete post' }
+    }
     return { data: true }
   }, [])
 
@@ -264,8 +328,25 @@ export function usePosts() {
   const flagPost = useCallback(async (postId) => {
     const sessionId = getOrCreateSessionId()
 
-    if (userFlags[postId]) return { data: true }
+    // If already flagged, unflag it
+    if (userFlags[postId]) {
+      const { error } = await supabase
+        .from('post_flags')
+        .delete()
+        .eq('post_id', postId)
+        .eq('session_id', sessionId)
 
+      if (error) return { error: 'Failed to unflag post' }
+
+      setUserFlags((prev) => {
+        const next = { ...prev }
+        delete next[postId]
+        return next
+      })
+      return { data: false }
+    }
+
+    // Otherwise, flag it
     const { error } = await supabase.from('post_flags').insert({ post_id: postId, session_id: sessionId })
 
     if (error && !String(error.message || '').toLowerCase().includes('duplicate')) {

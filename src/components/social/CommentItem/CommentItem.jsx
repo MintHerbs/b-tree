@@ -17,14 +17,15 @@ function formatRelativeTime(iso) {
   return `${day}d ago`
 }
 
-export default function CommentItem({ comment, sessionId, depth, onVote, onReply, onDelete }) {
+export default function CommentItem({ comment, sessionId, depth, onVote, onReply, onDelete, getUserVote }) {
   const [showReply, setShowReply] = useState(false)
   const [replyContent, setReplyContent] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const isOwn = comment?.session_id && sessionId && comment.session_id === sessionId
   const timeLabel = useMemo(() => formatRelativeTime(comment?.created_at), [comment?.created_at])
 
-  const userVote = comment?.userVote ?? comment?.user_vote ?? null
+  const userVote = getUserVote?.(comment?.id) ?? null
   const isRemoved = !!comment?.is_deleted
   const replies = Array.isArray(comment?.replies) ? comment.replies : []
 
@@ -37,8 +38,23 @@ export default function CommentItem({ comment, sessionId, depth, onVote, onReply
     setShowReply(false)
   }
 
-  const handleDelete = async () => {
-    await onDelete?.(comment.id)
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    const res = await onDelete?.(comment.id)
+    if (res?.error) {
+      console.error('Failed to delete comment:', res.error)
+      alert('Failed to delete comment. Please try again.')
+      setShowDeleteConfirm(false)
+      return
+    }
+    setShowDeleteConfirm(false)
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false)
   }
 
   return (
@@ -85,7 +101,7 @@ export default function CommentItem({ comment, sessionId, depth, onVote, onReply
                 )}
 
                 {isOwn && !isRemoved && (
-                  <button type="button" className={styles.actionBtn} onClick={handleDelete}>
+                  <button type="button" className={styles.actionBtn} onClick={handleDeleteClick}>
                     <Trash size={14} />
                     Delete
                   </button>
@@ -94,6 +110,20 @@ export default function CommentItem({ comment, sessionId, depth, onVote, onReply
             </div>
           </div>
         </div>
+
+        {showDeleteConfirm && (
+          <div className={styles.deleteConfirm}>
+            <span className={styles.deleteConfirmText}>Delete this comment?</span>
+            <div className={styles.deleteConfirmActions}>
+              <button type="button" className={styles.btn} onClick={handleCancelDelete}>
+                Cancel
+              </button>
+              <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={handleConfirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
 
         {depth === 0 && showReply && (
           <div className={styles.replyBox}>
@@ -127,6 +157,7 @@ export default function CommentItem({ comment, sessionId, depth, onVote, onReply
               onVote={onVote}
               onReply={onReply}
               onDelete={onDelete}
+              getUserVote={getUserVote}
             />
           ))}
       </div>

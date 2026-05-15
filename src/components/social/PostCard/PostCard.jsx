@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DotsThreeVertical } from '@phosphor-icons/react'
+import { motion, AnimatePresence } from 'motion/react'
+import { RippleButton, RippleButtonRipples } from '@/components/animate-ui/primitives/buttons/ripple'
 import AgentAvatar from '../../effects/smoothui/agent-avatar'
 import { supabase } from '../../../lib/supabaseClient'
 import PostActions from '../PostActions/PostActions'
+import CodeBlock from '../CodeBlock/CodeBlock'
+import CommentSection from '../CommentSection/CommentSection'
 import styles from './PostCard.module.css'
 
 function formatRelativeTime(iso) {
@@ -174,7 +178,13 @@ export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDe
   }
 
   const handleConfirmDelete = async () => {
-    await onDelete?.(post.id)
+    const res = await onDelete?.(post.id)
+    if (res?.error) {
+      console.error('Failed to delete post:', res.error)
+      alert('Failed to delete post. Please try again.')
+      setConfirmDelete(false)
+      return
+    }
     setConfirmDelete(false)
   }
 
@@ -183,103 +193,186 @@ export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDe
   }
 
   return (
-    <div className={styles.card}>
+    <motion.div 
+      className={styles.card}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      layout
+    >
       <div className={styles.header}>
         <div className={styles.avatar}>
           <AgentAvatar seed={post?.session_id || 'anon'} size={32} animated={true} />
         </div>
 
         <div className={styles.meta}>
-          <div className={styles.name}>anon</div>
+          <div className={styles.name}>Anon</div>
           <div className={styles.time}>{timeLabel}</div>
         </div>
 
         {isOwnPost && (
-          <button type="button" className={styles.menuBtn} onClick={() => setMenuOpen((v) => !v)}>
+          <motion.button 
+            type="button" 
+            className={styles.menuBtn} 
+            onClick={() => setMenuOpen((v) => !v)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <DotsThreeVertical size={18} />
-          </button>
+          </motion.button>
         )}
       </div>
 
-      {menuOpen && (
-        <div className={styles.menu} ref={menuRef}>
-          <button type="button" className={styles.menuItem} onClick={handleEdit}>
-            Edit post
-          </button>
-          <button type="button" className={`${styles.menuItem} ${styles.menuDanger}`} onClick={handleDeleteClick}>
-            Delete post
-          </button>
-        </div>
-      )}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div 
+            className={styles.menu} 
+            ref={menuRef}
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <motion.button 
+              type="button" 
+              className={styles.menuItem} 
+              onClick={handleEdit}
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.15 }}
+            >
+              Edit post
+            </motion.button>
+            <motion.button 
+              type="button" 
+              className={`${styles.menuItem} ${styles.menuDanger}`} 
+              onClick={handleDeleteClick}
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.15 }}
+            >
+              Delete post
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {post?.title && <div className={styles.title}>{post.title}</div>}
 
       {!isEditing && <div className={styles.content}>{contentToShow}</div>}
 
       {showReadMore && (
-        <div className={styles.readMore} onClick={() => setIsExpanded(true)}>
+        <motion.div 
+          className={styles.readMore} 
+          onClick={() => setIsExpanded(true)}
+          whileHover={{ x: 4 }}
+          transition={{ duration: 0.2 }}
+        >
           ...read more
-        </div>
+        </motion.div>
       )}
 
-      {isEditing && (
-        <div className={styles.editArea}>
-          <textarea
-            className={styles.editTextarea}
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            maxLength={200}
-            rows={5}
-          />
-          <div className={styles.editActions}>
-            <button type="button" className={styles.btn} onClick={handleCancelEdit}>
-              Cancel
-            </button>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleSaveEdit}>
-              Save
-            </button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isEditing && (
+          <motion.div 
+            className={styles.editArea}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <textarea
+              className={styles.editTextarea}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              maxLength={200}
+              rows={5}
+            />
+            <div className={styles.editActions}>
+              <motion.button 
+                type="button" 
+                className={styles.btn} 
+                onClick={handleCancelEdit}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Cancel
+              </motion.button>
+              <RippleButton 
+                type="button" 
+                className={`${styles.btn} ${styles.btnPrimary}`} 
+                onClick={handleSaveEdit}
+                hoverScale={1.05}
+                tapScale={0.95}
+              >
+                Save
+                <RippleButtonRipples color="rgba(255, 255, 255, 0.3)" />
+              </RippleButton>
+            </div>
+          </motion.div>
+        )}
 
-      {confirmDelete && (
-        <div className={styles.confirm}>
-          <div className={styles.confirmText}>Delete this post?</div>
-          <div className={styles.editActions}>
-            <button type="button" className={styles.btn} onClick={handleCancelDelete}>
-              Cancel
-            </button>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleConfirmDelete}>
-              Yes, delete
-            </button>
-          </div>
-        </div>
-      )}
+        {confirmDelete && (
+          <motion.div 
+            className={styles.confirm}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className={styles.confirmText}>Delete this post?</div>
+            <div className={styles.editActions}>
+              <motion.button 
+                type="button" 
+                className={styles.btn} 
+                onClick={handleCancelDelete}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Cancel
+              </motion.button>
+              <RippleButton 
+                type="button" 
+                className={`${styles.btn} ${styles.btnDanger}`} 
+                onClick={handleConfirmDelete}
+                hoverScale={1.05}
+                tapScale={0.95}
+              >
+                Delete
+                <RippleButtonRipples color="rgba(255, 255, 255, 0.3)" />
+              </RippleButton>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {post?.code && (
-        <div className={styles.codeWrap}>
-          <div className={styles.codeLang}>{post?.code_language || 'code'}</div>
-          <pre className={styles.code}>
-            <code>{post.code}</code>
-          </pre>
+        <div className={styles.attachment}>
+          <CodeBlock code={post.code} language={post?.code_language || 'auto'} />
         </div>
       )}
 
       {post?.gif_url && <img className={styles.gif} src={post.gif_url} alt="GIF" />}
 
       {pollStats && pollStats.options.length > 0 && (
-        <div className={styles.poll}>
+        <motion.div 
+          className={styles.poll}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           {!hasVotedPoll &&
             pollStats.options.map((opt, idx) => (
-              <button
+              <RippleButton
                 key={idx}
                 type="button"
                 className={styles.pollOptionBtn}
                 onClick={() => handlePollVote(idx)}
                 disabled={isVotingPoll}
+                hoverScale={1.02}
+                tapScale={0.98}
               >
                 {opt}
-              </button>
+                <RippleButtonRipples color="rgba(139, 92, 246, 0.3)" />
+              </RippleButton>
             ))}
 
           {hasVotedPoll &&
@@ -288,21 +381,40 @@ export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDe
               const pct = toPercent(count, pollStats.total)
               const isSelected = userPollVote === idx
               return (
-                <div key={idx} className={styles.barRow}>
-                  <div className={styles.barTop}>
-                    <span>{opt}</span>
-                    <span>{pct}%</span>
-                  </div>
+                <motion.div 
+                  key={idx} 
+                  className={styles.barRow}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                >
                   <div className={styles.barTrack}>
-                    <div
+                    <motion.div
                       className={`${styles.barFill} ${isSelected ? styles.barFillSelected : ''}`}
-                      style={{ width: `${pct}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
                     />
+                    <div className={styles.barContent}>
+                      <span className={styles.barLabel}>{opt}</span>
+                      <span className={styles.barPercent}>{pct}%</span>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               )
             })}
-        </div>
+          
+          {hasVotedPoll && (
+            <motion.div 
+              className={styles.pollFooter}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              <span>{pollStats.total.toLocaleString()} vote{pollStats.total !== 1 ? 's' : ''}</span>
+            </motion.div>
+          )}
+        </motion.div>
       )}
 
       {post?.is_edited && <div className={styles.edited}>edited</div>}
@@ -320,6 +432,13 @@ export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDe
         onCommentToggle={() => setShowComments((v) => !v)}
         isCommentOpen={showComments}
       />
-    </div>
+
+      <CommentSection
+        postId={post?.id}
+        commentCount={commentCount}
+        sessionId={sessionId}
+        isOpen={showComments}
+      />
+    </motion.div>
   )
 }

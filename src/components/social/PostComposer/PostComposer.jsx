@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCircle, Code as CodeIcon } from '@phosphor-icons/react'
+import { BarChart3, CheckCircle2, Code2, AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { RippleButton, RippleButtonRipples } from '@/components/animate-ui/primitives/buttons/ripple'
 import AgentAvatar from '../../effects/smoothui/agent-avatar'
 import PollBuilder from './PollBuilder/PollBuilder'
 import CodeAttachment from './CodeAttachment/CodeAttachment'
 import TitleModal from './TitleModal/TitleModal'
+import { detectCodeLanguage, normalizeLanguage } from '../../../lib/social/codeHighlighter'
 import styles from './PostComposer.module.css'
 
 export default function PostComposer({ onPost, sessionId }) {
   const [content, setContent] = useState('')
   const [code, setCode] = useState(null)
-  const [codeLanguage, setCodeLanguage] = useState('python')
+  const [codeLanguage, setCodeLanguage] = useState('auto')
   const [poll, setPoll] = useState(null)
   const [activeFeature, setActiveFeature] = useState(null)
   const [showTitleModal, setShowTitleModal] = useState(false)
@@ -67,6 +70,17 @@ export default function PostComposer({ onPost, sessionId }) {
     setPoll({ type: 'binary', options: ['Yes', 'No'] })
   }
 
+  const handleTogglePoll = () => {
+    setError(null)
+    if (activeFeature === 'poll' && poll?.type !== 'binary') {
+      setActiveFeature(null)
+      setPoll(null)
+      return
+    }
+    setActiveFeature('poll')
+    setPoll({ type: 'poll', options: ['', ''] })
+  }
+
   const handleToggleCode = () => {
     setError(null)
     if (activeFeature === 'code') {
@@ -80,7 +94,7 @@ export default function PostComposer({ onPost, sessionId }) {
   const resetState = () => {
     setContent('')
     setCode(null)
-    setCodeLanguage('python')
+    setCodeLanguage('auto')
     setPoll(null)
     setActiveFeature(null)
     setShowTitleModal(false)
@@ -99,11 +113,18 @@ export default function PostComposer({ onPost, sessionId }) {
     }
     const cleanTitle = String(title || '').trim()
 
+    const normalizedCodeLanguage = normalizeLanguage(codeLanguage)
+    const resolvedCodeLanguage = code
+      ? normalizedCodeLanguage === 'auto'
+        ? detectCodeLanguage(code)
+        : normalizedCodeLanguage
+      : undefined
+
     const postData = {
       content: cleanContent,
       title: cleanTitle ? cleanTitle : undefined,
       code: code ? String(code) : undefined,
-      codeLanguage: code ? codeLanguage : undefined,
+      codeLanguage: resolvedCodeLanguage,
       poll: poll || undefined,
     }
 
@@ -157,51 +178,109 @@ export default function PostComposer({ onPost, sessionId }) {
 
           <div className={styles.bar}>
             <div className={styles.features}>
-              <button
+              <motion.button
                 type="button"
                 className={`${styles.featureBtn} ${activeFeature === 'poll' && poll?.type === 'binary' ? styles.featureBtnActive : ''}`}
                 onClick={handleToggleVote}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <CheckCircle size={16} /> Vote
-              </button>
+                <CheckCircle2 size={16} /> Vote
+              </motion.button>
 
-              <button
+              <motion.button
+                type="button"
+                className={`${styles.featureBtn} ${activeFeature === 'poll' && poll?.type !== 'binary' ? styles.featureBtnActive : ''}`}
+                onClick={handleTogglePoll}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <BarChart3 size={16} /> Poll
+              </motion.button>
+
+              <motion.button
                 type="button"
                 className={`${styles.featureBtn} ${activeFeature === 'code' ? styles.featureBtnActive : ''}`}
                 onClick={handleToggleCode}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <CodeIcon size={16} /> Code
-              </button>
+                <Code2 size={16} /> Code
+              </motion.button>
             </div>
 
-            <div className={`${styles.charCount} ${warnCount ? styles.charCountWarn : ''}`}>{charCount}/200</div>
+            <motion.div 
+              className={`${styles.charCount} ${warnCount ? styles.charCountWarn : ''}`}
+              animate={{ 
+                scale: warnCount ? [1, 1.1, 1] : 1,
+                color: warnCount ? '#ff6464' : 'rgba(255, 255, 255, 0.35)'
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              {charCount}/200
+            </motion.div>
           </div>
 
-          {activeFeature === 'poll' && (
-            <div className={styles.panel}>
-              <PollBuilder poll={poll} onChange={setPoll} />
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {activeFeature === 'poll' && (
+              <motion.div 
+                className={styles.panel}
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <PollBuilder poll={poll} onChange={setPoll} />
+              </motion.div>
+            )}
 
-          {activeFeature === 'code' && (
-            <div className={styles.panel}>
-              <CodeAttachment
-                code={code || ''}
-                language={codeLanguage}
-                onChange={(nextCode, lang) => {
-                  setCode(nextCode)
-                  setCodeLanguage(lang)
-                }}
-              />
-            </div>
-          )}
+            {activeFeature === 'code' && (
+              <motion.div 
+                className={styles.panel}
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CodeAttachment
+                  code={code || ''}
+                  language={codeLanguage}
+                  onChange={(nextCode, lang) => {
+                    setCode(nextCode)
+                    setCodeLanguage(lang)
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {error && <div className={styles.error}>{error}</div>}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                className={styles.error}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AlertCircle size={14} />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className={styles.footer}>
-            <button type="button" className={styles.postBtn} onClick={handlePostClick} disabled={isPosting}>
+            <RippleButton 
+              type="button" 
+              className={styles.postBtn} 
+              onClick={handlePostClick} 
+              disabled={isPosting}
+              hoverScale={1.02}
+              tapScale={0.98}
+            >
               {isPosting ? 'Posting…' : 'Post'}
-            </button>
+              <RippleButtonRipples color="rgba(255, 255, 255, 0.3)" />
+            </RippleButton>
           </div>
         </div>
       </div>

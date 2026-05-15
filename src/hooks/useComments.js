@@ -58,10 +58,40 @@ export function useComments(postId) {
     }
 
     const flat = data || []
-    setComments(buildNestedComments(flat))
+    
+    // Fetch vote counts for all comments
+    const commentIds = flat.map((c) => c.id).filter(Boolean)
+    let voteCounts = {}
+    
+    if (commentIds.length > 0) {
+      const { data: voteData } = await supabase
+        .from('comment_votes')
+        .select('comment_id, vote_type')
+        .in('comment_id', commentIds)
+      
+      // Count votes for each comment
+      for (const vote of voteData || []) {
+        if (!voteCounts[vote.comment_id]) {
+          voteCounts[vote.comment_id] = { upvotes: 0, downvotes: 0 }
+        }
+        if (vote.vote_type === 'up') {
+          voteCounts[vote.comment_id].upvotes++
+        } else if (vote.vote_type === 'down') {
+          voteCounts[vote.comment_id].downvotes++
+        }
+      }
+    }
+    
+    // Add vote counts to comments
+    const flatWithCounts = flat.map(c => ({
+      ...c,
+      upvotes: voteCounts[c.id]?.upvotes ?? 0,
+      downvotes: voteCounts[c.id]?.downvotes ?? 0
+    }))
+    
+    setComments(buildNestedComments(flatWithCounts))
 
     const sessionId = getOrCreateSessionId()
-    const commentIds = flat.map((c) => c.id).filter(Boolean)
 
     if (commentIds.length) {
       const { data: voteRows } = await supabase
@@ -156,6 +186,30 @@ export function useComments(postId) {
     const sessionId = getOrCreateSessionId()
     if (voteType !== 'up' && voteType !== 'down') return { error: 'Invalid vote type' }
 
+    const currentVote = userVotes[commentId]
+    
+    // If clicking the same vote type, remove the vote
+    if (currentVote === voteType) {
+      const { error } = await supabase
+        .from('comment_votes')
+        .delete()
+        .eq('comment_id', commentId)
+        .eq('session_id', sessionId)
+
+      if (error) return { error: 'Failed to remove vote' }
+      
+      setUserVotes((prev) => {
+        const next = { ...prev }
+        delete next[commentId]
+        return next
+      })
+      
+      // Refresh comments to update counts
+      fetchComments()
+      return { data: null }
+    }
+
+    // Otherwise, upsert the new vote
     const { error } = await supabase
       .from('comment_votes')
       .upsert(
@@ -165,14 +219,29 @@ export function useComments(postId) {
 
     if (error) return { error: 'Failed to vote' }
     setUserVotes((prev) => ({ ...prev, [commentId]: voteType }))
+    
+    // Refresh comments to update counts
+    fetchComments()
     return { data: voteType }
-  }, [])
+  }, [userVotes, fetchComments])
 
   const deleteComment = useCallback(async (commentId) => {
-    const { error } = await supabase.from('comments').update({ is_deleted: true }).eq('id', commentId)
-    if (error) return { error: 'Failed to delete comment' }
+    const sessionId = getOrCreateSessionId()
+    const { error } = await supabase
+      .from('comments')
+      .update({ is_deleted: true })
+      .eq('id', commentId)
+      .eq('session_id', sessionId)
+    
+    if (error) {
+      console.error('Delete comment error:', error)
+      return { error: 'Failed to delete comment' }
+    }
+    
+    // Refresh comments to show the deleted state
+    fetchComments()
     return { data: true }
-  }, [])
+  }, [fetchComments])
 
   const getUserCommentVote = useCallback((commentId) => userVotes[commentId] ?? null, [userVotes])
 

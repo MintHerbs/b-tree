@@ -4,8 +4,7 @@ import { useComments } from '../../../hooks/useComments'
 import styles from './CommentSection.module.css'
 import CommentItem from '../CommentItem/CommentItem'
 
-export default function CommentSection({ postId, commentCount, sessionId }) {
-  const [isOpen, setIsOpen] = useState(false)
+export default function CommentSection({ postId, sessionId, isOpen }) {
   const [shouldInit, setShouldInit] = useState(false)
   const [newContent, setNewContent] = useState('')
   const [error, setError] = useState(null)
@@ -17,7 +16,7 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
     if (isOpen) setShouldInit(true)
   }, [isOpen])
 
-  const { comments, createComment, voteComment, deleteComment } = useComments(shouldInit ? postId : null)
+  const { comments, createComment, voteComment, deleteComment, getUserCommentVote } = useComments(shouldInit ? postId : null)
 
   const isExpanded = useMemo(() => {
     if (!newContent) return false
@@ -65,10 +64,6 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
 
   return (
     <div className={styles.section}>
-      <button type="button" className={styles.toggle} onClick={() => setIsOpen((v) => !v)}>
-        💬 {commentCount ?? 0} comments
-      </button>
-
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
@@ -79,6 +74,8 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
             transition={{ duration: 0.22 }}
           >
             <div className={styles.content}>
+              <div className={styles.threadHeader}>Discussion</div>
+
               {(comments || []).map((c) => (
                 <CommentItem
                   key={c.id}
@@ -88,6 +85,7 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
                   onVote={(commentId, voteType) => voteComment?.(commentId, voteType)}
                   onReply={handleReply}
                   onDelete={(commentId) => deleteComment?.(commentId)}
+                  getUserVote={getUserCommentVote}
                 />
               ))}
 
@@ -95,7 +93,7 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
                 <textarea
                   ref={textareaRef}
                   className={`${styles.textarea} ${isExpanded ? styles.textareaExpanded : ''}`}
-                  placeholder="Write a comment..."
+                  placeholder="Add a thoughtful reply"
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value.slice(0, 500))}
                   maxLength={500}
@@ -104,7 +102,7 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
                 {error && <div className={styles.error}>{error}</div>}
                 <div className={styles.actions}>
                   <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={handlePost} disabled={isPosting}>
-                    {isPosting ? 'Posting…' : 'Post comment'}
+                    {isPosting ? 'Posting...' : 'Reply'}
                   </button>
                 </div>
               </div>
@@ -115,4 +113,3 @@ export default function CommentSection({ postId, commentCount, sessionId }) {
     </div>
   )
 }
-

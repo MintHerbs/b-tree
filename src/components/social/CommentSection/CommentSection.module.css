@@ -1,23 +1,6 @@
 .section {
   width: 100%;
-  margin-top: 10px;
-}
-
-.toggle {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.7);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.toggle:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.85);
+  margin: 12px 0 0 0;
 }
 
 .panel {
@@ -25,35 +8,52 @@
 }
 
 .content {
-  padding-top: 10px;
+  padding: 16px 0 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.threadHeader {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.newComment {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.newComment {
-  margin-top: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
-  border-radius: 9999px;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 20px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  line-height: 1.5;
   resize: none;
   outline: none;
   overflow-y: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.textarea:focus {
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .textareaExpanded {
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .actions {
@@ -64,22 +64,40 @@
 }
 
 .btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
 }
 
 .btnPrimary {
-  background: rgba(139, 92, 246, 0.18);
-  border-color: rgba(139, 92, 246, 0.35);
+  background: #EA6C0A;
+  border-color: #EA6C0A;
   color: white;
 }
 
+.btnPrimary:hover {
+  background: #f97316;
+  border-color: #f97316;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .error {
-  color: #ff6464;
-  font-size: 12px;
+  color: #f87171;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
