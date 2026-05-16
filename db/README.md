@@ -35,6 +35,16 @@ db/
 | 0003 | `sql/0003_init_api_calls.sql`     | `api_calls` table for per-session Gemini quota        |
 | 0004 | `sql/0004_realtime_publications.sql` | adds `messages` to the `supabase_realtime` publication |
 | 0005 | `sql/0005_init_subjects.sql`      | `subjects` table (IT, Economics, …); admin-curated, public read |
+| 0006 | `sql/0006_init_posts.sql`          | `posts` table — anonymous feed posts                  |
+| 0007 | `sql/0007_init_post_votes.sql`     | `post_votes` + vote-count sync trigger                |
+| 0008 | `sql/0008_init_post_flags.sql`     | `post_flags`, `flagged_posts_review`, auto-flag trigger |
+| 0009 | `sql/0009_init_comments.sql`       | `comments` + depth-enforcement trigger                |
+| 0010 | `sql/0010_init_comment_votes.sql`  | `comment_votes` + vote-count sync trigger             |
+| 0011 | `sql/0011_init_polls.sql`          | `polls` + `poll_votes`                                |
+| 0012 | `sql/0012_init_rate_limits.sql`    | `rate_limits` + `bot_blacklist`                       |
+| 0013 | `sql/0013_social_rls.sql`          | RLS policies for all social tables                    |
+| 0014 | `sql/0014_social_rpcs.sql`         | Server-side RPCs (session, rate limit, bot, soft-delete) |
+| 0015 | `sql/0015_social_realtime.sql`     | Realtime publication for social tables                |
 
 The tables these migrations declare already exist in the live Supabase
 project — the migrations were extracted from the live schema so the

@@ -122,7 +122,7 @@ function FileItem({
         data-slot="file-item"
         data-git-status={gitStatus}
         data-variant={variant}
-        className={styles.row}
+        className={cn(styles.row, className)}
         style={gitColor ? { color: gitColor } : undefined}
         {...props}
       >
@@ -130,7 +130,7 @@ function FileItem({
           <FileIconPrimitive>
             <Icon size={18} />
           </FileIconPrimitive>
-          <FileLabelPrimitive className={cn(styles.label, className)}>
+          <FileLabelPrimitive className={styles.label}>
             {children}
           </FileLabelPrimitive>
         </div>

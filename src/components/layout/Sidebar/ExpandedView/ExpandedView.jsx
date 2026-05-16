@@ -48,12 +48,12 @@ function ExpandedView({
 
               return (
                 <FolderItem key={module.id} value={module.id}>
-                  <FolderTrigger>{module.id}</FolderTrigger>
+                  <FolderTrigger variant="parent">{module.id}</FolderTrigger>
                   <FolderContent>
                     <SubFiles>
                       {notes.length > 0 && (
                         <FolderItem value={`${module.id}-notes`}>
-                          <FolderTrigger>notes</FolderTrigger>
+                          <FolderTrigger variant="folder">notes</FolderTrigger>
                           <FolderContent>
                             <SubFiles>
                               {notes.map((n) => {
@@ -75,7 +75,7 @@ function ExpandedView({
 
                       {tools.length > 0 && (
                         <FolderItem value={`${module.id}-tools`}>
-                          <FolderTrigger>tools</FolderTrigger>
+                          <FolderTrigger variant="folder">tools</FolderTrigger>
                           <FolderContent>
                             <SubFiles>
                               {tools.map((t) => (
@@ -104,13 +104,29 @@ function ExpandedView({
             <FileItem icon={PACKAGE_JSON.Icon} onClick={() => onOpenPackageJson?.()}>
               {PACKAGE_JSON.label}
             </FileItem>
-            {STANDALONE_TOOLS.map((t) => (
+            {STANDALONE_TOOLS.filter(t => t.id === 'Home').map((t) => (
+              <FileItem
+                key={t.id}
+                icon={t.Icon}
+                onClick={() => go(t.route, t.id)}
+                className={path === t.route ? styles.activeFile : undefined}
+              >
+                {t.label}
+              </FileItem>
+            ))}
+            {STANDALONE_TOOLS.filter(t => t.id !== 'Home').map((t) => (
               <FileItem
                 key={t.id}
                 icon={t.Icon}
                 variant="tool"
                 onClick={() => go(t.route, t.id)}
-                className={path === t.route ? styles.activeFile : undefined}
+                className={
+                  path === t.route
+                    ? styles.activeFile
+                    : (t.id === 'cpa' || t.id === 'minmax')
+                    ? styles.cpaFile
+                    : undefined
+                }
               >
                 {t.label}
               </FileItem>

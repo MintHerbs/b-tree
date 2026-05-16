@@ -34,6 +34,7 @@ import {
   Database,
   Eye,
   FileCode,
+  FileJs,
   Function as FunctionIcon,
   HardDrive,
   Network,
@@ -79,10 +80,7 @@ export const MODULES = [
     id: 'Miscellaneous',
     label: 'Miscellaneous',
     Icon: FileCode,
-    tools: [
-      {id: 'cpa',    label: 'CPA Calculator.js',        route: '/tools/cpa-calculator' },
-      { id: 'minmax', label: 'Min Effort Max Result.js', route: '/tools/lazy-grades' },
-    ]
+    tools: []
   },
 
   // Coming soon — declare with just { id, label, Icon }. Add `tools` to activate.
@@ -99,9 +97,9 @@ export const MODULES = [
 // ── Standalone tools (below the divider) ────────────────────────────────────
 
 export const STANDALONE_TOOLS = [
-  // { id: 'cpa',    label: 'CPA Calculator.js',        Icon: Calculator, route: '/tools/cpa-calculator' },
-  // { id: 'minmax', label: 'Min Effort Max Result.js', Icon: Sparkle,    route: '/tools/lazy-grades' },
-  {id: 'Home', label: 'homePage.js', Icon: Sparkle, route: '/home' },
+  {id: 'Home', label: 'homePage.js', Icon: FileJs, route: '/home' },
+  { id: 'cpa',    label: 'CPA Calculator.js',        Icon: Calculator, route: '/tools/cpa-calculator' },
+  { id: 'minmax', label: 'Min Effort Max Result.js', Icon: Sparkle,    route: '/tools/lazy-grades' },
 ]
 
 // ── Easter-egg pinned at the divider ────────────────────────────────────────

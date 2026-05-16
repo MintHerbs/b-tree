@@ -19,7 +19,7 @@
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--tool-accent) 14%, transparent) 0%,
-    color-mix(in srgb, var(--tool-orange) 10%, transparent) 50%,
+    transparent 50%,
     color-mix(in srgb, var(--tool-accent) 14%, transparent) 100%
   );
   border: 1px solid color-mix(in srgb, var(--tool-accent) 26%, var(--tool-border));

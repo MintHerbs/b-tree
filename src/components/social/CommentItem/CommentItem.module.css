@@ -1,0 +1,191 @@
+.item {
+  display: flex;
+  gap: 12px;
+}
+
+.threadLine {
+  width: 2px;
+  background: rgba(139, 92, 246, 0.15);
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bubble {
+  flex: 1;
+  min-width: 0;
+}
+
+.text {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: pre-wrap;
+}
+
+.removed {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.meta {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actionBtn {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover {
+  color: rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+}
+
+.activeUp {
+  color: #EA6C0A;
+}
+
+.activeDown {
+  color: #8B5CF6;
+}
+
+.indentReply {
+  margin-left: 32px;
+}
+
+.replyBox {
+  margin-left: 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.replyTextarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.replyTextarea:focus {
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.replyTextarea::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.replyActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.btnPrimary {
+  background: #EA6C0A;
+  border-color: #EA6C0A;
+  color: white;
+}
+
+.btnPrimary:hover {
+  background: #f97316;
+  border-color: #f97316;
+}
+
+.btnDanger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}
+
+.btnDanger:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.deleteConfirm {
+  margin-top: 8px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.deleteConfirmText {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  gap: 8px;
+}

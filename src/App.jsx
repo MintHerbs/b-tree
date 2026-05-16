@@ -1,6 +1,6 @@
 // Router shell — global UI + state. Route table lives in src/routes/index.jsx.
 import { BrowserRouter, useLocation } from 'react-router-dom'
-import { useRef, useState, Suspense, useEffect } from 'react'
+import { createContext, useRef, useState, Suspense, useEffect } from 'react'
 import { usePresence } from './hooks/usePresence'
 import useChat from './hooks/useChat'
 import MusicPlayer from './components/layout/MusicPlayer/MusicPlayer'
@@ -9,6 +9,8 @@ import Sidebar from './components/layout/Sidebar'
 import Starfield from './components/effects/Starfield/Starfield'
 import { ChatPanel, ChatDimOverlay } from './features/chat/components'
 import { AppRoutes, preloadRoutes } from './routes'
+
+export const OnlineCountContext = createContext(1)
 
 function AppContent() {
   const location = useLocation()
@@ -27,6 +29,7 @@ function AppContent() {
 
   useEffect(() => {
     const t = setTimeout(preloadRoutes, 3000)
+    import('./pages/HomeFeedPage')
     return () => clearTimeout(t)
   }, [])
 
@@ -82,10 +85,12 @@ function AppContent() {
         transition: 'opacity 0.3s ease'
       }}>
         <Suspense fallback={null}>
-          <AppRoutes
-            onAIStateChange={setAIState}
-            onChatOpen={() => setIsChatOpen(true)}
-          />
+          <OnlineCountContext.Provider value={onlineCount}>
+            <AppRoutes
+              onAIStateChange={setAIState}
+              onChatOpen={() => setIsChatOpen(true)}
+            />
+          </OnlineCountContext.Provider>
         </Suspense>
       </div>
 

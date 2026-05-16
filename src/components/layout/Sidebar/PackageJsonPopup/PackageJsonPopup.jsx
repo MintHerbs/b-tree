@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { BookOpen, Globe } from '@phosphor-icons/react'
 import ChatAvatar from '../../../../features/chat/components/ChatAvatar/ChatAvatar'
 import NotificationBadge from '../../../effects/smoothui/components/notification-badge'
@@ -30,6 +31,8 @@ function PackageJsonPopup({
   sessionId,
   unreadCount = 0,
 }) {
+  const navigate = useNavigate()
+
   useEffect(() => {
     if (!isOpen) return
     const handleEscape = (e) => {
@@ -59,7 +62,10 @@ function PackageJsonPopup({
         >
           <div
             className={`${styles.bottomRow} ${mode === 'social' ? styles.bottomRowActive : ''}`}
-            onClick={() => setMode?.('social')}
+            onClick={() => {
+              setMode?.('social')
+              navigate('/social/feed')
+            }}
           >
             <div className={styles.rowLeft}>
               <Globe size={18} weight="regular" />

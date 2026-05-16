@@ -70,6 +70,7 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
           setMode={setMode}
           sessionId={sessionId}
           onOpenPackageJson={() => setIsPackageJsonOpen(true)}
+          setIsExpanded={setIsExpanded}
         />
       )}
     </aside>

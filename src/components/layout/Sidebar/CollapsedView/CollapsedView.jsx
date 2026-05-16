@@ -34,6 +34,7 @@ function CollapsedView({
   setMode,
   sessionId,
   onOpenPackageJson,
+  setIsExpanded,
 }) {
   const handleMoonClick = useCallback((e) => {
     e.preventDefault()
@@ -58,6 +59,14 @@ function CollapsedView({
       <div className={styles.nav}>
         {mode === 'social' ? (
           <>
+            <SidebarIcon
+              icon={<House size={20} weight="regular" />}
+              tooltip="Home Feed"
+              isActive={path.startsWith('/social/feed') && !isChatOpen}
+              activeColor={colors.iconActive}
+              onClick={() => go('/social/feed', 'social-feed')}
+            />
+
             <NotificationBadge
               count={!isChatOpen && unreadCount > 0 ? unreadCount : 0}
               max={10}
@@ -81,14 +90,6 @@ function CollapsedView({
                 <span className={styles.tooltip}>Community Chat</span>
               </div>
             </NotificationBadge>
-
-            <SidebarIcon
-              icon={<House size={20} weight="regular" />}
-              tooltip="Home Feed"
-              isActive={false}
-              activeColor={colors.iconActive}
-              onClick={() => alert('Coming soon — Home Feed')}
-            />
           </>
         ) : (
           <>
@@ -137,7 +138,14 @@ function CollapsedView({
             position="top-right"
             showZero={false}
           >
-            <div className={styles.iconWrapper} onClick={() => setMode('social')} title="Social">
+            <div
+              className={styles.iconWrapper}
+              onClick={() => {
+                setMode('social')
+                go('/social/feed', 'social-feed')
+              }}
+              title="Social"
+            >
               {mode === 'social' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
               <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
                 <Globe
@@ -150,7 +158,10 @@ function CollapsedView({
             </div>
           </NotificationBadge>
 
-          <div className={styles.iconWrapper} onClick={() => setMode('academia')} title="Academia">
+          <div className={styles.iconWrapper} onClick={() => {
+            setMode('academia')
+            setIsExpanded(true)
+          }} title="Academia">
             {mode === 'academia' && <span className={styles.activeBar} style={{ background: colors.iconActive }} />}
             <div className={styles.iconInner} style={{ '--hover-color': colors.iconActive }}>
               <BookOpen

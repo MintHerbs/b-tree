@@ -1,0 +1,203 @@
+.composer {
+  width: calc(100% - 32px);
+  background: #0A0A0C;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 16px;
+  padding: 18px 20px 16px;
+  margin: 16px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.6), 
+    0 0 0 1px rgba(139, 92, 246, 0.1),
+    inset 0 0 60px rgba(139, 92, 246, 0.02);
+  position: relative;
+  z-index: 4;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.composer:focus-within {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.7), 
+    0 0 0 1px rgba(139, 92, 246, 0.3),
+    inset 0 0 60px rgba(139, 92, 246, 0.04),
+    0 0 30px rgba(139, 92, 246, 0.2);
+}
+
+.shake {
+  animation: composerShake 0.45s ease-in-out;
+}
+
+.shake textarea {
+  color: #FF5FA2;
+  text-shadow: 0 0 8px rgba(255, 95, 162, 0.5);
+}
+
+@keyframes composerShake {
+  0% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-8px);
+  }
+  36% {
+    transform: translateX(7px);
+  }
+  54% {
+    transform: translateX(-6px);
+  }
+  72% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.inputs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textarea {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 0;
+  min-height: 40px;
+  padding: 2px 0 10px;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  overflow-y: hidden;
+}
+
+.textarea::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.textareaExpanded {
+  border-radius: 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.features {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.featureBtn {
+  background: transparent;
+  color: #6a6a7a;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: color 0.15s ease, transform 0.15s ease, text-shadow 0.15s ease;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.featureBtn:hover {
+  color: #C9A0FF;
+  text-shadow: 0 0 8px rgba(201, 160, 255, 0.5);
+}
+
+.featureBtnActive {
+  color: #8B5CF6;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+.charCount {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.01em;
+}
+
+.charCountWarn {
+  color: #FF5FA2;
+  text-shadow: 0 0 6px rgba(255, 95, 162, 0.4);
+}
+
+.panel {
+  background: rgba(10, 10, 12, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.05);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.postBtn {
+  background: linear-gradient(135deg, #8B5CF6 0%, #C9A0FF 100%);
+  color: #0A0A0C;
+  border-radius: 50px;
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4), 0 0 15px rgba(139, 92, 246, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.postBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.postBtn:not(:disabled):hover {
+  background: linear-gradient(135deg, #C9A0FF 0%, #8B5CF6 100%);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.6), 0 0 25px rgba(139, 92, 246, 0.3);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 95, 162, 0.1);
+  border: 1px solid rgba(255, 95, 162, 0.3);
+  border-radius: 10px;
+  color: #FF5FA2;
+  font-size: 0.8rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(255, 95, 162, 0.2), 0 0 15px rgba(255, 95, 162, 0.1);
+  text-shadow: 0 0 6px rgba(255, 95, 162, 0.3);
+}

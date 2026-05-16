@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
 export function useApiCalls() {
   const [remainingCalls, setRemainingCalls] = useState(10);
@@ -16,6 +11,12 @@ export function useApiCalls() {
 
   async function initializeApiCalls() {
     try {
+      if (!isSupabaseConfigured) {
+        setRemainingCalls(10);
+        setIsLoading(false);
+        return;
+      }
+
       // Get session_id from localStorage
       let sessionId = localStorage.getItem('session_id');
       
@@ -94,6 +95,7 @@ export function useApiCalls() {
 
   async function decrementCall() {
     try {
+      if (!isSupabaseConfigured) return;
       const sessionId = localStorage.getItem('session_id');
       
       if (!sessionId) {

@@ -9,12 +9,15 @@
   height: 60px;
   position: relative;
   z-index: 10;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .left {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .title {
@@ -22,12 +25,14 @@
   font-weight: 700;
   color: #8B5CF6;
   margin: 0;
+  white-space: nowrap;
 }
 
 .right {
   display: flex;
   align-items: center;
   gap: 24px;
+  flex-shrink: 0;
 }
 
 .resetButton {

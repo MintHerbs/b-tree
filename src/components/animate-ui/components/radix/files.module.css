@@ -37,17 +37,23 @@
   color: #cbd5e1;
   transition: color 0.15s ease, background 0.15s ease;
   background: transparent;
+  min-width: max-content;
 }
 
 .leftGroup {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .label {
   font-size: 12px;
   font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .customIcon {
@@ -87,7 +93,15 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+:global([data-slot="folder-row"][data-variant="parent"]) {
+  color: #F4BA42;
+}
+
 :global([data-slot="folder-row"][data-variant="parent"][data-open="true"]) {
+  color: #65DA7C;
+}
+
+:global([data-slot="folder-row"][data-variant="parent"][data-open="true"]) svg {
   color: #65DA7C;
 }
 
@@ -99,7 +113,16 @@
   color: #EA6C0A;
 }
 
+:global([data-slot="file-item"][data-variant="package"]) {
+  color: #EA6C0A;
+}
+
 :global([data-slot="motion-highlight-item-container"]:hover) :global([data-slot="file-item"][data-variant="tool"]) {
+  color: #EA6C0A;
+  background: rgba(234, 108, 10, 0.12);
+}
+
+:global([data-slot="motion-highlight-item-container"]:hover) :global([data-slot="file-item"][data-variant="package"]) {
   color: #EA6C0A;
   background: rgba(234, 108, 10, 0.12);
 }
@@ -109,7 +132,24 @@
   background: rgba(139, 92, 246, 0.1);
 }
 
+:global([data-slot="motion-highlight-item-container"][data-active="true"]) .row svg {
+  color: #8B5CF6;
+}
+
 :global([data-slot="motion-highlight-item-container"][data-active="true"]) :global([data-slot="file-item"][data-variant="tool"]) {
   color: #EA6C0A;
   background: rgba(234, 108, 10, 0.16);
+}
+
+:global([data-slot="motion-highlight-item-container"][data-active="true"]) :global([data-slot="file-item"][data-variant="tool"]) svg {
+  color: #EA6C0A;
+}
+
+:global([data-slot="motion-highlight-item-container"][data-active="true"]) :global([data-slot="file-item"][data-variant="package"]) {
+  color: #EA6C0A;
+  background: rgba(234, 108, 10, 0.16);
+}
+
+:global([data-slot="motion-highlight-item-container"][data-active="true"]) :global([data-slot="file-item"][data-variant="package"]) svg {
+  color: #EA6C0A;
 }
