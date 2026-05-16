@@ -47,15 +47,16 @@
 .name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #7FE7FF;
+  color: #C9A0FF;
   letter-spacing: 0.01em;
-  text-shadow: 0 0 8px rgba(127, 231, 255, 0.4);
+  text-shadow: 0 0 8px rgba(201, 160, 255, 0.4);
 }
 
 .time {
   font-size: 0.75rem;
   color: #6a6a7a;
   letter-spacing: 0.01em;
+  margin-top: -2px;
 }
 
 .menuBtn {

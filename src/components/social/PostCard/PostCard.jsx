@@ -35,6 +35,7 @@ function toPercent(value, total) {
 
 const PostCard = forwardRef(function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDelete }, ref) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isCodeExpanded, setIsCodeExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -60,6 +61,16 @@ const PostCard = forwardRef(function PostCard({ post, sessionId, onVote, onFlag,
     if (contentLines <= 4) return String(post?.content || '')
     return getFirstLines(post?.content || '', 4)
   }, [contentLines, isExpanded, isEditing, post?.content])
+
+  // Code truncation logic
+  const codeLines = useMemo(() => String(post?.code || '').split('\n').length, [post?.code])
+  const MAX_CODE_LINES = 15
+  const showCodeReadMore = codeLines > MAX_CODE_LINES && !isCodeExpanded
+  const codeToShow = useMemo(() => {
+    if (isCodeExpanded) return String(post?.code || '')
+    if (codeLines <= MAX_CODE_LINES) return String(post?.code || '')
+    return getFirstLines(post?.code || '', MAX_CODE_LINES)
+  }, [codeLines, isCodeExpanded, post?.code])
 
   const userVote = post?.userVote ?? post?.user_vote ?? null
   const hasFlagged = !!(post?.hasFlagged ?? post?.has_flagged)
@@ -347,7 +358,18 @@ const PostCard = forwardRef(function PostCard({ post, sessionId, onVote, onFlag,
 
       {post?.code && (
         <div className={styles.attachment}>
-          <CodeBlock code={post.code} language={post?.code_language || 'auto'} />
+          <CodeBlock code={codeToShow} language={post?.code_language || 'auto'} />
+          {showCodeReadMore && (
+            <motion.div 
+              className={styles.readMore} 
+              onClick={() => setIsCodeExpanded(true)}
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
+              style={{ marginTop: '8px' }}
+            >
+              ...read more ({codeLines - MAX_CODE_LINES} more lines)
+            </motion.div>
+          )}
         </div>
       )}
 

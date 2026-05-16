@@ -9,11 +9,11 @@
 
 .feedColumn {
   width: 100%;
-  max-width: 680px;
+  max-width: 780px;
   min-height: 100vh;
   background: #0a0a0a;
-  border-left: 1px solid rgba(255, 255, 255, 0.07);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
   margin: 0 auto;
   padding-top: var(--nav-offset, 64px);
   padding-bottom: 80px;
@@ -25,7 +25,7 @@
   position: fixed;
   top: 0;
   left: 50%;
-  width: min(100vw, 680px);
+  width: min(100vw, 780px);
   height: calc(var(--nav-offset, 64px) + 48px);
   transform: translateX(-50%);
   pointer-events: none;
