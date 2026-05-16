@@ -9,8 +9,14 @@ export default function CodeBlock({ code, language }) {
   return (
     <div className={styles.block}>
       <div className={styles.header}>
-        <span>{getLanguageLabel(detectedLanguage)}</span>
-        {requestedLanguage === 'auto' && <span className={styles.detected}>detected</span>}
+        <div className={styles.headerLeft}>
+          <div className={styles.dots}>
+            <span className={styles.dot}></span>
+            <span className={styles.dot}></span>
+            <span className={styles.dot}></span>
+          </div>
+          <span className={styles.language}>{getLanguageLabel(detectedLanguage)}</span>
+        </div>
       </div>
 
       <pre className={styles.pre}>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, withSession } from '../lib/supabaseClient'
 import { useRateLimit } from './useRateLimit'
 
 function getOrCreateSessionId() {
@@ -34,7 +34,7 @@ export function useComments(postId) {
   const [userVotes, setUserVotes] = useState({})
   const channelName = useRef(`comments-${Date.now()}-${Math.random().toString(36).slice(2)}`)
 
-  const { checkLimit } = useRateLimit()
+  const { checkLimit, recordAction } = useRateLimit()
 
   const fetchComments = useCallback(async () => {
     if (!postId) {
@@ -165,6 +165,11 @@ export function useComments(postId) {
         depth = 1
       }
 
+      const { data: botCheck } = await supabase.rpc('check_bot_blacklist', {
+        p_session_id: localStorage.getItem('session_id')
+      })
+      if (botCheck?.is_blacklisted) throw new Error('Unable to post at this time.')
+
       const { data: inserted, error } = await supabase
         .from('comments')
         .insert({
@@ -177,9 +182,10 @@ export function useComments(postId) {
         .select('*')
         .single()
 
+      if (!error) await recordAction('comment')
       return { data: inserted ?? null, error: error ?? null }
     },
-    [checkLimit, postId]
+    [checkLimit, postId, recordAction]
   )
 
   const voteComment = useCallback(async (commentId, voteType) => {
@@ -226,17 +232,13 @@ export function useComments(postId) {
   }, [userVotes, fetchComments])
 
   const deleteComment = useCallback(async (commentId) => {
-    const sessionId = getOrCreateSessionId()
-    const { error } = await supabase
-      .from('comments')
-      .update({ is_deleted: true })
-      .eq('id', commentId)
-      .eq('session_id', sessionId)
-    
-    if (error) {
-      console.error('Delete comment error:', error)
-      return { error: 'Failed to delete comment' }
-    }
+    await withSession()
+    const { data, error } = await supabase.rpc('soft_delete_comment', {
+      p_comment_id: commentId,
+      p_session_id: localStorage.getItem('session_id'),
+    })
+
+    if (error || !data?.success) throw new Error(data?.error || 'Failed to delete comment')
     
     // Refresh comments to show the deleted state
     fetchComments()

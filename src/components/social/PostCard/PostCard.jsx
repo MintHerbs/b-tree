@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { DotsThreeVertical } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'motion/react'
 import { RippleButton, RippleButtonRipples } from '@/components/animate-ui/primitives/buttons/ripple'
@@ -33,7 +33,7 @@ function toPercent(value, total) {
   return Math.round((value / total) * 100)
 }
 
-export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDelete }) {
+const PostCard = forwardRef(function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDelete }, ref) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -194,6 +194,7 @@ export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDe
 
   return (
     <motion.div 
+      ref={ref}
       className={styles.card}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -441,4 +442,6 @@ export default function PostCard({ post, sessionId, onVote, onFlag, onEdit, onDe
       />
     </motion.div>
   )
-}
+})
+
+export default PostCard

@@ -4,21 +4,19 @@ import { supabase } from '../lib/supabaseClient'
 const ACTION_CONFIG = {
   post: {
     max: 5,
-    windowMs: 60 * 60 * 1000,
-    countField: 'post_count',
-    windowField: 'post_window_start',
+    windowSecs: 3600,
   },
   comment: {
     max: 10,
-    windowMs: 60 * 60 * 1000,
-    countField: 'comment_count',
-    windowField: 'comment_window_start',
+    windowSecs: 3600,
+  },
+  chat: {
+    max: 20,
+    windowSecs: 300,
   },
   vote: {
     max: 50,
-    windowMs: 60 * 60 * 1000,
-    countField: 'vote_count',
-    windowField: 'vote_window_start',
+    windowSecs: 3600,
   },
 }
 
@@ -31,18 +29,6 @@ function getOrCreateSessionId() {
   return sessionId
 }
 
-function buildDefaults(sessionId, nowIso) {
-  return {
-    session_id: sessionId,
-    post_count: 0,
-    post_window_start: nowIso,
-    comment_count: 0,
-    comment_window_start: nowIso,
-    vote_count: 0,
-    vote_window_start: nowIso,
-  }
-}
-
 export function useRateLimit() {
   const [sessionId, setSessionId] = useState(null)
   const [isBlacklisted, setIsBlacklisted] = useState(false)
@@ -51,51 +37,24 @@ export function useRateLimit() {
     try {
       if (!sessionId) return { allowed: true }
 
-      const now = Date.now()
-      const nowIso = new Date().toISOString()
-      const windowMs = 60 * 60 * 1000
+      const cfg = ACTION_CONFIG.post
+      const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
+        p_session_id: sessionId,
+        p_action: 'post',
+        p_max_count: cfg.max,
+        p_window_secs: cfg.windowSecs,
+      })
 
-      const { data: row, error: fetchError } = await supabase
-        .from('rate_limits')
-        .select('post_count, post_window_start')
-        .eq('session_id', sessionId)
-        .maybeSingle()
-
-      if (fetchError) {
-        console.error('[RateLimit] Failed to fetch post rate limit:', fetchError)
+      if (error) {
+        console.error('[RateLimit] Failed to check post rate limit:', error)
         return { allowed: true }
       }
 
-      if (!row) {
-        const { error: insertError } = await supabase
-          .from('rate_limits')
-          .insert({ session_id: sessionId, post_count: 1, post_window_start: nowIso })
-          .select('session_id')
-          .maybeSingle()
+      if (!data.allowed) {
+        const secondsLeft = data.retry_after_seconds ?? 0
 
-        if (insertError) console.error('[RateLimit] Failed to insert post rate limit row:', insertError)
-        return { allowed: true }
-      }
-
-      const windowStartMs = new Date(row.post_window_start).getTime()
-      const ageMs = now - windowStartMs
-
-      if (!Number.isFinite(windowStartMs) || ageMs >= windowMs) {
-        const { error: resetError } = await supabase
-          .from('rate_limits')
-          .update({ post_count: 1, post_window_start: nowIso })
-          .eq('session_id', sessionId)
-
-        if (resetError) console.error('[RateLimit] Failed to reset post rate limit window:', resetError)
-        return { allowed: true }
-      }
-
-      const postCount = row.post_count ?? 0
-
-      if (postCount >= 5) {
-        const secondsLeft = Math.max(0, Math.ceil((windowMs - ageMs) / 1000))
-
-        if (ageMs < 2 * 60 * 1000) {
+        // Blacklist if burst posting (within 2 minutes)
+        if (secondsLeft > cfg.windowSecs - 2 * 60) {
           const { error: blacklistError } = await supabase.from('bot_blacklist').upsert({
             session_id: sessionId,
             reason: 'post_burst',
@@ -105,16 +64,6 @@ export function useRateLimit() {
         }
 
         return { allowed: false, secondsLeft }
-      }
-
-      const { error: incrementError } = await supabase
-        .from('rate_limits')
-        .update({ post_count: postCount + 1 })
-        .eq('session_id', sessionId)
-
-      if (incrementError) {
-        console.error('[RateLimit] Failed to increment post count:', incrementError)
-        return { allowed: true }
       }
 
       return { allowed: true }
@@ -141,25 +90,6 @@ export function useRateLimit() {
     checkBlacklist()
   }, [])
 
-  const ensureRateLimitRow = useCallback(async () => {
-    if (!sessionId) return null
-
-    const { data, error } = await supabase
-      .from('rate_limits')
-      .select('*')
-      .eq('session_id', sessionId)
-      .maybeSingle()
-
-    if (!error && data) return data
-
-    const nowIso = new Date().toISOString()
-    const defaults = buildDefaults(sessionId, nowIso)
-    const insertRes = await supabase.from('rate_limits').insert(defaults).select('*').maybeSingle()
-
-    if (insertRes.error || !insertRes.data) return null
-    return insertRes.data
-  }, [sessionId])
-
   const checkLimit = useCallback(
     async (action) => {
       if (!sessionId) return false
@@ -173,77 +103,74 @@ export function useRateLimit() {
         return !!res.allowed
       }
 
-      let row = await ensureRateLimitRow()
-      if (!row) return false
-
-      const now = Date.now()
-      const windowStartMs = new Date(row[cfg.windowField]).getTime()
-      const windowAgeMs = now - windowStartMs
-
-      if (windowAgeMs >= cfg.windowMs) {
-        const nowIso = new Date().toISOString()
-        const { data: updated, error: updateError } = await supabase
-          .from('rate_limits')
-          .update({ [cfg.countField]: 0, [cfg.windowField]: nowIso })
-          .eq('session_id', sessionId)
-          .select('*')
-          .maybeSingle()
-
-        if (updateError || !updated) return false
-        row = updated
-      }
-
-      const count = row[cfg.countField] ?? 0
-      const currentWindowStartMs = new Date(row[cfg.windowField]).getTime()
-
-      if (action === 'post' && count >= cfg.max && now - currentWindowStartMs < 2 * 60 * 1000) {
-        await supabase.from('bot_blacklist').upsert({
-          session_id: sessionId,
-          reason: 'post_burst',
+      // For non-post actions, check without incrementing
+      try {
+        const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
+          p_session_id: sessionId,
+          p_action: action,
+          p_max_count: cfg.max,
+          p_window_secs: cfg.windowSecs,
         })
-        setIsBlacklisted(true)
+
+        if (error) {
+          console.error(`[RateLimit] Failed to check ${action} rate limit:`, error)
+          return false
+        }
+
+        // If not allowed, throw error with retry_after for countdown UI
+        if (!data.allowed) {
+          const err = new Error(`Rate limit exceeded for ${action}`)
+          err.retryAfter = data.retry_after_seconds
+          throw err
+        }
+
+        return data.allowed
+      } catch (e) {
+        console.error(`[RateLimit] ${action} rate limit check failed:`, e)
+        // Re-throw if it has retryAfter (our custom error)
+        if (e.retryAfter !== undefined) throw e
         return false
       }
-
-      if (count >= cfg.max) return false
-      return true
     },
-    [checkAndIncrementPostCount, ensureRateLimitRow, isBlacklisted, sessionId]
+    [checkAndIncrementPostCount, isBlacklisted, sessionId]
   )
 
   const recordAction = useCallback(
     async (action) => {
       if (!sessionId) return
 
+      // Post action is already recorded in checkAndIncrementPostCount
       if (action === 'post') return
 
       const cfg = ACTION_CONFIG[action]
       if (!cfg) return
 
-      let row = await ensureRateLimitRow()
-      const now = Date.now()
-      const nowIso = new Date().toISOString()
+      try {
+        const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
+          p_session_id: sessionId,
+          p_action: action,
+          p_max_count: cfg.max,
+          p_window_secs: cfg.windowSecs,
+        })
 
-      if (!row) {
-        const insertRow = buildDefaults(sessionId, nowIso)
-        insertRow[cfg.countField] = 1
-        insertRow[cfg.windowField] = nowIso
-        await supabase.from('rate_limits').insert(insertRow)
-        return
+        if (error) {
+          console.error(`[RateLimit] Failed to record ${action}:`, error)
+          return
+        }
+
+        // If not allowed, throw error with retry_after for countdown UI
+        if (!data.allowed) {
+          const err = new Error(`Rate limit exceeded for ${action}`)
+          err.retryAfter = data.retry_after_seconds
+          throw err
+        }
+      } catch (e) {
+        console.error(`[RateLimit] Failed to record ${action}:`, e)
+        // Re-throw if it has retryAfter (our custom error)
+        if (e.retryAfter !== undefined) throw e
       }
-
-      const windowStartMs = new Date(row[cfg.windowField]).getTime()
-      const windowAgeMs = now - windowStartMs
-
-      const nextCount = windowAgeMs >= cfg.windowMs ? 1 : (row[cfg.countField] ?? 0) + 1
-      const nextWindowStart = windowAgeMs >= cfg.windowMs ? nowIso : row[cfg.windowField]
-
-      await supabase
-        .from('rate_limits')
-        .update({ [cfg.countField]: nextCount, [cfg.windowField]: nextWindowStart })
-        .eq('session_id', sessionId)
     },
-    [ensureRateLimitRow, sessionId]
+    [sessionId]
   )
 
   return useMemo(

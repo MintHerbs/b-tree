@@ -19,17 +19,45 @@ function FeedSkeleton() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: i * 0.1 }}
         >
-          <div className={styles.pulseLine} style={{ width: '45%' }}>
-            <div className={styles.shimmer} />
+          {/* Header with avatar and meta */}
+          <div className={styles.skeletonHeader}>
+            <div className={styles.skeletonAvatar}>
+              <div className={styles.shimmer} />
+            </div>
+            <div className={styles.skeletonMeta}>
+              <div className={styles.pulseLine} style={{ width: '80px', height: '12px', marginBottom: '6px' }}>
+                <div className={styles.shimmer} />
+              </div>
+              <div className={styles.pulseLine} style={{ width: '50px', height: '10px' }}>
+                <div className={styles.shimmer} />
+              </div>
+            </div>
           </div>
-          <div className={styles.pulseLine} style={{ width: '100%' }}>
-            <div className={styles.shimmer} />
+
+          {/* Content lines */}
+          <div className={styles.skeletonContent}>
+            <div className={styles.pulseLine} style={{ width: '100%', height: '12px' }}>
+              <div className={styles.shimmer} />
+            </div>
+            <div className={styles.pulseLine} style={{ width: '95%', height: '12px' }}>
+              <div className={styles.shimmer} />
+            </div>
+            <div className={styles.pulseLine} style={{ width: '88%', height: '12px' }}>
+              <div className={styles.shimmer} />
+            </div>
           </div>
-          <div className={styles.pulseLine} style={{ width: '92%' }}>
-            <div className={styles.shimmer} />
-          </div>
-          <div className={styles.pulseLine} style={{ width: '78%' }}>
-            <div className={styles.shimmer} />
+
+          {/* Actions area */}
+          <div className={styles.skeletonActions}>
+            <div className={styles.pulseLine} style={{ width: '60px', height: '32px', borderRadius: '8px' }}>
+              <div className={styles.shimmer} />
+            </div>
+            <div className={styles.pulseLine} style={{ width: '60px', height: '32px', borderRadius: '8px' }}>
+              <div className={styles.shimmer} />
+            </div>
+            <div className={styles.pulseLine} style={{ width: '60px', height: '32px', borderRadius: '8px' }}>
+              <div className={styles.shimmer} />
+            </div>
           </div>
         </motion.div>
       ))}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, withSession } from '../lib/supabaseClient'
 import { useRateLimit } from './useRateLimit'
 
 function getOrCreateSessionId() {
@@ -18,6 +18,29 @@ function stripHtmlTags(value) {
 
 function sortByCreatedAtDesc(items) {
   return [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+async function getPostCounts(postId) {
+  const [{ data: voteRows }, { count: commentCount }] = await Promise.all([
+    supabase
+      .from('post_votes')
+      .select('vote_type')
+      .eq('post_id', postId),
+    supabase
+      .from('comments')
+      .select('id', { count: 'exact', head: true })
+      .eq('post_id', postId)
+      .eq('is_deleted', false),
+  ])
+
+  const upvotes = (voteRows || []).filter((v) => v.vote_type === 'up').length
+  const downvotes = (voteRows || []).filter((v) => v.vote_type === 'down').length
+
+  return {
+    upvotes,
+    downvotes,
+    comment_count: commentCount ?? 0,
+  }
 }
 
 export function usePosts() {
@@ -64,10 +87,7 @@ export function usePosts() {
         .from('posts')
         .select(`
           *,
-          sessions(id),
-          upvotes:post_votes(count).eq(vote_type, 'up'),
-          downvotes:post_votes(count).eq(vote_type, 'down'),
-          comment_count:comments(count)
+          sessions(id)
         `)
         .eq('is_deleted', false)
         .eq('is_flagged', false)
@@ -82,13 +102,13 @@ export function usePosts() {
         return
       }
 
-      // Transform the count aggregates into simple numbers
-      const nextPosts = (data || []).map(post => ({
-        ...post,
-        upvotes: post.upvotes?.[0]?.count ?? 0,
-        downvotes: post.downvotes?.[0]?.count ?? 0,
-        comment_count: post.comment_count?.[0]?.count ?? 0
-      }))
+      const nextPosts = await Promise.all(
+        (data || []).map(async (post) => ({
+          ...post,
+          ...(await getPostCounts(post.id)),
+        }))
+      )
+      if (!isActive) return
       
       setPosts(nextPosts)
 
@@ -118,16 +138,8 @@ export function usePosts() {
           const next = payload.new
           if (!next || next.is_deleted || next.is_flagged) return
           
-          // Fetch vote counts for the new post
-          const { data: voteCounts } = await supabase
-            .from('post_votes')
-            .select('vote_type')
-            .eq('post_id', next.id)
-          
-          const upvotes = (voteCounts || []).filter(v => v.vote_type === 'up').length
-          const downvotes = (voteCounts || []).filter(v => v.vote_type === 'down').length
-          
-          setPosts((prev) => sortByCreatedAtDesc([{ ...next, upvotes, downvotes }, ...prev]).slice(0, 50))
+          const counts = await getPostCounts(next.id)
+          setPosts((prev) => sortByCreatedAtDesc([{ ...next, ...counts }, ...prev]).slice(0, 50))
         }
       )
       .on(
@@ -142,20 +154,13 @@ export function usePosts() {
             return
           }
 
-          // Fetch vote counts for the updated post
-          const { data: voteCounts } = await supabase
-            .from('post_votes')
-            .select('vote_type')
-            .eq('post_id', next.id)
-          
-          const upvotes = (voteCounts || []).filter(v => v.vote_type === 'up').length
-          const downvotes = (voteCounts || []).filter(v => v.vote_type === 'down').length
+          const counts = await getPostCounts(next.id)
 
           setPosts((prev) => {
             const exists = prev.some((p) => p.id === next.id)
             const updated = exists 
-              ? prev.map((p) => (p.id === next.id ? { ...next, upvotes, downvotes } : p)) 
-              : [{ ...next, upvotes, downvotes }, ...prev]
+              ? prev.map((p) => (p.id === next.id ? { ...next, ...counts } : p)) 
+              : [{ ...next, ...counts }, ...prev]
             return sortByCreatedAtDesc(updated).slice(0, 50)
           })
         }
@@ -188,6 +193,24 @@ export function usePosts() {
           setPosts((prev) => prev.map(p => 
             p.id === postId ? { ...p, upvotes, downvotes } : p
           ))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'comments' },
+        async (payload) => {
+          const postId = payload.new?.post_id || payload.old?.post_id
+          if (!postId) return
+
+          const { count } = await supabase
+            .from('comments')
+            .select('id', { count: 'exact', head: true })
+            .eq('post_id', postId)
+            .eq('is_deleted', false)
+
+          setPosts((prev) => prev.map((p) => (
+            p.id === postId ? { ...p, comment_count: count ?? 0 } : p
+          )))
         }
       )
       .subscribe()
@@ -230,6 +253,11 @@ export function usePosts() {
         gif_url: data?.gifUrl ?? data?.gif_url ?? null,
       }
 
+      const { data: botCheck } = await supabase.rpc('check_bot_blacklist', {
+        p_session_id: localStorage.getItem('session_id')
+      })
+      if (botCheck?.is_blacklisted) throw new Error('Unable to post at this time.')
+
       const { data: postRow, error: postError } = await supabase
         .from('posts')
         .insert(insertPayload)
@@ -251,6 +279,7 @@ export function usePosts() {
   )
 
   const updatePost = useCallback(async (id, data) => {
+    await withSession()
     const updates = {}
 
     if (data?.title !== undefined) {
@@ -276,17 +305,15 @@ export function usePosts() {
   }, [])
 
   const deletePost = useCallback(async (id) => {
-    const sessionId = getOrCreateSessionId()
-    const { error } = await supabase
-      .from('posts')
-      .update({ is_deleted: true })
-      .eq('id', id)
-      .eq('session_id', sessionId)
-    
-    if (error) {
-      console.error('Delete post error:', error)
-      return { error: 'Failed to delete post' }
-    }
+    await withSession()
+    const { data, error } = await supabase.rpc('soft_delete_post', {
+      p_post_id: id,
+      p_session_id: localStorage.getItem('session_id'),
+    })
+
+    if (error || !data?.success) throw new Error(data?.error || 'Failed to delete post')
+
+    setPosts((prev) => prev.filter((p) => p.id !== id))
     return { data: true }
   }, [])
 

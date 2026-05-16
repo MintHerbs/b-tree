@@ -58,3 +58,9 @@ export const supabase = isSupabaseConfigured
       channel: () => createDisabledChannel(),
       removeChannel: () => {},
     }
+
+export async function withSession() {
+  const sessionId = localStorage.getItem('session_id')
+  if (!sessionId) return
+  await supabase.rpc('set_session_id', { p_session_id: sessionId })
+}
