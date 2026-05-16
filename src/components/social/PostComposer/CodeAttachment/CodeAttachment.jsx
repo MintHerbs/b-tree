@@ -41,7 +41,7 @@ export default function CodeAttachment({ code, language, onChange }) {
   }
 
   const handleCodeChange = (e) => {
-    const next = clampToMaxLines(e.target.value, 300)
+    const next = clampToMaxLines(e.target.value, 1000)
     onChange(next, normalizedLanguage || 'auto')
   }
 
@@ -84,7 +84,7 @@ export default function CodeAttachment({ code, language, onChange }) {
           <span className={styles.info}>
             {normalizedLanguage === 'auto' 
               ? `Detected: ${getLanguageLabel(detectedLanguage)}` 
-              : `${lineCount}/300 lines`}
+              : `${lineCount}/1000 lines`}
           </span>
           <button 
             type="button"

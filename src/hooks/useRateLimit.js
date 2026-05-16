@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 
 const ACTION_CONFIG = {
   post: {
-    max: 5,
+    max: 50,
     windowSecs: 3600,
   },
   comment: {

@@ -240,7 +240,7 @@ export function usePosts() {
       await supabase.from('sessions').upsert({ id: sessionId, last_seen: new Date().toISOString() })
 
       const content = stripHtmlTags(data?.content).trim()
-      if (content.length > 200) return { error: 'Content too long' }
+      if (content.length > 1000) return { error: 'Content too long' }
 
       const title = data?.title != null && String(data.title).trim() !== '' ? stripHtmlTags(data.title).trim() : null
 
@@ -288,7 +288,7 @@ export function usePosts() {
 
     if (data?.content !== undefined) {
       const content = stripHtmlTags(data.content).trim()
-      if (content.length > 200) return { error: 'Content too long' }
+      if (content.length > 1000) return { error: 'Content too long' }
       updates.content = content
     }
 

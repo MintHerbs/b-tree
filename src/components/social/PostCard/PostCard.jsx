@@ -284,7 +284,7 @@ const PostCard = forwardRef(function PostCard({ post, sessionId, onVote, onFlag,
               className={styles.editTextarea}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              maxLength={200}
+              maxLength={1000}
               rows={5}
             />
             <div className={styles.editActions}>

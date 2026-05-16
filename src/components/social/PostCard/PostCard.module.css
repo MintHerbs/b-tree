@@ -1,19 +1,24 @@
 .card {
   width: calc(100% - 32px);
-  background: rgba(15, 15, 15, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0A0A0C;
+  border: 1px solid rgba(139, 92, 246, 0.25);
   border-radius: 16px;
   padding: 16px 18px;
   margin: 0 16px 12px;
   position: relative;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 0 60px rgba(139, 92, 246, 0.02);
   will-change: transform;
 }
 
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.6), 
+    0 0 0 1px rgba(139, 92, 246, 0.15),
+    inset 0 0 60px rgba(139, 92, 246, 0.04);
   transform: translateY(-2px);
 }
 
@@ -42,36 +47,38 @@
 .name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #7FE7FF;
   letter-spacing: 0.01em;
+  text-shadow: 0 0 8px rgba(127, 231, 255, 0.4);
 }
 
 .time {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: #6a6a7a;
   letter-spacing: 0.01em;
 }
 
 .menuBtn {
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: #C9A0FF;
   padding: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
 }
 
 .menuBtn:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: #8B5CF6;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
 }
 
 .menu {
   position: absolute;
   top: 40px;
   right: 10px;
-  background: rgba(15, 15, 15, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 12, 0.98);
+  border: 1px solid rgba(139, 92, 246, 0.35);
   border-radius: 12px;
   padding: 6px;
   display: flex;
@@ -79,31 +86,36 @@
   gap: 2px;
   z-index: 10;
   min-width: 140px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(139, 92, 246, 0.2);
 }
 
 .menuItem {
   width: 100%;
   text-align: left;
   background: transparent;
-  color: rgba(255, 255, 255, 0.85);
+  color: #C9A0FF;
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, text-shadow 0.15s ease;
 }
 
 .menuItem:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(139, 92, 246, 0.15);
+  text-shadow: 0 0 8px rgba(201, 160, 255, 0.5);
 }
 
 .menuDanger {
-  color: #f87171;
+  color: #FF5FA2;
+  text-shadow: 0 0 6px rgba(255, 95, 162, 0.3);
 }
 
 .menuDanger:hover {
-  background: rgba(248, 113, 113, 0.1);
+  background: rgba(255, 95, 162, 0.1);
+  text-shadow: 0 0 10px rgba(255, 95, 162, 0.6);
 }
 
 .title {
@@ -129,11 +141,13 @@
   display: inline-flex;
   cursor: pointer;
   font-weight: 500;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+  text-shadow: 0 0 6px rgba(139, 92, 246, 0.3);
 }
 
 .readMore:hover {
-  color: #a78bfa;
+  color: #C9A0FF;
+  text-shadow: 0 0 10px rgba(201, 160, 255, 0.6);
 }
 
 .edited {
@@ -154,7 +168,8 @@
   max-height: 400px;
   object-fit: cover;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
 }
 
 .poll {
@@ -168,8 +183,8 @@
   width: 100%;
   text-align: left;
   background: transparent;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: rgba(139, 92, 246, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: #8B5CF6;
   padding: 12px 16px;
   border-radius: 24px;
   font-size: 0.9rem;
@@ -178,12 +193,14 @@
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  text-shadow: 0 0 6px rgba(139, 92, 246, 0.3);
 }
 
 .pollOptionBtn:hover {
   background: rgba(139, 92, 246, 0.12);
   border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
 }
 
 .pollOptionBtn:active {
@@ -205,23 +222,27 @@
   width: 100%;
   height: 40px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(10, 10, 12, 0.6);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
   position: relative;
 }
 
 .barFill {
   height: 100%;
-  background: rgba(139, 92, 246, 0.25);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.3), rgba(201, 160, 255, 0.3));
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
   top: 0;
   left: 0;
+  box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.2);
 }
 
 .barFillSelected {
-  background: rgba(139, 92, 246, 0.4);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.5), rgba(201, 160, 255, 0.5));
+  box-shadow: 
+    inset 0 0 20px rgba(139, 92, 246, 0.4),
+    0 0 15px rgba(139, 92, 246, 0.3);
 }
 
 .barContent {
@@ -240,13 +261,15 @@
 .barLabel {
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #7FE7FF;
+  text-shadow: 0 0 8px rgba(127, 231, 255, 0.4);
 }
 
 .barPercent {
   font-size: 0.9rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
 .pollFooter {
@@ -264,8 +287,8 @@
 
 .editTextarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 12, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.25);
   color: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   padding: 10px 12px;
@@ -273,6 +296,12 @@
   line-height: 20px;
   resize: none;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editTextarea:focus {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
 }
 
 .editActions {
@@ -283,58 +312,70 @@
 }
 
 .btn {
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
+  background: rgba(10, 10, 12, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  color: #C9A0FF;
   border-radius: 10px;
   padding: 6px 12px;
   font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.15s ease;
+  text-shadow: 0 0 6px rgba(201, 160, 255, 0.3);
 }
 
 .btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.45);
+  text-shadow: 0 0 10px rgba(201, 160, 255, 0.6);
 }
 
 .btnPrimary {
-  background: #EA6C0A;
-  border-color: #EA6C0A;
-  color: white;
+  background: linear-gradient(135deg, #8B5CF6, #C9A0FF);
+  border-color: #8B5CF6;
+  color: #0A0A0C;
+  text-shadow: none;
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
 }
 
 .btnPrimary:hover {
-  background: #f97316;
-  border-color: #f97316;
+  background: linear-gradient(135deg, #C9A0FF, #8B5CF6);
+  border-color: #C9A0FF;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
 }
 
 .btn.btnDanger {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: linear-gradient(135deg, #FF5FA2, #FF5FA2);
+  border-color: #FF5FA2;
   color: white;
+  text-shadow: 0 0 8px rgba(255, 95, 162, 0.5);
+  box-shadow: 0 0 15px rgba(255, 95, 162, 0.3);
 }
 
 .btn.btnDanger:hover {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: linear-gradient(135deg, #FF5FA2, #C9A0FF);
+  border-color: #C9A0FF;
+  box-shadow: 0 0 20px rgba(255, 95, 162, 0.5);
 }
 
 .confirm {
   margin: 8px 0 12px 0;
-  background: rgba(220, 38, 38, 0.12);
-  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: rgba(255, 95, 162, 0.1);
+  border: 1px solid rgba(255, 95, 162, 0.4);
   border-radius: 12px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  box-shadow: 
+    0 4px 12px rgba(255, 95, 162, 0.2),
+    0 0 20px rgba(255, 95, 162, 0.1);
 }
 
 .confirmText {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.95);
+  color: #FF5FA2;
   font-weight: 600;
+  text-shadow: 0 0 8px rgba(255, 95, 162, 0.4);
 }

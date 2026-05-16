@@ -24,7 +24,7 @@ export default function PostComposer({ onPost, sessionId }) {
   const shakeTimeoutRef = useRef(null)
 
   const charCount = content.length
-  const warnCount = charCount >= 180
+  const warnCount = charCount >= 900
 
   const isExpanded = useMemo(() => {
     if (!content) return false
@@ -172,7 +172,7 @@ export default function PostComposer({ onPost, sessionId }) {
             placeholder="What's on your mind?"
             value={content}
             onChange={handleContentChange}
-            maxLength={200}
+            maxLength={1000}
             rows={1}
           />
 
@@ -217,7 +217,7 @@ export default function PostComposer({ onPost, sessionId }) {
               }}
               transition={{ duration: 0.3 }}
             >
-              {charCount}/200
+              {charCount}/1000
             </motion.div>
           </div>
 
