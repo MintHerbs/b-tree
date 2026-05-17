@@ -73,15 +73,17 @@ function FolderTrigger({
               style={gitColor ? { color: gitColor } : undefined}
               data-git-status={gitStatus}
             >
-              {icon ? (
-                <span className={styles.customIcon}>
-                  {icon}
-                </span>
-              ) : (
-                <FolderIconPrimitive
-                  closeIcon={<FolderIcon size={18} />}
-                  openIcon={<FolderOpenIcon size={18} />}
-                />
+              {variant !== 'parent' && (
+                icon ? (
+                  <span className={styles.customIcon}>
+                    {icon}
+                  </span>
+                ) : (
+                  <FolderIconPrimitive
+                    closeIcon={<FolderIcon size={18} />}
+                    openIcon={<FolderOpenIcon size={18} />}
+                  />
+                )
               )}
               <FileLabelPrimitive className={cn(styles.label, className)} {...props}>
                 {children}
