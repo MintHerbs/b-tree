@@ -36,19 +36,32 @@ function ExpandedView({
 
   return (
     <div className={styles.container}>
-      <div className={styles.rootLabel}>Computer Science</div>
+      <div className={styles.rootLabel}>
+        <span 
+          onClick={() => go('/home', 'Home')} 
+          style={{ cursor: 'pointer', textDecoration: 'none' }}
+          onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+        >
+          home
+        </span>
+        /computer science
+      </div>
 
       <div className={styles.treeArea}>
         <div className={styles.filesContainer}>
           <Files defaultOpen={defaultOpen}>
-            {MODULES.map((module) => {
+            {MODULES.filter(module => module.id !== 'Miscellaneous').map((module) => {
               const notes = module.notes ?? []
               const tools = module.tools ?? []
               const populated = moduleHasContent(module)
 
               return (
                 <FolderItem key={module.id} value={module.id}>
-                  <FolderTrigger variant="parent">{module.id}</FolderTrigger>
+                  <FolderTrigger variant="parent">
+                    <module.Icon size={15} weight="regular" style={{ marginRight: 6, flexShrink: 0 }} />
+                    {module.label}
+                  </FolderTrigger>
                   <FolderContent>
                     <SubFiles>
                       {notes.length > 0 && (
@@ -104,29 +117,12 @@ function ExpandedView({
             <FileItem icon={PACKAGE_JSON.Icon} onClick={() => onOpenPackageJson?.()}>
               {PACKAGE_JSON.label}
             </FileItem>
-            {STANDALONE_TOOLS.filter(t => t.id === 'Home').map((t) => (
+            {STANDALONE_TOOLS.filter(t => t.id !== 'Home').map((t) => (
               <FileItem
                 key={t.id}
                 icon={t.Icon}
                 onClick={() => go(t.route, t.id)}
                 className={path === t.route ? styles.activeFile : undefined}
-              >
-                {t.label}
-              </FileItem>
-            ))}
-            {STANDALONE_TOOLS.filter(t => t.id !== 'Home').map((t) => (
-              <FileItem
-                key={t.id}
-                icon={t.Icon}
-                variant="tool"
-                onClick={() => go(t.route, t.id)}
-                className={
-                  path === t.route
-                    ? styles.activeFile
-                    : (t.id === 'cpa' || t.id === 'minmax')
-                    ? styles.cpaFile
-                    : undefined
-                }
               >
                 {t.label}
               </FileItem>
