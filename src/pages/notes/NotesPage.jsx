@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import MarkdownRenderer from '../../components/markdown/MarkdownRenderer'
 
 const notes = import.meta.glob('../../content/notes/**/*.md', {
   query: '?raw',
@@ -45,15 +46,6 @@ function NotesPage() {
     return () => { cancelled = true }
   }, [noteKey])
 
-  const text =
-    status === 'loading'
-      ? 'Loading...'
-      : status === 'not_found'
-        ? 'Note not found.'
-        : status === 'error'
-          ? 'Failed to load note.'
-          : content
-
   return (
     <div
       style={{
@@ -67,18 +59,16 @@ function NotesPage() {
         boxSizing: 'border-box',
       }}
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '720px',
-          color: '#ffffff',
-          fontFamily: 'monospace',
-          lineHeight: 1.8,
-          whiteSpace: 'pre-wrap',
-        }}
-      >
-        {text}
-      </div>
+      {status === 'loading' && (
+        <div style={{ color: '#ffffff', fontSize: '18px' }}>Loading...</div>
+      )}
+      {status === 'not_found' && (
+        <div style={{ color: '#ff6b6b', fontSize: '18px' }}>Note not found.</div>
+      )}
+      {status === 'error' && (
+        <div style={{ color: '#ff6b6b', fontSize: '18px' }}>Failed to load note.</div>
+      )}
+      {status === 'loaded' && <MarkdownRenderer content={content} />}
     </div>
   )
 }
