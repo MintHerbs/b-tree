@@ -5,11 +5,10 @@
   border-radius: 12px;
   padding: 48px 56px 80px;
   max-width: 860px;
-  margin: 40px auto 80px auto;
-  padding-left: 76px; /* sidebar offset */
   position: relative;
   z-index: 5;
   box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  flex-shrink: 0;
 }
 
 /* Container for the markdown content - centered and styled like Obsidian */
