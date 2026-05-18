@@ -2,16 +2,16 @@
 *By Moon & LaLa*
 
 **Authors**  
-Sally — Instagram: offrian  
-LaLa — Instagram: nahla.dna
+Moon — Instagram: offrian  
+Nahla — Instagram: nahla.dna
 
 ---
 
 $$
-\text{matrix } \mathbf{A} = \begin{bmatrix} a & b & c & d \\ e & F & g & h \\ i & j & k & L \\ m & n & o & p \end{bmatrix} \quad \leftarrow \text{Column}
+\text{matrix } \mathbf{A} = \begin{bmatrix} a & b & c & d \\ e & F & g & h \\ i & j & k & L \\ m & n & o & p \end{bmatrix} \quad \leftarrow \text{Row}
 $$
 
-$\uparrow$ Row
+$$\hspace{9em}\uparrow \text{ Column}$$
 
 - **Element**: $a_{ij}$ = Element in row($i$) and column($j$)
 - **Size** = number of rows × number of columns
@@ -52,7 +52,7 @@ $$
 **Minor of $M_{11}$** — Strikethrough row 1 and column 1:
 
 $$
-\begin{bmatrix} \cancel{0} & \cancel{1} & \cancel{2} \\ \cancel{3} & 4 & 5 \\ \cancel{6} & 7 & 8 \end{bmatrix}
+\begin{bmatrix} \textcolor{#FF6B6B}{\cancel{0}} & \textcolor{#FF6B6B}{\cancel{1}} & \textcolor{#FF6B6B}{\cancel{2}} \\ \textcolor{#FF6B6B}{\cancel{3}} & \textcolor{#4ECDC4}{4} & \textcolor{#4ECDC4}{5} \\ \textcolor{#FF6B6B}{\cancel{6}} & \textcolor{#4ECDC4}{7} & \textcolor{#4ECDC4}{8} \end{bmatrix}
 $$
 
 Therefore, the minor of $M_{11}$ will be $= (4 \times 8) - (7 \times 5) = -3$
@@ -60,7 +60,7 @@ Therefore, the minor of $M_{11}$ will be $= (4 \times 8) - (7 \times 5) = -3$
 **Minor of $M_{12}$** — Strikethrough row 1 and column 2:
 
 $$
-\begin{bmatrix} \cancel{0} & \cancel{1} & \cancel{2} \\ 3 & \cancel{4} & 5 \\ 6 & \cancel{7} & 8 \end{bmatrix}
+\begin{bmatrix} \textcolor{#FF6B6B}{\cancel{0}} & \textcolor{#FF6B6B}{\cancel{1}} & \textcolor{#FF6B6B}{\cancel{2}} \\ \textcolor{#4ECDC4}{3} & \textcolor{#FF6B6B}{\cancel{4}} & \textcolor{#4ECDC4}{5} \\ \textcolor{#4ECDC4}{6} & \textcolor{#FF6B6B}{\cancel{7}} & \textcolor{#4ECDC4}{8} \end{bmatrix}
 $$
 
 Therefore, the minor of $M_{12}$ will be $= (3 \times 8) - (6 \times 5) = -6$
@@ -112,13 +112,13 @@ Finding Minor of a 3×3 occurs in $|2 \times 2|$
 **Step 1:** Select any Column and strikethrough. I chose R1:
 
 $$
-\text{matrix } \mathbf{A} = \begin{bmatrix} \cancel{0} & \cancel{1} & \cancel{2} \\ 3 & 4 & 5 \\ 6 & 7 & 8 \end{bmatrix}
+\text{matrix } \mathbf{A} = \begin{bmatrix} \textcolor{#FF6B6B}{\cancel{0}} & \textcolor{#FF6B6B}{\cancel{1}} & \textcolor{#FF6B6B}{\cancel{2}} \\ \textcolor{#4ECDC4}{3} & \textcolor{#4ECDC4}{4} & \textcolor{#4ECDC4}{5} \\ \textcolor{#4ECDC4}{6} & \textcolor{#4ECDC4}{7} & \textcolor{#4ECDC4}{8} \end{bmatrix}
 $$
 
 **Step 2:** Select any Row and strikethrough. I chose C3:
 
 $$
-\text{matrix } \mathbf{A} = \begin{bmatrix} \cancel{0} & \cancel{1} & \cancel{2} \\ 3 & 4 & \cancel{5} \\ 6 & 7 & \cancel{8} \end{bmatrix}
+\text{matrix } \mathbf{A} = \begin{bmatrix} \textcolor{#FF6B6B}{\cancel{0}} & \textcolor{#FF6B6B}{\cancel{1}} & \textcolor{#FF6B6B}{\cancel{2}} \\ \textcolor{#4ECDC4}{3} & \textcolor{#4ECDC4}{4} & \textcolor{#FF6B6B}{\cancel{5}} \\ \textcolor{#4ECDC4}{6} & \textcolor{#4ECDC4}{7} & \textcolor{#FF6B6B}{\cancel{8}} \end{bmatrix}
 $$
 
 **Step 3:** Write remaining numbers as a 2×2 matrix:
@@ -157,7 +157,7 @@ $$
 Diagonal Matrix has the same number of rows and columns. Only the leading diagonals have values, the rest of the elements are zero.
 
 $$
-\text{matrix } \mathbf{A} = \begin{bmatrix} a_{11} & 0 & 0 \\ 0 & a_{22} & 0 \\ 0 & 0 & a_{23} \end{bmatrix}
+\text{matrix } \mathbf{A} = \begin{bmatrix} \textcolor{#FB923C}{a_{11}} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#FB923C}{a_{22}} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FB923C}{a_{23}} \end{bmatrix}
 $$
 
 ### Symmetry Matrix
@@ -181,7 +181,7 @@ $$
 Identity Matrix has leading diagonals equal to 1. When we multiply an identity matrix to a matrix we get the same matrix.
 
 $$
-\text{matrix } \mathbf{A} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}
+\text{matrix } \mathbf{A} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} \end{bmatrix}
 $$
 
 ### Triangular Matrix
@@ -189,11 +189,11 @@ $$
 Shows evidence of symmetry along the leading diagonal.
 
 $$
-\text{Lower Triangular} = \begin{bmatrix} 1 & 0 & 0 \\ -1 & 2 & 0 \\ -6 & -4 & 3 \end{bmatrix}
+\text{Lower Triangular} = \begin{bmatrix} 1 & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ -1 & 2 & \textcolor{#6B6680}{0} \\ -6 & -4 & 3 \end{bmatrix}
 $$
 
 $$
-\text{Upper Triangular} = \begin{bmatrix} 1 & 2 & 3 \\ 0 & 4 & 5 \\ 0 & 0 & 6 \end{bmatrix}
+\text{Upper Triangular} = \begin{bmatrix} 1 & 2 & 3 \\ \textcolor{#6B6680}{0} & 4 & 5 \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & 6 \end{bmatrix}
 $$
 
 ### Transpose of Matrix
@@ -233,9 +233,9 @@ $$
 $$
 
 $$
-\text{Cofactor} \rightarrow \begin{bmatrix} d & -c \\ -b & a \end{bmatrix}
-\xrightarrow{\text{Transpose}} \begin{bmatrix} d & -b \\ -c & a \end{bmatrix}
-\xrightarrow{\div \text{ Determinant}} \frac{1}{ad-bc} \begin{bmatrix} d & -b \\ -c & a \end{bmatrix}
+\text{Cofactor} \rightarrow \begin{bmatrix} \textcolor{#4ECDC4}{d} & \textcolor{#FF6B6B}{-c} \\ \textcolor{#FF6B6B}{-b} & \textcolor{#4ECDC4}{a} \end{bmatrix}
+\xrightarrow{\textcolor{#FDE68A}{\text{Transpose}}} \begin{bmatrix} \textcolor{#4ECDC4}{d} & \textcolor{#FDE68A}{-b} \\ \textcolor{#FDE68A}{-c} & \textcolor{#4ECDC4}{a} \end{bmatrix}
+\xrightarrow{\textcolor{#C4B5FD}{\div \text{ Det}}} \textcolor{#C4B5FD}{\frac{1}{ad-bc}} \begin{bmatrix} d & -b \\ -c & a \end{bmatrix}
 $$
 
 ### Method 2: Using Row Operations
@@ -254,45 +254,45 @@ $$
 We need to put it in the form $[A|I_3]$ (augmented matrix):
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & 1 & 0 & 0 \\ -2 & 0 & 1 & 0 & 1 & 0 \\ 1 & 1 & 0 & 0 & 0 & 1 \end{array}\right]
+\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & \textcolor{#C4B5FD}{\textcolor{#A78BFA}{1}} & \textcolor{#C4B5FD}{\textcolor{#6B6680}{0}} & \textcolor{#C4B5FD}{\textcolor{#6B6680}{0}} \\ -2 & 0 & 1 & \textcolor{#C4B5FD}{\textcolor{#6B6680}{0}} & \textcolor{#C4B5FD}{\textcolor{#A78BFA}{1}} & \textcolor{#C4B5FD}{\textcolor{#6B6680}{0}} \\ 1 & 1 & 0 & \textcolor{#C4B5FD}{\textcolor{#6B6680}{0}} & \textcolor{#C4B5FD}{\textcolor{#6B6680}{0}} & \textcolor{#C4B5FD}{\textcolor{#A78BFA}{1}} \end{array}\right]
 $$
 
 This part ($A$) should become like $I_3$. And whatever calculations are done in $A$ to become $I_3$ has to be done in $I_3$ too. The end product ($I_3$) will become the inverse.
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & 1 & 0 & 0 \\ -2 & 0 & 1 & 0 & 1 & 0 \\ 1 & 1 & 0 & 0 & 0 & 1 \end{array}\right] \xrightarrow{R_1 - R_3}
+\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ -2 & 0 & 1 & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ 1 & 1 & 0 & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} \end{array}\right] \xrightarrow{R_1 - R_3}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & 1 & 0 & 0 \\ -2 & 0 & 1 & 0 & 1 & 0 \\ 0 & 3 & -1 & 0 & 0 & -1 \end{array}\right] \xrightarrow{2R_1 + R_2}
+\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ -2 & 0 & 1 & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{3} & \textcolor{#FDE68A}{-1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{-1} \end{array}\right] \xrightarrow{2R_1 + R_2}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & 1 & 0 & 0 \\ 0 & 4 & -1 & 2 & 1 & 0 \\ 0 & 3 & -1 & 1 & 0 & -1 \end{array}\right] \xrightarrow{3R_2 - 4R_3}
+\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{4} & \textcolor{#FDE68A}{-1} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ 0 & 3 & -1 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{-1} \end{array}\right] \xrightarrow{3R_2 - 4R_3}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & 1 & 0 & 0 \\ 0 & 4 & -1 & 2 & 1 & 0 \\ 0 & 0 & 1 & 2 & 3 & 4 \end{array}\right] \xrightarrow{R_1 + R_3}
+\left[\begin{array}{ccc|ccc} 1 & 2 & -1 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ 0 & 4 & -1 & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{1} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \end{array}\right] \xrightarrow{R_1 + R_3}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & 0 & 3 & 3 & 4 \\ 0 & 4 & -1 & 2 & 1 & 0 \\ 0 & 0 & 1 & 2 & 3 & 4 \end{array}\right] \xrightarrow{R_2 + R_3}
+\left[\begin{array}{ccc|ccc} \textcolor{#FDE68A}{1} & \textcolor{#FDE68A}{2} & \textcolor{#FDE68A}{0} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \\ 0 & 4 & -1 & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ 0 & 0 & 1 & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \end{array}\right] \xrightarrow{R_2 + R_3}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & 0 & 3 & 3 & 4 \\ 0 & 4 & 0 & 4 & 4 & 4 \\ 0 & 0 & 1 & 2 & 3 & 4 \end{array}\right] \xrightarrow{2R_1 - R_2}
+\left[\begin{array}{ccc|ccc} 1 & 2 & 0 & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{4} & \textcolor{#FDE68A}{0} & \textcolor{#C4B5FD}{4} & \textcolor{#C4B5FD}{4} & \textcolor{#C4B5FD}{4} \\ 0 & 0 & 1 & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \end{array}\right] \xrightarrow{2R_1 - R_2}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & -2 & 0 & 3 & 3 & 3 \\ 0 & 4 & 0 & 4 & 4 & 4 \\ 0 & 0 & 1 & 2 & 3 & 4 \end{array}\right]
+\left[\begin{array}{ccc|ccc} \textcolor{#FDE68A}{1} & \textcolor{#FDE68A}{-2} & \textcolor{#FDE68A}{0} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{3} \\ 0 & 4 & 0 & \textcolor{#C4B5FD}{4} & \textcolor{#C4B5FD}{4} & \textcolor{#C4B5FD}{4} \\ 0 & 0 & 1 & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \end{array}\right]
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 2 & 0 & 0 & 2 & 2 & 4 \\ 0 & 4 & 0 & 4 & 4 & 4 \\ 0 & 0 & 1 & 2 & 3 & 4 \end{array}\right] \xrightarrow{\frac{1}{2}R_1,\; \frac{1}{4}R_2}
+\left[\begin{array}{ccc|ccc} \textcolor{#FDE68A}{2} & \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{0} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{4} \\ 0 & 4 & 0 & \textcolor{#C4B5FD}{4} & \textcolor{#C4B5FD}{4} & \textcolor{#C4B5FD}{4} \\ 0 & 0 & 1 & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \end{array}\right] \xrightarrow{\frac{1}{2}R_1,\; \frac{1}{4}R_2}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 0 & 0 & 1 & 1 & 2 \\ 0 & 1 & 0 & 1 & 1 & 1 \\ 0 & 0 & 1 & 2 & 3 & 4 \end{array}\right] \qquad \therefore A^{-1} = \begin{bmatrix} 1 & 1 & 2 \\ 1 & 1 & 1 \\ 2 & 3 & 4 \end{bmatrix}
+\left[\begin{array}{ccc|ccc} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{2} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{1} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{4} \end{array}\right] \qquad \therefore A^{-1} = \begin{bmatrix} 1 & 1 & 2 \\ 1 & 1 & 1 \\ 2 & 3 & 4 \end{bmatrix}
 $$
 
 > **NOTE:** To check if the answer is correct: $A \times A^{-1} = \text{Identity matrix}$
@@ -308,23 +308,23 @@ A = \begin{bmatrix} 1 & 2 & 4 \\ 1 & 3 & 6 \\ 1 & 0 & 1 \end{bmatrix}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & 4 & 1 & 0 & 0 \\ 1 & 3 & 6 & 0 & 1 & 0 \\ 1 & 0 & 1 & 0 & 0 & 1 \end{array}\right] \xrightarrow{R_2 - R_1}
+\left[\begin{array}{ccc|ccc} 1 & 2 & 4 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ 1 & 3 & 6 & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ 1 & 0 & 1 & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} \end{array}\right] \xrightarrow{R_2 - R_1}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & 4 & 1 & 0 & 0 \\ 0 & 1 & 2 & -1 & 1 & 0 \\ 1 & 0 & 1 & 0 & 0 & 1 \end{array}\right] \xrightarrow{R_3 - R_1}
+\left[\begin{array}{ccc|ccc} 1 & 2 & 4 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{1} & \textcolor{#FDE68A}{2} & \textcolor{#C4B5FD}{-1} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ 1 & 0 & 1 & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} \end{array}\right] \xrightarrow{R_3 - R_1}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 2 & 4 & 1 & 0 & 0 \\ 0 & 1 & 2 & -1 & 1 & 0 \\ 0 & -2 & -3 & -1 & 0 & 1 \end{array}\right] \xrightarrow{R_1 - 2R_2,\; R_3 + 2R_2}
+\left[\begin{array}{ccc|ccc} 1 & 2 & 4 & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{0} \\ 0 & 1 & 2 & \textcolor{#C4B5FD}{-1} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{-2} & \textcolor{#FDE68A}{-3} & \textcolor{#C4B5FD}{-1} & \textcolor{#C4B5FD}{0} & \textcolor{#C4B5FD}{1} \end{array}\right] \xrightarrow{R_1 - 2R_2,\; R_3 + 2R_2}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 0 & 0 & 3 & -2 & 0 \\ 0 & 1 & 2 & -1 & 1 & 0 \\ 0 & 0 & 1 & -3 & 2 & 1 \end{array}\right] \xrightarrow{R_2 - 2R_3}
+\left[\begin{array}{ccc|ccc} \textcolor{#FDE68A}{1} & \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{0} & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{-2} & \textcolor{#C4B5FD}{0} \\ 0 & 1 & 2 & \textcolor{#C4B5FD}{-1} & \textcolor{#C4B5FD}{1} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{1} & \textcolor{#C4B5FD}{-3} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{1} \end{array}\right] \xrightarrow{R_2 - 2R_3}
 $$
 
 $$
-\left[\begin{array}{ccc|ccc} 1 & 0 & 0 & 3 & -2 & 0 \\ 0 & 1 & 0 & 5 & -3 & -2 \\ 0 & 0 & 1 & -3 & 2 & 1 \end{array}\right]
+\left[\begin{array}{ccc|ccc} 1 & 0 & 0 & \textcolor{#C4B5FD}{3} & \textcolor{#C4B5FD}{-2} & \textcolor{#C4B5FD}{0} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{1} & \textcolor{#FDE68A}{0} & \textcolor{#C4B5FD}{5} & \textcolor{#C4B5FD}{-3} & \textcolor{#C4B5FD}{-2} \\ 0 & 0 & 1 & \textcolor{#C4B5FD}{-3} & \textcolor{#C4B5FD}{2} & \textcolor{#C4B5FD}{1} \end{array}\right]
 $$
 
 $$
@@ -670,7 +670,7 @@ It involves 3 row operations:
 In short, the aim is to form a triangular matrix:
 
 $$
-\begin{bmatrix} a & b & c \\ 0 & d & e \\ 0 & 0 & f \end{bmatrix} \begin{bmatrix} x \\ y \\ z \end{bmatrix} = \begin{bmatrix} g \\ h \\ i \end{bmatrix}
+\begin{bmatrix} a & b & c \\ \textcolor{#6B6680}{0} & d & e \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & f \end{bmatrix} \begin{bmatrix} x \\ y \\ z \end{bmatrix} = \begin{bmatrix} \textcolor{#C4B5FD}{g} \\ \textcolor{#C4B5FD}{h} \\ \textcolor{#C4B5FD}{i} \end{bmatrix}
 $$
 
 ### Example 1:
@@ -696,20 +696,20 @@ $$
 **Step 2:** Augment matrix $A$ with $B$:
 
 $$
-\left[\begin{array}{ccc|c} 4 & -1 & 2 & 15 \\ -1 & 2 & 3 & 5 \\ 5 & -7 & 9 & 8 \end{array}\right]
+\left[\begin{array}{ccc|c} 4 & -1 & 2 & \textcolor{#C4B5FD}{15} \\ -1 & 2 & 3 & \textcolor{#C4B5FD}{5} \\ 5 & -7 & 9 & \textcolor{#C4B5FD}{8} \end{array}\right]
 $$
 
 **Step 3:** Make the matrix either lower or upper triangular:
 
 $$
-\left[\begin{array}{ccc|c} 4 & -1 & 2 & 15 \\ 0 & \frac{7}{4} & \frac{7}{2} & \frac{35}{4} \\ 0 & -\frac{23}{4} & \frac{13}{2} & -\frac{43}{4} \end{array}\right]
+\left[\begin{array}{ccc|c} 4 & -1 & 2 & \textcolor{#C4B5FD}{15} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{\frac{7}{4}} & \textcolor{#FDE68A}{\frac{7}{2}} & \textcolor{#C4B5FD}{\frac{35}{4}} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{-\frac{23}{4}} & \textcolor{#FDE68A}{\frac{13}{2}} & \textcolor{#C4B5FD}{-\frac{43}{4}} \end{array}\right]
 \quad \begin{array}{l} \\ R_2 = R_2 + \frac{1}{4}R_1 \\ R_3 = R_3 - \frac{5}{4}R_1 \end{array}
 $$
 
 **Step 3 (continued):** Keep doing row operations till triangular matrix is reached:
 
 $$
-\left[\begin{array}{ccc|c} 4 & -1 & 2 & 15 \\ 0 & \frac{7}{4} & \frac{7}{2} & \frac{35}{4} \\ 0 & 0 & 18 & 18 \end{array}\right]
+\left[\begin{array}{ccc|c} \textcolor{#FB923C}{4} & -1 & 2 & \textcolor{#C4B5FD}{15} \\ \textcolor{#6B6680}{0} & \textcolor{#FB923C}{\frac{7}{4}} & \frac{7}{2} & \textcolor{#C4B5FD}{\frac{35}{4}} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FB923C}{18} & \textcolor{#C4B5FD}{18} \end{array}\right]
 \quad \begin{array}{l} \\ \\ R_3 = R_3 + \frac{23}{7}R_2 \end{array}
 $$
 
@@ -742,19 +742,25 @@ $$
 **Solution:**
 
 $$
-\left[\begin{array}{ccc|c} 1 & 1 & -1 & -2 \\ 2 & -1 & 1 & 5 \\ -1 & 2 & 2 & 1 \end{array}\right] \xrightarrow{R_3 + R_1}
+\left[\begin{array}{ccc|c} 1 & 1 & -1 & \textcolor{#C4B5FD}{-2} \\ 2 & -1 & 1 & \textcolor{#C4B5FD}{5} \\ -1 & 2 & 2 & \textcolor{#C4B5FD}{1} \end{array}\right] \xrightarrow{R_3 + R_1}
 $$
 
 $$
-\left[\begin{array}{ccc|c} 1 & 1 & -1 & -2 \\ 2 & -1 & 1 & 5 \\ 0 & 3 & 1 & -1 \end{array}\right] \xrightarrow{2R_1 - R_2}
+\left[\begin{array}{ccc|c} 1 & 1 & -1 & \textcolor{#C4B5FD}{-2} \\ 2 & -1 & 1 & \textcolor{#C4B5FD}{5} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{3} & \textcolor{#FDE68A}{1} & \textcolor{#FDE68A}{-1} \end{array}\right] \xrightarrow{2R_1 - R_2}
 $$
 
 $$
-\left[\begin{array}{ccc|c} 1 & 1 & -1 & -2 \\ 0 & 3 & -3 & -9 \\ 0 & 3 & 1 & -1 \end{array}\right] \xrightarrow{R_3 - R_2}
+\left[\begin{array}{ccc|c} 1 & 1 & -1 & \textcolor{#C4B5FD}{-2} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{3} & \textcolor{#FDE68A}{-3} & \textcolor{#FDE68A}{-9} \\ 0 & 3 & 1 & \textcolor{#C4B5FD}{-1} \end{array}\right] \xrightarrow{R_3 - R_2}
 $$
 
 $$
-\left[\begin{array}{ccc|c} 1 & 1 & -1 & -2 \\ 0 & 3 & -3 & -9 \\ 0 & 0 & 4 & 8 \end{array}\right]
+\left[\begin{array}{ccc|c} 1 & 1 & -1 & \textcolor{#C4B5FD}{-2} \\ 0 & 3 & -3 & \textcolor{#C4B5FD}{-9} \\ \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{0} & \textcolor{#FDE68A}{4} & \textcolor{#C4B5FD}{8} \end{array}\right]
+$$
+
+**Final triangular form:**
+
+$$
+\left[\begin{array}{ccc|c} \textcolor{#FB923C}{1} & 1 & -1 & \textcolor{#C4B5FD}{-2} \\ \textcolor{#6B6680}{0} & \textcolor{#FB923C}{3} & -3 & \textcolor{#C4B5FD}{-9} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FB923C}{4} & \textcolor{#C4B5FD}{8} \end{array}\right]
 $$
 
 From here we can deduce the following equations:
@@ -789,7 +795,7 @@ $$
 i.e:
 
 $$
-\mathbf{A} = \begin{bmatrix} 1 & 2 \\ 1 & 0 \end{bmatrix} = \begin{bmatrix} 1 & 0 \\ 1 & 1 \end{bmatrix} \begin{bmatrix} 1 & 2 \\ 0 & -2 \end{bmatrix} = \mathbf{LU}
+\mathbf{A} = \begin{bmatrix} 1 & 2 \\ 1 & 0 \end{bmatrix} = \underbrace{\begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{1} & \textcolor{#A78BFA}{1} \end{bmatrix}}_{\textcolor{#5B8CFF}{L}} \underbrace{\begin{bmatrix} \textcolor{#FF8FAB}{1} & \textcolor{#FF8FAB}{2} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{-2} \end{bmatrix}}_{\textcolor{#FF8FAB}{U}} = \mathbf{\textcolor{#5B8CFF}{L}\textcolor{#FF8FAB}{U}}
 $$
 
 Above is an example decomposition of matrix $A$ into a lower and upper triangle.
@@ -809,19 +815,19 @@ We have two methods of decomposition:
 **Triangles for Doolittle's Method:**
 
 $$
-L = \begin{bmatrix} 1 & 0 & 0 \\ a & 1 & 0 \\ b & c & 1 \end{bmatrix} \qquad U = \begin{bmatrix} d & e & f \\ 0 & g & h \\ 0 & 0 & i \end{bmatrix}
+\textcolor{#5B8CFF}{L} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{a} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{b} & \textcolor{#5B8CFF}{c} & \textcolor{#A78BFA}{1} \end{bmatrix} \qquad \textcolor{#FF8FAB}{U} = \begin{bmatrix} \textcolor{#FF8FAB}{d} & \textcolor{#FF8FAB}{e} & \textcolor{#FF8FAB}{f} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{g} & \textcolor{#FF8FAB}{h} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{i} \end{bmatrix}
 $$
 
 We can also write the triangles for Doolittle's method as:
 
 $$
-L = \begin{bmatrix} 1 & 0 & 0 \\ L_{21} & 1 & 0 \\ L_{31} & L_{32} & 1 \end{bmatrix} \qquad U = \begin{bmatrix} U_{11} & U_{12} & U_{13} \\ 0 & U_{22} & U_{23} \\ 0 & 0 & U_{33} \end{bmatrix}
+\textcolor{#5B8CFF}{L} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{21}} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{31}} & \textcolor{#5B8CFF}{L_{32}} & \textcolor{#A78BFA}{1} \end{bmatrix} \qquad \textcolor{#FF8FAB}{U} = \begin{bmatrix} \textcolor{#FF8FAB}{U_{11}} & \textcolor{#FF8FAB}{U_{12}} & \textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{U_{22}} & \textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{U_{33}} \end{bmatrix}
 $$
 
 We can also write the triangle for Crout's Method as:
 
 $$
-L = \begin{bmatrix} L_{11} & 0 & 0 \\ L_{21} & L_{22} & 0 \\ L_{31} & L_{32} & L_{33} \end{bmatrix} \qquad U = \begin{bmatrix} 1 & U_{12} & U_{13} \\ 0 & 1 & U_{23} \\ 0 & 0 & 1 \end{bmatrix}
+\textcolor{#5B8CFF}{L} = \begin{bmatrix} \textcolor{#5B8CFF}{L_{11}} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{21}} & \textcolor{#5B8CFF}{L_{22}} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{31}} & \textcolor{#5B8CFF}{L_{32}} & \textcolor{#5B8CFF}{L_{33}} \end{bmatrix} \qquad \textcolor{#FF8FAB}{U} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{U_{12}} & \textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} \end{bmatrix}
 $$
 
 ---
@@ -875,7 +881,7 @@ $$ag = 4 \quad bg + c = 9 \quad bh + ci = 4 \quad ah = 1 \quad dg + e = 13 \quad
 **Step 5:** Substitute values into $L$ and $U$:
 
 $$
-\begin{bmatrix} a & 0 & 0 \\ b & c & 0 \\ d & e & f \end{bmatrix} \begin{bmatrix} 1 & g & h \\ 0 & 1 & i \\ 0 & 0 & 1 \end{bmatrix} = \begin{bmatrix} 5 & 0 & 0 \\ 10 & 1 & 0 \\ 10 & 5 & 3 \end{bmatrix} \begin{bmatrix} 1 & 0.8 & 0.2 \\ 0 & 1 & 2 \\ 0 & 0 & 1 \end{bmatrix}
+\begin{bmatrix} \textcolor{#5B8CFF}{a} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{b} & \textcolor{#5B8CFF}{c} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{d} & \textcolor{#5B8CFF}{e} & \textcolor{#5B8CFF}{f} \end{bmatrix} \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{g} & \textcolor{#FF8FAB}{h} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{i} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} \end{bmatrix} = \begin{bmatrix} \textcolor{#5B8CFF}{5} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{10} & \textcolor{#5B8CFF}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{10} & \textcolor{#5B8CFF}{5} & \textcolor{#5B8CFF}{3} \end{bmatrix} \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{0.8} & \textcolor{#FF8FAB}{0.2} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{2} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} \end{bmatrix}
 $$
 
 $$b = 10 \quad d = 10 \quad c = 1 \quad h = 0.2 \quad e = 5 \quad f = 3$$
@@ -933,13 +939,13 @@ $$
 **Step 2:** Decompose $A$ into $L$ and $U$:
 
 $$
-\begin{bmatrix} 1 & 1 & 1 \\ 4 & 3 & -1 \\ 3 & 5 & 3 \end{bmatrix} = \begin{bmatrix} L_{11} & 0 & 0 \\ L_{21} & L_{22} & 0 \\ L_{31} & L_{32} & L_{33} \end{bmatrix} \begin{bmatrix} 1 & U_{12} & U_{13} \\ 0 & 1 & U_{23} \\ 0 & 0 & 1 \end{bmatrix}
+\begin{bmatrix} 1 & 1 & 1 \\ 4 & 3 & -1 \\ 3 & 5 & 3 \end{bmatrix} = \begin{bmatrix} \textcolor{#5B8CFF}{L_{11}} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{21}} & \textcolor{#5B8CFF}{L_{22}} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{31}} & \textcolor{#5B8CFF}{L_{32}} & \textcolor{#5B8CFF}{L_{33}} \end{bmatrix} \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{U_{12}} & \textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} \end{bmatrix}
 $$
 
 **Step 3:** Multiply $L$ and $U$ just like you would multiply a 3×3 matrix (Row × Column):
 
 $$
-A = \begin{bmatrix} L_{11} & L_{11}U_{12} & L_{11}U_{13} \\ L_{21} & L_{21}U_{12} + L_{22} & L_{21}U_{13} + L_{22}U_{23} \\ L_{31} & L_{31}U_{12} + L_{32} & L_{31}U_{13} + L_{32}U_{23} + L_{33} \end{bmatrix}
+A = \begin{bmatrix} \textcolor{#5B8CFF}{L_{11}} & \textcolor{#5B8CFF}{L_{11}}\textcolor{#FF8FAB}{U_{12}} & \textcolor{#5B8CFF}{L_{11}}\textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#5B8CFF}{L_{21}} & \textcolor{#5B8CFF}{L_{21}}\textcolor{#FF8FAB}{U_{12}} + \textcolor{#5B8CFF}{L_{22}} & \textcolor{#5B8CFF}{L_{21}}\textcolor{#FF8FAB}{U_{13}} + \textcolor{#5B8CFF}{L_{22}}\textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#5B8CFF}{L_{31}} & \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF8FAB}{U_{12}} + \textcolor{#5B8CFF}{L_{32}} & \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF8FAB}{U_{13}} + \textcolor{#5B8CFF}{L_{32}}\textcolor{#FF8FAB}{U_{23}} + \textcolor{#5B8CFF}{L_{33}} \end{bmatrix}
 $$
 
 **Step 4:** Compare $LU$ with their respective positions in $A$:
@@ -975,7 +981,7 @@ $$
 $$
 
 $$
-\therefore L = \begin{bmatrix} 1 & 0 & 0 \\ 4 & -1 & 0 \\ 3 & 2 & -10 \end{bmatrix} \quad \text{and} \quad U = \begin{bmatrix} 1 & 1 & 1 \\ 0 & 1 & 5 \\ 0 & 0 & 1 \end{bmatrix}
+\therefore \textcolor{#5B8CFF}{L} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{4} & \textcolor{#5B8CFF}{-1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{3} & \textcolor{#5B8CFF}{2} & \textcolor{#5B8CFF}{-10} \end{bmatrix} \quad \text{and} \quad \textcolor{#FF8FAB}{U} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{1} & \textcolor{#FF8FAB}{1} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#FF8FAB}{5} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} \end{bmatrix}
 $$
 
 **Step 5:** We know that $Ax = B \Rightarrow LUx = B$. Let $Ux = y \Rightarrow Ly = B$:
@@ -1039,19 +1045,19 @@ $$
 **Step 2:** Decompose $A$ into $L$ and $U$:
 
 $$
-\begin{bmatrix} 1 & 1 & 1 \\ 4 & 3 & -1 \\ 3 & 5 & 3 \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 \\ L_{21} & 1 & 0 \\ L_{31} & L_{32} & 1 \end{bmatrix} \begin{bmatrix} U_{11} & U_{12} & U_{13} \\ 0 & U_{22} & U_{23} \\ 0 & 0 & U_{33} \end{bmatrix}
+\begin{bmatrix} 1 & 1 & 1 \\ 4 & 3 & -1 \\ 3 & 5 & 3 \end{bmatrix} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{21}} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{31}} & \textcolor{#5B8CFF}{L_{32}} & \textcolor{#A78BFA}{1} \end{bmatrix} \begin{bmatrix} \textcolor{#FF8FAB}{U_{11}} & \textcolor{#FF8FAB}{U_{12}} & \textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{U_{22}} & \textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{U_{33}} \end{bmatrix}
 $$
 
 **Step 3:** Multiply $L$ and $U$ just like you would multiply a 3×3 matrix (Row × Column):
 
 $$
-A = \begin{bmatrix} U_{11} & U_{12} & U_{13} \\ L_{21}U_{11} & L_{21}U_{12} + U_{22} & U_{13}L_{21} + U_{23} \\ L_{31}U_{11} & L_{31}U_{12} + L_{32}U_{22} & L_{31}U_{13} + L_{32}U_{23} + U_{33} \end{bmatrix}
+A = \begin{bmatrix} \textcolor{#FF8FAB}{U_{11}} & \textcolor{#FF8FAB}{U_{12}} & \textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#5B8CFF}{L_{21}}\textcolor{#FF8FAB}{U_{11}} & \textcolor{#5B8CFF}{L_{21}}\textcolor{#FF8FAB}{U_{12}} + \textcolor{#FF8FAB}{U_{22}} & \textcolor{#FF8FAB}{U_{13}}\textcolor{#5B8CFF}{L_{21}} + \textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF8FAB}{U_{11}} & \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF8FAB}{U_{12}} + \textcolor{#5B8CFF}{L_{32}}\textcolor{#FF8FAB}{U_{22}} & \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF8FAB}{U_{13}} + \textcolor{#5B8CFF}{L_{32}}\textcolor{#FF8FAB}{U_{23}} + \textcolor{#FF8FAB}{U_{33}} \end{bmatrix}
 $$
 
 **Step 4:** Compare $LU$ with their respective position in $A$:
 
 $$
-\begin{bmatrix} 1 & 1 & 1 \\ 4 & 3 & -1 \\ 3 & 5 & 3 \end{bmatrix} = \begin{bmatrix} U_{11} & U_{12} & U_{13} \\ L_{21}U_{11} & L_{21}U_{12} + U_{22} & U_{13}L_{21} + U_{23} \\ L_{31}U_{11} & L_{31}U_{12} + L_{32}U_{22} & L_{31}U_{13} + L_{32}U_{23} + U_{33} \end{bmatrix}
+\begin{bmatrix} 1 & 1 & 1 \\ 4 & 3 & -1 \\ 3 & 5 & 3 \end{bmatrix} = \begin{bmatrix} \textcolor{#FF5FA2}{U_{11}} & \textcolor{#FF5FA2}{U_{12}} & \textcolor{#FF5FA2}{U_{13}} \\ \textcolor{#5B8CFF}{L_{21}}\textcolor{#FF5FA2}{U_{11}} & \textcolor{#5B8CFF}{L_{21}}\textcolor{#FF5FA2}{U_{12}} + \textcolor{#FF5FA2}{U_{22}} & \textcolor{#FF5FA2}{U_{13}}\textcolor{#5B8CFF}{L_{21}} + \textcolor{#FF5FA2}{U_{23}} \\ \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF5FA2}{U_{11}} & \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF5FA2}{U_{12}} + \textcolor{#5B8CFF}{L_{32}}\textcolor{#FF5FA2}{U_{22}} & \textcolor{#5B8CFF}{L_{31}}\textcolor{#FF5FA2}{U_{13}} + \textcolor{#5B8CFF}{L_{32}}\textcolor{#FF5FA2}{U_{23}} + \textcolor{#FF5FA2}{U_{33}} \end{bmatrix}
 $$
 
 By comparing, we get these equations:
@@ -1081,7 +1087,7 @@ $$
 $$
 
 $$
-\therefore L = \begin{bmatrix} 1 & 0 & 0 \\ 4 & 1 & 0 \\ 3 & -2 & 1 \end{bmatrix} \quad U = \begin{bmatrix} 1 & 1 & 1 \\ 0 & -1 & -5 \\ 0 & 0 & -10 \end{bmatrix}
+\therefore \textcolor{#5B8CFF}{L} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{4} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{3} & \textcolor{#5B8CFF}{-2} & \textcolor{#A78BFA}{1} \end{bmatrix} \quad \textcolor{#FF8FAB}{U} = \begin{bmatrix} \textcolor{#FF8FAB}{1} & \textcolor{#FF8FAB}{1} & \textcolor{#FF8FAB}{1} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{-1} & \textcolor{#FF8FAB}{-5} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{-10} \end{bmatrix}
 $$
 
 **Step 5:** We know that $LUx = B$. Let $Ux = y \Rightarrow Ly = B$:
@@ -1145,7 +1151,7 @@ $$
 Splitting $A$ into $L$ and $U$:
 
 $$
-\begin{bmatrix} 5 & 4 & 1 \\ 10 & 9 & 4 \\ 10 & 13 & 15 \end{bmatrix} = \begin{bmatrix} 1 & 0 & 0 \\ L_{21} & 1 & 0 \\ L_{31} & L_{32} & 1 \end{bmatrix} \begin{bmatrix} U_{11} & U_{12} & U_{13} \\ 0 & U_{22} & U_{23} \\ 0 & 0 & U_{33} \end{bmatrix}
+\begin{bmatrix} 5 & 4 & 1 \\ 10 & 9 & 4 \\ 10 & 13 & 15 \end{bmatrix} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{21}} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{L_{31}} & \textcolor{#5B8CFF}{L_{32}} & \textcolor{#A78BFA}{1} \end{bmatrix} \begin{bmatrix} \textcolor{#FF8FAB}{U_{11}} & \textcolor{#FF8FAB}{U_{12}} & \textcolor{#FF8FAB}{U_{13}} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{U_{22}} & \textcolor{#FF8FAB}{U_{23}} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{U_{33}} \end{bmatrix}
 $$
 
 $$
@@ -1179,7 +1185,7 @@ $$
 $$
 
 $$
-L = \begin{bmatrix} 1 & 0 & 0 \\ 2 & 1 & 0 \\ 2 & 5 & 1 \end{bmatrix} \quad \text{and} \quad U = \begin{bmatrix} 5 & 4 & 1 \\ 0 & 1 & 2 \\ 0 & 0 & 3 \end{bmatrix}
+\textcolor{#5B8CFF}{L} = \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{2} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} \\ \textcolor{#5B8CFF}{2} & \textcolor{#5B8CFF}{5} & \textcolor{#A78BFA}{1} \end{bmatrix} \quad \text{and} \quad \textcolor{#FF8FAB}{U} = \begin{bmatrix} \textcolor{#FF8FAB}{5} & \textcolor{#FF8FAB}{4} & \textcolor{#FF8FAB}{1} \\ \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{1} & \textcolor{#FF8FAB}{2} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FF8FAB}{3} \end{bmatrix}
 $$
 
 $$Ax = B \quad \Rightarrow \quad LUx = B, \quad \text{Let } Ux = y \Rightarrow Ly = B$$
@@ -1236,7 +1242,7 @@ $$
 2. Leading 1's are the only non-zero entry in a column.
 
 $$
-\text{Echelon Form:} \quad \begin{bmatrix} x & x & x \\ 0 & x & x \\ 0 & 0 & x \end{bmatrix} \qquad \text{Reduced Echelon Form:} \quad \begin{bmatrix} 1 & 0 & 2 \\ 0 & 1 & 4 \\ 0 & 0 & 0 \end{bmatrix}
+\text{Echelon Form:} \quad \begin{bmatrix} \textcolor{#FB923C}{x} & x & x \\ \textcolor{#6B6680}{0} & \textcolor{#FB923C}{x} & x \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#FB923C}{x} \end{bmatrix} \qquad \text{Reduced Echelon Form:} \quad \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & 2 \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & 4 \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \end{bmatrix}
 $$
 
 Note: $X$ = Any positive integer.
@@ -1287,7 +1293,17 @@ $$
 At the end, your matrix should look a bit like this:
 
 $$
-\begin{bmatrix} I_r & & & \\ & 1 & 0 & 0 & 0 & O_{n1} \\ & 0 & 1 & 0 & 0 & \\ & 0 & 0 & 1 & 0 & \\ & 0 & 0 & 0 & 0 & \\ O_{n2} & & & & & O_{n3} \end{bmatrix}
+\left[\begin{array}{ccc|cc}
+\textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\
+\textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\
+\textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\
+\hline
+\textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0}
+\end{array}\right]
+$$
+
+$$
+\underbrace{\quad I_r \quad}_{\text{rank}} \quad \underbrace{\quad O \quad}_{\text{zero}}
 $$
 
 ### Example 1: Find the rank of the following set of equations:
@@ -1836,7 +1852,7 @@ $$
 **Step 3:** Rearrange rows:
 
 $$
-\begin{bmatrix} I_r & O_i \\ O_i & O_i \end{bmatrix} \approx \begin{bmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 & 0 \end{bmatrix}
+\begin{bmatrix} I_r & O_i \\ O_i & O_i \end{bmatrix} \approx \begin{bmatrix} \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#A78BFA}{1} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \\ \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} & \textcolor{#6B6680}{0} \end{bmatrix}
 $$
 
 $$\therefore \mathbf{Rank}(A) = 3$$
@@ -1863,7 +1879,7 @@ $$
 To solve, we first need to ensure that the matrix has a dominant leading diagonal. This means that the absolute value of each leading diagonal element must be greater than the sum of the absolute values of the other elements in the corresponding row. Once this condition is satisfied, we can proceed with the iterations as follows:
 
 $$
-\begin{bmatrix} 5 & -2 & 3 \\ -3 & 9 & 2 \\ 2 & -l & -7 \end{bmatrix}
+\begin{bmatrix} \textcolor{#FB923C}{5} & -2 & 3 \\ -3 & \textcolor{#FB923C}{9} & 2 \\ 2 & -l & \textcolor{#FB923C}{-7} \end{bmatrix}
 $$
 
 $$
@@ -1919,7 +1935,7 @@ $$
 To solve, we first need to ensure that the matrix has a dominant leading diagonal. This means that the absolute value of each leading diagonal element must be greater than the sum of the absolute values of the other elements in the corresponding row. Once this condition is satisfied, we can proceed with the iterations as follows:
 
 $$
-\begin{bmatrix} 5 & -2 & 3 \\ -3 & 9 & 2 \\ 2 & -l & -7 \end{bmatrix}
+\begin{bmatrix} \textcolor{#FB923C}{5} & -2 & 3 \\ -3 & \textcolor{#FB923C}{9} & 2 \\ 2 & -l & \textcolor{#FB923C}{-7} \end{bmatrix}
 $$
 
 $$

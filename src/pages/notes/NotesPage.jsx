@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import MarkdownRenderer from '../../components/markdown/MarkdownRenderer'
+import styles from '../../components/markdown/MarkdownRenderer.module.css'
 
 const notes = import.meta.glob('../../content/notes/**/*.md', {
   query: '?raw',
@@ -50,25 +51,22 @@ function NotesPage() {
     <div
       style={{
         position: 'relative',
-        zIndex: 5,
-        marginLeft: '76px',
         minHeight: '100vh',
-        padding: '48px 20px',
-        display: 'flex',
-        justifyContent: 'center',
         boxSizing: 'border-box',
       }}
     >
-      {status === 'loading' && (
-        <div style={{ color: '#ffffff', fontSize: '18px' }}>Loading...</div>
-      )}
-      {status === 'not_found' && (
-        <div style={{ color: '#ff6b6b', fontSize: '18px' }}>Note not found.</div>
-      )}
-      {status === 'error' && (
-        <div style={{ color: '#ff6b6b', fontSize: '18px' }}>Failed to load note.</div>
-      )}
-      {status === 'loaded' && <MarkdownRenderer content={content} />}
+      <div className={styles.notesContainer}>
+        {status === 'loading' && (
+          <div style={{ color: '#E8E0D5', fontSize: '18px' }}>Loading...</div>
+        )}
+        {status === 'not_found' && (
+          <div style={{ color: '#ff6b6b', fontSize: '18px' }}>Note not found.</div>
+        )}
+        {status === 'error' && (
+          <div style={{ color: '#ff6b6b', fontSize: '18px' }}>Failed to load note.</div>
+        )}
+        {status === 'loaded' && <MarkdownRenderer content={content} />}
+      </div>
     </div>
   )
 }
