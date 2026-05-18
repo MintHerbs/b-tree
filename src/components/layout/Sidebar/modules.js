@@ -84,12 +84,26 @@ export const MODULES = [
   },
 
   // Coming soon — declare with just { id, label, Icon }. Add `tools` to activate.
-  { id: 'computational-math',    label: 'Computational Math',    Icon: FunctionIcon },
+  {
+    id: 'math',
+    label: 'Math',
+    Icon: FunctionIcon,
+    notes: [
+      { filename: 'math.md', label: 'Matrix Notes.md' },
+    ],
+  },
   { id: 'computer-architecture', label: 'Computer Architecture', Icon: Cpu },
   { id: 'computer-networking',   label: 'Computer Networking',   Icon: Network },
   { id: 'computer-security',     label: 'Computer Security',     Icon: ShieldCheck },
   { id: 'computer-vision',       label: 'Computer Vision',       Icon: Eye },
-  { id: 'operating-systems',     label: 'Operating Systems',     Icon: HardDrive },
+  {
+    id: 'operating-system',
+    label: 'Operating Systems',
+    Icon: HardDrive,
+    notes: [
+      { filename: 'c-programming.md', label: 'C Programming Labs.md' },
+    ],
+  },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
   { id: 'software-engineering',  label: 'Software Engineering',  Icon: Code },
 ]

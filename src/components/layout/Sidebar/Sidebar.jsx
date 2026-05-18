@@ -17,6 +17,7 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
   const [mode, setMode] = useState('academia')
   const [isExpanded, setIsExpanded] = useState(false)
   const [isPackageJsonOpen, setIsPackageJsonOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const path = location.pathname
 
@@ -24,7 +25,21 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     setIsChatOpen?.(false)
     onChildSelect?.(childId)
     navigate(route)
-  }, [navigate, onChildSelect, setIsChatOpen])
+    // Close sidebar on mobile after navigation
+    if (isMobile) {
+      setIsExpanded(false)
+    }
+  }, [navigate, onChildSelect, setIsChatOpen, isMobile])
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 968)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     if (!isExpanded) setIsPackageJsonOpen(false)
@@ -34,46 +49,93 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     if (mode !== 'academia') setIsExpanded(false)
   }, [mode])
 
+  const handleMouseEnter = () => {
+    if (mode === 'academia' && !isMobile) {
+      setIsExpanded(true)
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (mode === 'academia' && !isMobile) {
+      setIsExpanded(false)
+    }
+  }
+
+  const handleMobileToggle = (e) => {
+    if (isMobile) {
+      // Check if click is on the hamburger area (top-left 56x56px)
+      const rect = e.currentTarget.getBoundingClientRect()
+      const clickX = e.clientX - rect.left
+      const clickY = e.clientY - rect.top
+      
+      if (clickX <= 56 && clickY <= 56) {
+        setIsExpanded(!isExpanded)
+      }
+    }
+  }
+
+  const handleOverlayClick = (e) => {
+    if (isMobile && isExpanded && e.target === e.currentTarget) {
+      setIsExpanded(false)
+    }
+  }
+
   return (
-    <aside
-      className={`${styles.sidebar} ${isExpanded ? styles.sidebarExpanded : ''}`}
-      onMouseEnter={() => {
-        if (mode === 'academia') setIsExpanded(true)
-      }}
-      onMouseLeave={() => {
-        if (mode === 'academia') setIsExpanded(false)
-      }}
-      style={{ width: mode === 'academia' && isExpanded ? '240px' : '56px' }}
-    >
-      {mode === 'academia' && isExpanded ? (
-        <ExpandedView
-          path={path}
-          go={go}
-          isPackageJsonOpen={isPackageJsonOpen}
-          onOpenPackageJson={() => setIsPackageJsonOpen(true)}
-          onClosePackageJson={() => setIsPackageJsonOpen(false)}
-          mode={mode}
-          setMode={setMode}
-          sessionId={sessionId}
-          unreadCount={unreadCount}
-        />
-      ) : (
-        <CollapsedView
-          path={path}
-          go={go}
-          activeChild={activeChild}
-          onChildSelect={onChildSelect}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-          unreadCount={unreadCount}
-          mode={mode}
-          setMode={setMode}
-          sessionId={sessionId}
-          onOpenPackageJson={() => setIsPackageJsonOpen(true)}
-          setIsExpanded={setIsExpanded}
+    <>
+      {/* Overlay for mobile */}
+      {isMobile && isExpanded && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 59
+          }}
+          onClick={handleOverlayClick}
         />
       )}
-    </aside>
+      
+      <aside
+        className={`${styles.sidebar} ${isExpanded ? styles.sidebarExpanded : ''}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleMobileToggle}
+        style={{ width: mode === 'academia' && isExpanded ? (isMobile ? '280px' : '240px') : '56px' }}
+      >
+        {mode === 'academia' && isExpanded ? (
+          <ExpandedView
+            path={path}
+            go={go}
+            isPackageJsonOpen={isPackageJsonOpen}
+            onOpenPackageJson={() => setIsPackageJsonOpen(true)}
+            onClosePackageJson={() => setIsPackageJsonOpen(false)}
+            mode={mode}
+            setMode={setMode}
+            sessionId={sessionId}
+            unreadCount={unreadCount}
+          />
+        ) : (
+          <CollapsedView
+            path={path}
+            go={go}
+            activeChild={activeChild}
+            onChildSelect={onChildSelect}
+            isChatOpen={isChatOpen}
+            setIsChatOpen={setIsChatOpen}
+            unreadCount={unreadCount}
+            mode={mode}
+            setMode={setMode}
+            sessionId={sessionId}
+            onOpenPackageJson={() => setIsPackageJsonOpen(true)}
+            setIsExpanded={setIsExpanded}
+          />
+        )}
+      </aside>
+    </>
   )
 }
 

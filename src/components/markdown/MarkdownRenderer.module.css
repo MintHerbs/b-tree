@@ -1,0 +1,328 @@
+/* Warm dark container for notes page */
+.notesContainer {
+  background: #161311;
+  color: #E8E0D5;
+  border-radius: 12px;
+  padding: 48px 56px 80px;
+  max-width: 860px;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  flex-shrink: 0;
+}
+
+/* Container for the markdown content - centered and styled like Obsidian */
+.markdownContainer {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0;
+  color: #E8E0D5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+/* Headers */
+.h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 2rem 0 1.5rem 0;
+  color: #8B5CF6;
+  border-bottom: 2px solid rgba(139, 92, 246, 0.4);
+  padding-bottom: 0.5rem;
+}
+
+.h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 1.8rem 0 1.2rem 0;
+  color: #F0EAE0;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.4);
+  padding-bottom: 0.4rem;
+}
+
+.h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.5rem 0 1rem 0;
+  color: #F0EAE0;
+}
+
+/* Paragraphs */
+.paragraph {
+  margin: 1rem 0;
+  color: #E8E0D5;
+}
+
+/* Code blocks - Enhanced for syntax highlighting */
+.codeBlock {
+  margin: 1.5rem 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  overflow-x: auto !important;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.codeBlock pre {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.codeBlock code {
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  font-family: inherit !important;
+  display: block !important;
+}
+
+/* Syntax highlighter overrides */
+.codeBlock :global(.linenumber) {
+  min-width: 2.5em;
+  padding-right: 1em;
+  text-align: right;
+  user-select: none;
+  opacity: 0.5;
+}
+
+/* Inline code */
+.inlineCode {
+  background: rgba(127, 231, 255, 0.08);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #7FE7FF;
+}
+
+/* Tables - Obsidian-style */
+.tableWrapper {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+  font-size: 15px;
+}
+
+.thead {
+  background: rgba(139, 92, 246, 0.15);
+  border-bottom: 2px solid rgba(139, 92, 246, 0.4);
+}
+
+.tbody {
+  background: transparent;
+}
+
+.tr {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.tbody .tr:hover {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.tbody .tr:last-child {
+  border-bottom: none;
+}
+
+.th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #F0EAE0;
+  border-right: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.th:last-child {
+  border-right: none;
+}
+
+.td {
+  padding: 0.75rem 1rem;
+  color: #E8E0D5;
+  border-right: 1px solid rgba(139, 92, 246, 0.1);
+  vertical-align: top;
+}
+
+.td:last-child {
+  border-right: none;
+}
+
+/* Code in table cells */
+.td code,
+.th code {
+  background: rgba(127, 231, 255, 0.08);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #7FE7FF;
+}
+
+/* Blockquotes */
+.blockquote {
+  border-left: 4px solid rgba(139, 92, 246, 0.5);
+  padding: 0.5rem 1.5rem;
+  margin: 1.5rem 0;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 0 8px 8px 0;
+  color: rgba(232, 224, 213, 0.85);
+  font-style: italic;
+}
+
+.blockquote p {
+  margin: 0.5rem 0;
+}
+
+.blockquote strong {
+  color: #F0EAE0;
+  font-weight: 600;
+}
+
+/* Horizontal rule */
+.hr {
+  border: none;
+  border-top: 1px solid rgba(139, 92, 246, 0.4);
+  margin: 2rem 0;
+}
+
+/* Lists */
+.ul,
+.ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+  color: #E8E0D5;
+}
+
+.li {
+  margin: 0.5rem 0;
+  line-height: 1.7;
+}
+
+.li strong {
+  color: #F0EAE0;
+  font-weight: 600;
+}
+
+/* Math formulas - KaTeX styling adjustments */
+.markdownContainer :global(.katex) {
+  font-size: 1.1em;
+  color: #E8E0D5;
+}
+
+.markdownContainer :global(.katex-display) {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1rem 0;
+}
+
+/* Scrollbar styling for code blocks and tables */
+.codeBlock::-webkit-scrollbar,
+.tableWrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.codeBlock::-webkit-scrollbar-track,
+.tableWrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.codeBlock::-webkit-scrollbar-thumb,
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.codeBlock::-webkit-scrollbar-thumb:hover,
+.tableWrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Links */
+.markdownContainer a {
+  color: #8B5CF6;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.markdownContainer a:hover {
+  border-bottom-color: #8B5CF6;
+}
+
+/* Emphasis */
+.markdownContainer em {
+  color: #F0EAE0;
+  font-style: italic;
+}
+
+.markdownContainer strong {
+  color: #F0EAE0;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .notesContainer {
+    padding: 24px 20px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    border-radius: 0;
+  }
+
+  .markdownContainer {
+    padding: 0;
+    font-size: 15px;
+  }
+
+  .h1 {
+    font-size: 2rem;
+  }
+
+  .h2 {
+    font-size: 1.6rem;
+  }
+
+  .h3 {
+    font-size: 1.3rem;
+  }
+
+  .codeBlock {
+    padding: 1rem;
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Bracket coloring for KaTeX math expressions */
+:global(.katex) .mopen,
+:global(.katex) .mclose,
+:global(.katex) .delimsizing {
+  color: #67E8F9 !important;
+}
+
+:global(.katex) {
+  color: #E8E0D5 !important;
+}

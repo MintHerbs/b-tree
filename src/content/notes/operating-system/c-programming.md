@@ -1,4 +1,4 @@
-# Section 0 - Introduction
+# Introduction
 
 Section 1 establishes the fundamental programming concepts of C. 
 C is heavily used in operating systems because it allows direct interaction with hardware, and it powers some of the most demanding software in existence, from the Linux kernel to the flight systems that send rockets into space.
@@ -7,7 +7,7 @@ After Section 1, a robust, exam-level question is introduced. It implements ever
 
 ----
 
-# Section 1 - C Fundamentals
+#  C Fundamentals
 
 This section covers the core C building blocks used throughout the labsheets: I/O, conditionals, loops, functions, pointers, arrays, strings, structs, and dynamic memory.
 
@@ -415,7 +415,7 @@ int main() {
 
 ---
 
-# Section 2 - The Quadratic Equation Question
+# The Quadratic Equation Question
 
 ## Problem Statement
 
@@ -482,7 +482,7 @@ int main() {
 
 ---
 
-# Section 3 - System Calls, Part 1
+# System Calls, Part 1
 
 ## 3.1 What is a System Call?
 
@@ -570,7 +570,7 @@ int main() {
 
 ---
 
-# Section 4 - File I/O System Calls
+# File I/O System Calls
 
 ## 4.1 What is a File Descriptor?
 
@@ -679,7 +679,7 @@ read(fd, &s, sizeof(struct Student));
 
 ---
 
-# Section 5 - Pipes
+# Pipes
 
 ## 5.1 What is a Pipe?
 
@@ -832,7 +832,7 @@ int main() {
 
 ---
 
-# Section 6 - Process Creation with fork()
+# Process Creation with fork()
 
 ## 6.1 What is fork()?
 
@@ -938,7 +938,7 @@ if (flag == 1) {
 
 ---
 
-# Section 7 - Signals
+# Signals
 
 ## 7.1 What are Signals?
 
@@ -1050,7 +1050,7 @@ if (flag == 0) {
 
 ---
 
-# Section 8 - Threads and Mutex Locks
+# Threads and Mutex Locks
 
 ## 8.1 Threads vs Processes
 
@@ -1366,7 +1366,7 @@ int main() {
 
 ---
 
-# Section 9 - Directory Operations
+# Directory Operations
 
 ## 9.1 Creating Directories - mkdir
 
