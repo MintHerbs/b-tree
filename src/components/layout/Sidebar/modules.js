@@ -86,10 +86,25 @@ export const MODULES = [
   // Coming soon — declare with just { id, label, Icon }. Add `tools` to activate.
   {
     id: 'math',
-    label: 'Math',
+    label: 'Computational Math',
     Icon: FunctionIcon,
     notes: [
-      { filename: 'math.md', label: 'Matrix Notes.md' },
+      { filename: 'notes/determinant',               label: 'determinant.md' },
+      { filename: 'notes/cofactor',                  label: 'cofactor.md' },
+      { filename: 'notes/types-of-matrices',         label: 'types-of-matrices.md' },
+      { filename: 'notes/properties-of-determinants',label: 'properties-of-determinants.md' },
+      { filename: 'notes/simultaneous-equations',    label: 'simultaneous-equations.md' },
+      { filename: 'notes/inverse',                   label: 'inverse.md' },
+      { filename: 'notes/cramers-rule',              label: 'cramers-rule.md' },
+      { filename: 'notes/gauss-elimination',         label: 'gauss-elimination.md' },
+      { filename: 'notes/lu-decomposition',          label: 'lu-decomposition.md' },
+      { filename: 'notes/echelon-form',              label: 'echelon-form.md' },
+      { filename: 'notes/rank',                      label: 'rank.md' },
+      { filename: 'notes/system-of-linear-equations',label: 'system-of-linear-equations.md' },
+      { filename: 'notes/homogeneous-equations',     label: 'homogeneous-equations.md' },
+      { filename: 'notes/eigenvalues',               label: 'eigenvalues.md' },
+      { filename: 'notes/gauss-jacobi',              label: 'gauss-jacobi.md' },
+      { filename: 'notes/gauss-seidel',              label: 'gauss-seidel.md' },
     ],
   },
   { id: 'computer-architecture', label: 'Computer Architecture', Icon: Cpu },
@@ -97,11 +112,20 @@ export const MODULES = [
   { id: 'computer-security',     label: 'Computer Security',     Icon: ShieldCheck },
   { id: 'computer-vision',       label: 'Computer Vision',       Icon: Eye },
   {
-    id: 'operating-system',
+    id: 'operating-systems',
     label: 'Operating Systems',
     Icon: HardDrive,
     notes: [
-      { filename: 'c-programming.md', label: 'C Programming Labs.md' },
+      { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' },
+      { filename: 'Labs/C Programming/c-fundamentals',              label: 'c-fundamentals.md' },
+      { filename: 'Labs/C Programming/the-quadratic-equation-question', label: 'the-quadratic-equation-question.md' },
+      { filename: 'Labs/C Programming/system-calls-part-1',         label: 'system-calls-part-1.md' },
+      { filename: 'Labs/C Programming/file-io-system-calls',        label: 'file-io-system-calls.md' },
+      { filename: 'Labs/C Programming/pipes',                       label: 'pipes.md' },
+      { filename: 'Labs/C Programming/process-creation-with-fork',  label: 'process-creation-with-fork.md' },
+      { filename: 'Labs/C Programming/signals',                     label: 'signals.md' },
+      { filename: 'Labs/C Programming/threads-and-mutex-locks',     label: 'threads-and-mutex-locks.md' },
+      { filename: 'Labs/C Programming/directory-operations',        label: 'directory-operations.md' },
     ],
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
@@ -119,6 +143,28 @@ export const STANDALONE_TOOLS = [
 // ── Easter-egg pinned at the divider ────────────────────────────────────────
 
 export const PACKAGE_JSON = { id: 'package-json', label: 'package.json', Icon: FileCode }
+
+// ── Breadcrumb abbreviations ────────────────────────────────────────────────
+
+export const MODULE_ABBREV = {
+  'home':                    'home',
+  'computer-science':        'CS',        // root label
+  'algorithms':              'Algo',
+  'artificial-intelligence': 'AI',
+  'database':                'DB',
+  'math':                    'Math',
+  'computer-architecture':   'CA',
+  'computer-networking':     'CN',
+  'computer-security':       'CompSec',
+  'computer-vision':         'CV',
+  'operating-systems':       'OS',
+  'programming':             'Prog',
+  'software-engineering':    'SEPM',
+  'miscellaneous':           'Misc',
+  'notes':                   'notes',
+  'labs':                    'labs',
+  'tools':                   'tools',
+}
 
 // ── Derived helpers — components consume these, not the raw arrays ──────────
 
