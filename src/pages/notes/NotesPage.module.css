@@ -34,72 +34,58 @@
   overflow: visible;
 }
 
-/* Table of Contents Sidebar - Top right corner, expands left */
-.tocSidebar {
+/* Fixed hamburger button */
+.tocButton {
   position: fixed;
   right: 2rem;
-  top: 61px;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  background: rgba(10, 10, 10, 0.9);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  z-index: 50;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  cursor: pointer;
-  transition: width 0.25s ease, height 0.25s ease;
-}
-
-.tocSidebar:hover,
-.tocSidebar.tocExpanded {
-  width: 280px;
-  height: auto;
-  max-height: calc(100vh - 100px);
-  cursor: default;
-}
-
-/* Hamburger icon - always visible */
-.tocHamburger {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 56px;
-  height: 56px;
+  top: 70px;
+  width: 40px;
+  height: 40px;
+  background: rgba(22, 19, 17, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.15);
-  z-index: 3;
-  opacity: 1;
-  transition: opacity 0.15s ease, color 0.2s ease;
+  cursor: pointer;
+  z-index: 55;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.tocSidebar:hover .tocHamburger {
-  color: rgba(139, 92, 246, 0.8);
-  opacity: 0;
+.tocButton:hover {
+  color: #8B5CF6;
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
-.tocSidebar.tocExpanded .tocHamburger {
-  opacity: 0;
-}
-
-/* Content that appears on expand */
-.tocContent {
-  position: relative;
-  z-index: 2;
-  opacity: 0;
-  padding: 2rem 1.5rem;
+/* Drawer — slides in from right via transform only */
+.tocDrawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background: rgba(16, 14, 12, 0.97);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 54;
+  padding: 80px 1.5rem 2rem;
   overflow-y: auto;
-  height: 100%;
-  transition: opacity 0.15s ease;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  backdrop-filter: blur(12px);
 }
 
-.tocSidebar:hover .tocContent,
-.tocSidebar.tocExpanded .tocContent {
-  opacity: 1;
-  transition-delay: 0.1s;
+.tocDrawerOpen {
+  transform: translateX(0);
+}
+
+/* Backdrop */
+.tocBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 53;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
 }
 
 /* Header */
@@ -214,21 +200,21 @@
   font-weight: 600;
 }
 
-/* Scrollbar styling for TOC content */
-.tocContent::-webkit-scrollbar {
+/* Scrollbar styling for drawer */
+.tocDrawer::-webkit-scrollbar {
   width: 4px;
 }
 
-.tocContent::-webkit-scrollbar-track {
+.tocDrawer::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.tocContent::-webkit-scrollbar-thumb {
+.tocDrawer::-webkit-scrollbar-thumb {
   background: rgba(139, 92, 246, 0.3);
   border-radius: 2px;
 }
 
-.tocContent::-webkit-scrollbar-thumb:hover {
+.tocDrawer::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 92, 246, 0.5);
 }
 
@@ -239,7 +225,7 @@
     padding: 60px 2rem 80px;
   }
 
-  .tocSidebar {
+  .tocButton {
     right: 1.5rem;
   }
 
@@ -255,12 +241,11 @@
     padding: 60px 1.5rem 80px;
   }
 
-  .tocSidebar {
+  .tocButton {
     right: 1rem;
   }
 
-  .tocSidebar:hover,
-  .tocSidebar.tocExpanded {
+  .tocDrawer {
     width: 260px;
   }
 
@@ -273,8 +258,8 @@
     font-size: 0.75rem;
   }
 
-  .tocContent {
-    padding: 1.75rem 1.25rem;
+  .tocDrawer {
+    padding: 80px 1.25rem 2rem;
   }
 }
 
@@ -285,37 +270,16 @@
     padding: 0;
   }
 
-  .tocSidebar {
-    position: fixed;
+  .tocButton {
     right: 1rem;
     top: 1rem;
     width: 48px;
     height: 48px;
-    margin-bottom: 0;
   }
 
-  .tocSidebar:hover,
-  .tocSidebar.tocExpanded {
+  .tocDrawer {
     width: calc(100vw - 2rem);
     max-width: 320px;
-    height: auto;
-    max-height: calc(100vh - 2rem);
-  }
-
-  .tocHamburger {
-    display: flex;
-    width: 48px;
-    height: 48px;
-  }
-
-  .tocContent {
-    opacity: 0;
-    padding: 1.5rem 1.25rem;
-  }
-
-  .tocSidebar:hover .tocContent,
-  .tocSidebar.tocExpanded .tocContent {
-    opacity: 1;
   }
 
   .tocNav {
@@ -336,31 +300,22 @@
     margin-bottom: 2rem;
   }
 
-  .tocSidebar {
+  .tocButton {
     right: 0.75rem;
     top: 0.75rem;
     width: 44px;
     height: 44px;
   }
 
-  .tocSidebar:hover,
-  .tocSidebar.tocExpanded {
-    width: calc(100vw - 1.5rem);
-    max-width: 300px;
-  }
-
-  .tocHamburger {
-    width: 44px;
-    height: 44px;
-  }
-
-  .tocHamburger svg {
+  .tocButton svg {
     width: 18px;
     height: 18px;
   }
 
-  .tocContent {
-    padding: 1.25rem 1rem;
+  .tocDrawer {
+    width: calc(100vw - 1.5rem);
+    max-width: 300px;
+    padding: 70px 1rem 2rem;
   }
 
   .tocHeader {
@@ -383,31 +338,22 @@
 }
 
 @media (max-width: 480px) {
-  .tocSidebar {
+  .tocButton {
     right: 0.5rem;
     top: 0.5rem;
     width: 40px;
     height: 40px;
   }
 
-  .tocSidebar:hover,
-  .tocSidebar.tocExpanded {
-    width: calc(100vw - 1rem);
-    max-width: 280px;
-  }
-
-  .tocHamburger {
-    width: 40px;
-    height: 40px;
-  }
-
-  .tocHamburger svg {
+  .tocButton svg {
     width: 16px;
     height: 16px;
   }
 
-  .tocContent {
-    padding: 1rem 0.875rem;
+  .tocDrawer {
+    width: calc(100vw - 1rem);
+    max-width: 280px;
+    padding: 60px 0.875rem 2rem;
   }
 
   .tocHeader {

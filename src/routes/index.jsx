@@ -14,7 +14,7 @@ export function AppRoutes({ onAIStateChange, onChatOpen }) {
           element={<Component onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />}
         />
       ))}
-      <Route path="/notes/:section/:file" element={<NotesPage />} />
+      <Route path="/notes/:section/*" element={<NotesPage />} />
 
       <Route path="/social/feed" element={<HomeFeedPage onAIStateChange={onAIStateChange} onChatOpen={onChatOpen} />} />
       <Route path="/social/chat" element={<SocialChatRoute onChatOpen={onChatOpen} />} />
