@@ -261,3 +261,77 @@
 .menuItem:hover {
   background: var(--color-hover);
 }
+
+.newModuleForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 240px;
+}
+
+.newModuleInput {
+  background: var(--color-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  padding: 8px 10px;
+}
+
+.newModuleInput:focus {
+  border-color: var(--accent);
+}
+
+.newModuleInput::placeholder {
+  color: var(--text-muted);
+}
+
+.newModuleSubmit {
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.iconPicker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.iconChoice {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--color-icon);
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.iconChoice span {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconChoice:hover,
+.selectedIconChoice {
+  background: var(--color-accent-selected);
+  border-color: var(--accent);
+  color: var(--accent);
+}

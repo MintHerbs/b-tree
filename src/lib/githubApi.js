@@ -80,3 +80,21 @@ export async function getFileContent(path) {
   const data = await res.json()
   return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))))
 }
+
+export async function deleteFile(path, message) {
+  const sha = await getFileSha(path)
+  if (!sha) return null
+
+  const body = {
+    message,
+    sha,
+    branch: BRANCH,
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
+    { method: 'DELETE', headers, body: JSON.stringify(body) }
+  )
+  if (!res.ok) throw new Error(`GitHub delete failed: ${res.status}`)
+  return res.json()
+}

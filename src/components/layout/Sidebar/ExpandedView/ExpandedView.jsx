@@ -54,6 +54,8 @@ function ExpandedView({
             {MODULES.filter(module => module.id !== 'Miscellaneous').map((module) => {
               const notes = module.notes ?? []
               const tools = module.tools ?? []
+              const hasNotesFolder = Object.prototype.hasOwnProperty.call(module, 'notes')
+              const hasToolsFolder = Object.prototype.hasOwnProperty.call(module, 'tools')
               const populated = moduleHasContent(module)
 
               return (
@@ -64,12 +66,12 @@ function ExpandedView({
                   </FolderTrigger>
                   <FolderContent>
                     <SubFiles>
-                      {notes.length > 0 && (
+                      {hasNotesFolder && (
                         <FolderItem value={`${module.id}-notes`}>
                           <FolderTrigger variant="folder">notes</FolderTrigger>
                           <FolderContent>
                             <SubFiles>
-                              {notes.map((n) => {
+                              {notes.length > 0 ? notes.map((n) => {
                                 const route = noteRoute(module.id, n.filename)
                                 return (
                                   <FileItem
@@ -80,18 +82,20 @@ function ExpandedView({
                                     {n.label}
                                   </FileItem>
                                 )
-                              })}
+                              }) : (
+                                <div className={styles.emptyState}>(empty)</div>
+                              )}
                             </SubFiles>
                           </FolderContent>
                         </FolderItem>
                       )}
 
-                      {tools.length > 0 && (
+                      {hasToolsFolder && (
                         <FolderItem value={`${module.id}-tools`}>
                           <FolderTrigger variant="folder">tools</FolderTrigger>
                           <FolderContent>
                             <SubFiles>
-                              {tools.map((t) => (
+                              {tools.length > 0 ? tools.map((t) => (
                                 <FileItem
                                   key={t.id}
                                   onClick={() => go(t.route, t.id)}
@@ -99,7 +103,9 @@ function ExpandedView({
                                 >
                                   {t.label}
                                 </FileItem>
-                              ))}
+                              )) : (
+                                <div className={styles.emptyState}>(empty)</div>
+                              )}
                             </SubFiles>
                           </FolderContent>
                         </FolderItem>

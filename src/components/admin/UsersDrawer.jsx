@@ -27,6 +27,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
   const [selectedDirectories, setSelectedDirectories] = useState([])
   const [generatedPassword, setGeneratedPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [creatingUser, setCreatingUser] = useState(false)
   
   // Status messages
   const [status, setStatus] = useState({ message: '', type: '' })
@@ -49,18 +50,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       
       if (error) throw error
       
-      // Get email addresses from auth.users
-      const usersWithEmails = await Promise.all(
-        data.map(async (user) => {
-          const { data: authData } = await supabase.auth.admin.getUserById(user.id)
-          return {
-            ...user,
-            email: authData?.user?.email || 'N/A'
-          }
-        })
-      )
-      
-      setUsers(usersWithEmails)
+      setUsers(data)
     } catch (error) {
       console.error('Failed to load users:', error)
       setStatus({ message: `Failed to load users: ${error.message}`, type: 'error' })
@@ -109,28 +99,21 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
     }
     
     try {
+      setCreatingUser(true)
       setStatus({ message: 'Creating user...', type: 'info' })
-      
-      // Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password: generatedPassword,
-        email_confirm: true,
-      })
-      
-      if (authError) throw authError
-      
-      // Insert into admin_users
-      const { error: insertError } = await supabase
-        .from('admin_users')
-        .insert({
-          id: authData.user.id,
+
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email,
+          password: generatedPassword,
           username,
           role,
-          allowed_directories: role === 'owner' ? [] : selectedDirectories,
-        })
-      
-      if (insertError) throw insertError
+          allowedDirectories: role === 'owner' ? [] : selectedDirectories,
+        },
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
       
       setStatus({ message: `User created! Password: ${generatedPassword}`, type: 'success' })
       
@@ -151,6 +134,8 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       console.error('Failed to create user:', error)
       setStatus({ message: `Failed to create user: ${error.message}`, type: 'error' })
       setTimeout(() => setStatus({ message: '', type: '' }), 5000)
+    } finally {
+      setCreatingUser(false)
     }
   }
 
@@ -169,17 +154,12 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
     try {
       setStatus({ message: 'Deleting user...', type: 'info' })
       
-      // Delete from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-      if (authError) throw authError
-      
-      // Delete from admin_users (should cascade automatically, but just in case)
-      const { error: deleteError } = await supabase
-        .from('admin_users')
-        .delete()
-        .eq('id', userId)
-      
-      if (deleteError) throw deleteError
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId },
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
       
       setStatus({ message: 'User deleted successfully', type: 'success' })
       
@@ -247,7 +227,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                         <td>
                           <div className={styles.userCell}>
                             <span className={styles.username}>{user.username}</span>
-                            <span className={styles.email}>{user.email}</span>
+                            <span className={styles.email}>{user.email || user.id}</span>
                           </div>
                         </td>
                         <td>
@@ -372,8 +352,8 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                   </div>
                 </div>
 
-                <button type="submit" className={styles.createButton}>
-                  Create User
+                <button type="submit" className={styles.createButton} disabled={creatingUser}>
+                  {creatingUser ? 'Creating...' : 'Create User'}
                 </button>
               </form>
             )}

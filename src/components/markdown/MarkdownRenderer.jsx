@@ -7,6 +7,18 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import 'katex/dist/katex.min.css'
 import styles from './MarkdownRenderer.module.css'
 
+function resolveImageSrc(src = '') {
+  if (!src.startsWith('/notes/img/')) return src
+
+  const owner = import.meta.env.VITE_GITHUB_OWNER
+  const repo = import.meta.env.VITE_GITHUB_REPO
+  const branch = import.meta.env.VITE_GITHUB_BRANCH || 'main'
+
+  if (!owner || !repo) return src
+
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/public${src}`
+}
+
 /**
  * MarkdownRenderer - Renders markdown content with support for:
  * - LaTeX math formulas (inline and block)
@@ -110,6 +122,16 @@ function MarkdownRenderer({ content }) {
           },
           li({ children }) {
             return <li className={styles.li}>{children}</li>
+          },
+          img({ src, alt }) {
+            return (
+              <img
+                className={styles.image}
+                src={resolveImageSrc(src)}
+                alt={alt || ''}
+                loading="lazy"
+              />
+            )
           },
         }}
       >

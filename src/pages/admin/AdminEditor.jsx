@@ -5,13 +5,14 @@ import { useDropzone } from 'react-dropzone'
 import { colors } from '../../constants/colors'
 import '../../styles/adminTokens.css'
 import { MODULES } from '../../components/layout/Sidebar/modules'
-import { listDirectory, uploadImage, commitFile, getFileContent } from '../../lib/githubApi'
+import { listDirectory, uploadImage, commitFile, getFileContent, deleteFile } from '../../lib/githubApi'
 import { useAdmin } from './useAdmin'
 import EditorNavbar from '../../components/admin/EditorNavbar'
 import DirectoryDrawer from '../../components/admin/DirectoryDrawer'
 import PreviewModal from '../../components/admin/PreviewModal'
 import UsersDrawer from '../../components/admin/UsersDrawer'
 import ToastNotification, { useToast } from '../../components/admin/ToastNotification'
+import { ADMIN_ICON_OPTIONS, getIconNameForComponent, getIconOptionByName } from '../../components/admin/adminIconOptions'
 import { Monitor } from '@phosphor-icons/react'
 import styles from './AdminEditor.module.css'
 
@@ -24,6 +25,197 @@ function titleToFilename(title) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/(^-|-$)/g, '')
+}
+
+const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
+
+function moduleToSource(module) {
+  const lines = [
+    '  {',
+    `    id: '${module.id}',`,
+    `    label: '${module.label}',`,
+    `    Icon: ${module.iconName},`,
+  ]
+
+  if (module.notes) {
+    lines.push('    notes: [')
+    module.notes.forEach(note => {
+      lines.push(`      { filename: '${note.filename}', label: '${note.label}' },`)
+    })
+    lines.push('    ],')
+  }
+
+  if (module.tools) {
+    lines.push('    tools: [')
+    module.tools.forEach(tool => {
+      lines.push(`      { id: '${tool.id}', label: '${tool.label}', route: '${tool.route}' },`)
+    })
+    lines.push('    ],')
+  }
+
+  lines.push('  },')
+  return lines.join('\n')
+}
+
+function ensureIconImport(modulesJs, iconName) {
+  if (!iconName || modulesJs.includes(`  ${iconName},`) || modulesJs.includes(`  Function as ${iconName},`)) {
+    return modulesJs
+  }
+
+  const importStart = modulesJs.indexOf('import {\n')
+  const importEnd = modulesJs.indexOf("} from '@phosphor-icons/react'", importStart)
+
+  if (importStart === -1 || importEnd === -1) {
+    throw new Error('Could not update icon imports in modules.js')
+  }
+
+  const importLine = iconName === 'FunctionIcon'
+    ? '  Function as FunctionIcon,'
+    : `  ${iconName},`
+
+  return `${modulesJs.slice(0, importEnd)}${importLine}\n${modulesJs.slice(importEnd)}`
+}
+
+function insertModuleSource(modulesJs, module) {
+  if (modulesJs.includes(`id: '${module.id}'`)) {
+    throw new Error(`Subject "${module.id}" already exists`)
+  }
+
+  const standaloneIndex = modulesJs.indexOf('export const STANDALONE_TOOLS')
+  const moduleSection = standaloneIndex >= 0 ? modulesJs.slice(0, standaloneIndex) : modulesJs
+  const rest = standaloneIndex >= 0 ? modulesJs.slice(standaloneIndex) : ''
+  const arrayEnd = moduleSection.lastIndexOf('\n]')
+
+  if (arrayEnd === -1) {
+    throw new Error('Could not find MODULES array end')
+  }
+
+  return `${moduleSection.slice(0, arrayEnd)}\n${moduleToSource(module)}${moduleSection.slice(arrayEnd)}${rest}`
+}
+
+function removeModuleSource(modulesJs, moduleId) {
+  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}',`, 'm')
+  const startMatch = modulesJs.match(startPattern)
+
+  if (!startMatch || startMatch.index == null) {
+    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
+  }
+
+  const start = startMatch.index
+  let index = start + 1
+  let depth = 0
+
+  for (; index < modulesJs.length; index++) {
+    const char = modulesJs[index]
+    if (char === '{') depth += 1
+    if (char === '}') {
+      depth -= 1
+      if (depth === 0) {
+        let end = index + 1
+        if (modulesJs[end] === ',') end += 1
+        if (modulesJs[end] === '\r') end += 1
+        if (modulesJs[end] === '\n') end += 1
+        return `${modulesJs.slice(0, start)}\n${modulesJs.slice(end)}`
+      }
+    }
+  }
+
+  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
+}
+
+function findModuleBlock(modulesJs, moduleId) {
+  const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm')
+  const startMatch = modulesJs.match(startPattern)
+
+  if (!startMatch || startMatch.index == null) {
+    throw new Error(`Could not find module: ${moduleId}`)
+  }
+
+  const start = startMatch.index
+  let index = start + 1
+  let depth = 0
+
+  for (; index < modulesJs.length; index++) {
+    const char = modulesJs[index]
+    if (char === '{') depth += 1
+    if (char === '}') {
+      depth -= 1
+      if (depth === 0) {
+        return {
+          start,
+          end: index + 1,
+          source: modulesJs.slice(start, index + 1),
+        }
+      }
+    }
+  }
+
+  throw new Error(`Could not parse module: ${moduleId}`)
+}
+
+function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
+  const block = findModuleBlock(modulesJs, moduleId)
+  const source = block.source
+
+  if (source.includes(`filename: '${notePath}'`)) {
+    throw new Error('A note with this filename already exists')
+  }
+
+  const notesPattern = /(notes:\s*\[)([\s\S]*?)(\])/m
+  const notesMatch = source.match(notesPattern)
+  let updatedSource
+
+  if (notesMatch) {
+    updatedSource = source.replace(notesPattern, `$1$2      ${newNoteEntry}\n    $3`)
+  } else {
+    const toolsIndex = source.indexOf('\n    tools:')
+    const notesSource = `\n    notes: [\n      ${newNoteEntry}\n    ],`
+
+    if (toolsIndex !== -1) {
+      updatedSource = `${source.slice(0, toolsIndex)}${notesSource}${source.slice(toolsIndex)}`
+    } else {
+      const closingIndex = source.lastIndexOf('\n  }')
+      updatedSource = `${source.slice(0, closingIndex)}${notesSource}${source.slice(closingIndex)}`
+    }
+  }
+
+  return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
+}
+
+function refreshModuleState(setModules, updater) {
+  setModules(prev => updater(prev))
+}
+
+function getUnusedIconOptions(modules, selectedIconName = null) {
+  const usedIconNames = new Set(
+    modules
+      .map(module => getIconNameForComponent(module.Icon))
+      .filter(Boolean)
+  )
+
+  return ADMIN_ICON_OPTIONS.filter(option => (
+    option.name === selectedIconName || !usedIconNames.has(option.name)
+  ))
+}
+
+function resolveAdminImageSrc(src = '') {
+  if (!src.startsWith('/notes/img/')) return src
+
+  const owner = import.meta.env.VITE_GITHUB_OWNER
+  const repo = import.meta.env.VITE_GITHUB_REPO
+  const branch = import.meta.env.VITE_GITHUB_BRANCH || 'main'
+
+  if (!owner || !repo) return src
+
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/public${src}`
+}
+
+function extractMarkdownImages(markdown) {
+  return [...markdown.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)].map(match => ({
+    alt: match[1],
+    src: match[2],
+  }))
 }
 
 function AdminEditorContent() {
@@ -96,6 +288,9 @@ function AdminEditorContent() {
   const allowedDirectories = profile?.role === 'owner' 
     ? null 
     : profile?.allowed_directories || []
+
+  const unusedIconOptions = getUnusedIconOptions(modules)
+  const imagePreviews = extractMarkdownImages(content)
 
   // Monaco theme setup
   const handleBeforeMount = (monaco) => {
@@ -342,11 +537,10 @@ function AdminEditorContent() {
       await commitFile(mdPath, content, commitMessage)
       
       // Read current modules.js
-      const modulesJsPath = 'src/components/layout/Sidebar/modules.js'
       let currentModulesJs
       
       try {
-        currentModulesJs = await getFileContent(modulesJsPath)
+        currentModulesJs = await getFileContent(MODULES_JS_PATH)
       } catch (error) {
         throw new Error(`Could not read modules.js: ${error.message}`)
       }
@@ -358,29 +552,15 @@ function AdminEditorContent() {
       // Insert new note entry
       const newNoteEntry = `{ filename: '${subfolder}/${filename}', label: '${filename}.md' },`
       
-      const modulePattern = new RegExp(
-        `(\\{[^}]*id:\\s*'${moduleId}'[^}]*notes:\\s*\\[)([^\\]]*)(\\])`,
-        's'
-      )
-      
-      const match = currentModulesJs.match(modulePattern)
-      
-      if (!match) {
-        throw new Error(`Could not find notes array for module: ${moduleId}`)
-      }
-      
-      const notesContent = match[2]
-      if (notesContent.includes(`filename: '${subfolder}/${filename}'`)) {
-        throw new Error('A note with this filename already exists')
-      }
-      
-      const updatedModulesJs = currentModulesJs.replace(
-        modulePattern,
-        `$1$2      ${newNoteEntry}\n    $3`
+      const updatedModulesJs = upsertNoteEntry(
+        currentModulesJs,
+        moduleId,
+        newNoteEntry,
+        `${subfolder}/${filename}`
       )
       
       await commitFile(
-        modulesJsPath,
+        MODULES_JS_PATH,
         updatedModulesJs,
         `feat: add ${filename} to ${moduleId} notes`
       )
@@ -449,35 +629,82 @@ function AdminEditorContent() {
   }, [unsaved])
 
   // Module management handlers
-  const handleNewModule = async (name) => {
+  const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
     const moduleId = titleToFilename(name)
-    showToast(`Creating module ${moduleId}...`, 'success')
+    if (!moduleId) {
+      showToast('Please enter a subject name', 'error')
+      return
+    }
+
+    showToast(`Creating subject ${moduleId}...`, 'success')
     
     try {
-      // Create default subfolders with .gitkeep
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const label = name.trim()
+      const iconOption = getIconOptionByName(iconName)
+      const newModule = {
+        id: moduleId,
+        label,
+        iconName: iconOption.name,
+        Icon: iconOption.Icon,
+        notes: [],
+        tools: [],
+      }
+      const updatedModulesJs = insertModuleSource(
+        ensureIconImport(currentModulesJs, iconOption.name),
+        newModule
+      )
+
       await commitFile(
         `src/content/notes/${moduleId}/notes/.gitkeep`,
         '',
-        `feat: create ${moduleId} module with notes folder`
+        `feat: create ${moduleId} notes folder`
       )
       await commitFile(
         `src/content/notes/${moduleId}/tools/.gitkeep`,
         '',
         `feat: add tools folder to ${moduleId}`
       )
-      
-      // Update modules.js (simplified - would need full implementation)
-      showToast(`Module ${moduleId} created`, 'success')
-      
-      // Refresh modules
-      setModules([...modules])
+      await commitFile(
+        MODULES_JS_PATH,
+        updatedModulesJs,
+        `feat: add ${moduleId} subject`
+      )
+
+      refreshModuleState(setModules, prev => [...prev, newModule])
+      showToast(`Subject ${label} created`, 'success')
     } catch (error) {
-      showToast(`Failed to create module: ${error.message}`, 'error')
+      showToast(`Failed to create subject: ${error.message}`, 'error')
     }
   }
 
   const handleDeleteModule = async (moduleId) => {
-    showToast(`Delete module is not wired yet for ${moduleId}`, 'error')
+    showToast(`Removing subject ${moduleId}...`, 'success')
+
+    try {
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
+
+      await commitFile(
+        MODULES_JS_PATH,
+        updatedModulesJs,
+        `feat: remove ${moduleId} subject`
+      )
+      await deleteFile(
+        `src/content/notes/${moduleId}/notes/.gitkeep`,
+        `chore: remove ${moduleId} notes placeholder`
+      )
+      await deleteFile(
+        `src/content/notes/${moduleId}/tools/.gitkeep`,
+        `chore: remove ${moduleId} tools placeholder`
+      )
+
+      refreshModuleState(setModules, prev => prev.filter(module => module.id !== moduleId))
+      setSelectedPath(prev => prev?.moduleId === moduleId ? null : prev)
+      showToast(`Subject ${moduleId} removed from the filesystem`, 'success')
+    } catch (error) {
+      showToast(`Failed to remove subject: ${error.message}`, 'error')
+    }
   }
 
   const handleNewSubfolder = async (moduleId, subfolderName) => {
@@ -566,6 +793,7 @@ function AdminEditorContent() {
         onDeleteModule={handleDeleteModule}
         onMoveFile={handleMoveFile}
         isLoading={modulesLoading}
+        iconOptions={unusedIconOptions}
       />
 
       <PreviewModal
@@ -604,6 +832,7 @@ function AdminEditorContent() {
         currentStyle={currentStyle}
         onStyleChange={handleStyleChange}
         onNewModule={handleNewModule}
+        iconOptions={unusedIconOptions}
         onDeleteModule={() => selectedPath && handleDeleteModule(selectedPath.moduleId)}
       />
 
@@ -648,6 +877,16 @@ function AdminEditorContent() {
               padding: { top: 0, bottom: 120 },
             }}
           />
+          {imagePreviews.length > 0 && (
+            <div className={styles.imagePreviewPanel} aria-label="Inserted image previews">
+              {imagePreviews.map((image, index) => (
+                <figure className={styles.imagePreview} key={`${image.src}-${index}`}>
+                  <img src={resolveAdminImageSrc(image.src)} alt={image.alt || 'Inserted image'} />
+                  <figcaption>{image.src}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
         </div>
         
         {isDragActive && (

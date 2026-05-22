@@ -41,9 +41,13 @@ export default function EditorNavbar({
   currentStyle,
   onStyleChange,
   onNewModule,
+  iconOptions = [],
   onDeleteModule
 }) {
   const [titleWidth, setTitleWidth] = useState('auto')
+  const [newModuleName, setNewModuleName] = useState('')
+  const [newModuleIcon, setNewModuleIcon] = useState(iconOptions[0]?.name || '')
+  const [newModuleOpen, setNewModuleOpen] = useState(false)
   const mirrorRef = useRef(null)
 
   // Auto-size title input
@@ -52,6 +56,12 @@ export default function EditorNavbar({
       setTitleWidth(`${mirrorRef.current.offsetWidth + 20}px`)
     }
   }, [title])
+
+  useEffect(() => {
+    if (!iconOptions.some(option => option.name === newModuleIcon)) {
+      setNewModuleIcon(iconOptions[0]?.name || '')
+    }
+  }, [iconOptions, newModuleIcon])
 
   return (
     <Tooltip.Provider delayDuration={300}>
@@ -255,18 +265,63 @@ export default function EditorNavbar({
           <div className={styles.moduleGroup}>
             <div className={styles.verticalDivider} />
 
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button className={styles.formatButton} onClick={() => onNewModule && onNewModule('New Module')}>
-                  <FilePlus size={18} />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content className={styles.tooltip} sideOffset={5}>
-                  New module
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
+            <Popover.Root open={newModuleOpen} onOpenChange={setNewModuleOpen}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <Popover.Trigger asChild>
+                    <button className={styles.formatButton}>
+                      <FilePlus size={18} />
+                    </button>
+                  </Popover.Trigger>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                    New subject
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+              <Popover.Portal>
+                <Popover.Content className={styles.popoverContent} sideOffset={5}>
+                  <form
+                    className={styles.newModuleForm}
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      if (!newModuleName.trim()) return
+                      onNewModule?.(newModuleName.trim(), newModuleIcon)
+                      setNewModuleName('')
+                      setNewModuleOpen(false)
+                    }}
+                  >
+                    <input
+                      className={styles.newModuleInput}
+                      value={newModuleName}
+                      onChange={(event) => setNewModuleName(event.target.value)}
+                      placeholder="Subject name"
+                      autoFocus
+                    />
+                    {iconOptions.length > 0 && (
+                      <div className={styles.iconPicker} aria-label="Choose subject icon">
+                        {iconOptions.map(option => (
+                          <button
+                            key={option.name}
+                            type="button"
+                            className={`${styles.iconChoice} ${newModuleIcon === option.name ? styles.selectedIconChoice : ''}`}
+                            onClick={() => setNewModuleIcon(option.name)}
+                            title={option.label}
+                          >
+                            <option.Icon size={18} />
+                            <span>{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button className={styles.newModuleSubmit} type="submit">
+                      Create
+                    </button>
+                  </form>
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
 
             <Popover.Root>
               <Popover.Trigger asChild>

@@ -33,7 +33,8 @@ export default function DirectoryDrawer({
   onNewModule,
   onDeleteModule,
   onMoveFile,
-  isLoading = false
+  isLoading = false,
+  iconOptions = []
 }) {
   const [newSubfolderModule, setNewSubfolderModule] = useState(null)
   const [newSubfolderValue, setNewSubfolderValue] = useState('')
@@ -41,6 +42,7 @@ export default function DirectoryDrawer({
   const [renameValue, setRenameValue] = useState('')
   const [addingNewModule, setAddingNewModule] = useState(false)
   const [newModuleValue, setNewModuleValue] = useState('')
+  const [newModuleIcon, setNewModuleIcon] = useState(iconOptions[0]?.name || '')
   const [dragOverPath, setDragOverPath] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
@@ -72,6 +74,12 @@ export default function DirectoryDrawer({
     }
   }, [addingNewModule])
 
+  useEffect(() => {
+    if (!iconOptions.some(option => option.name === newModuleIcon)) {
+      setNewModuleIcon(iconOptions[0]?.name || '')
+    }
+  }, [iconOptions, newModuleIcon])
+
   const handleNewSubfolder = (moduleId) => {
     if (newSubfolderValue.trim()) {
       onNewSubfolder(moduleId, newSubfolderValue.trim())
@@ -90,7 +98,7 @@ export default function DirectoryDrawer({
 
   const handleNewModule = () => {
     if (newModuleValue.trim()) {
-      onNewModule(newModuleValue.trim())
+      onNewModule(newModuleValue.trim(), newModuleIcon)
       setAddingNewModule(false)
       setNewModuleValue('')
     }
@@ -179,7 +187,10 @@ export default function DirectoryDrawer({
               return (
                 <FolderItem key={module.id} value={module.id}>
                   <div className={styles.moduleRow}>
-                    <FolderTrigger>
+                    <FolderTrigger variant="parent">
+                      {module.Icon && (
+                        <module.Icon size={15} weight="regular" className={styles.moduleIcon} />
+                      )}
                       {module.label}
                     </FolderTrigger>
                     
@@ -214,7 +225,7 @@ export default function DirectoryDrawer({
                                   setDeleteConfirm({ type: 'module', moduleId: module.id })
                                 }}
                               >
-                                Delete module
+                                Delete subject
                               </button>
                             </Popover.Content>
                           </Popover.Portal>
@@ -369,6 +380,23 @@ export default function DirectoryDrawer({
                     }
                   }}
                 />
+                {iconOptions.length > 0 && (
+                  <div className={styles.iconPicker} aria-label="Choose subject icon">
+                    {iconOptions.map(option => (
+                      <button
+                        key={option.name}
+                        type="button"
+                        className={`${styles.iconChoice} ${newModuleIcon === option.name ? styles.selectedIconChoice : ''}`}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => setNewModuleIcon(option.name)}
+                        title={option.label}
+                      >
+                        <option.Icon size={16} />
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             </Files>
@@ -389,7 +417,7 @@ export default function DirectoryDrawer({
               onClick={() => setAddingNewModule(true)}
             >
               <FolderPlus size={14} />
-              New Module
+              New Subject
             </button>
           )}
         </div>
@@ -404,12 +432,12 @@ export default function DirectoryDrawer({
               <div className={styles.confirmHeader}>
                 <Warning size={18} weight="bold" style={{ color: colors.warning }} />
                 <span className={styles.confirmTitle}>
-                  {deleteConfirm.type === 'module' ? 'Delete module?' : 'Delete folder?'}
+                  {deleteConfirm.type === 'module' ? 'Delete subject?' : 'Delete folder?'}
                 </span>
               </div>
               <p className={styles.confirmMessage}>
                 {deleteConfirm.type === 'module'
-                  ? `Delete ${deleteConfirm.moduleId}? All notes inside will be removed from modules.js.`
+                  ? `Delete ${deleteConfirm.moduleId}? It will be removed from the app filesystem.`
                   : `Delete this folder? Notes inside will be orphaned.`}
               </p>
               <div className={styles.confirmActions}>
