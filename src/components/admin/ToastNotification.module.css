@@ -1,0 +1,111 @@
+.toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  min-width: 280px;
+  max-width: 420px;
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  
+  /* Entrance animation */
+  animation: toastEnter 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Stack offset based on index */
+  transform: translateY(calc(var(--toast-index) * -8px));
+}
+
+.toastExit {
+  animation: toastExit 180ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateX(100%) translateY(calc(var(--toast-index) * -8px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(calc(var(--toast-index) * -8px));
+  }
+}
+
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateX(0) translateY(calc(var(--toast-index) * -8px));
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) translateY(calc(var(--toast-index) * -8px));
+  }
+}
+
+.toastAccent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent-color);
+  border-radius: 2px 0 0 2px;
+}
+
+.toastContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  padding-left: 8px;
+}
+
+.toastIcon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.toastMessage {
+  color: var(--text);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.toastClose {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.toastClose:hover {
+  background: var(--color-hover);
+  color: var(--text);
+}
+
+.toastClose:active {
+  transform: scale(0.95);
+}

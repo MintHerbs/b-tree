@@ -26,6 +26,7 @@ function AppContent() {
   const { unreadCount } = useChat(isChatOpen)
 
   const isToolsRoute = location.pathname.startsWith('/tools/')
+  const isAdminRoute = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     const t = setTimeout(preloadRoutes, 3000)
@@ -57,7 +58,7 @@ function AppContent() {
 
   return (
     <>
-      <Starfield />
+      {!isAdminRoute && <Starfield />}
       {isChatOpen && !isToolsRoute && <ChatDimOverlay />}
       <DynamicIsland
         onlineCount={onlineCount}
@@ -67,15 +68,17 @@ function AppContent() {
         errorMessage={errorMessage}
         onSongChange={setCurrentSongId}
       />
-      {/* Global sidebar - persists across all routes */}
-      <Sidebar
-        defaultOpenGroup="database"
-        activeChild={activeChild}
-        onChildSelect={setActiveChild}
-        isChatOpen={isChatOpen}
-        setIsChatOpen={setIsChatOpen}
-        unreadCount={unreadCount}
-      />
+      {/* Global sidebar - persists across all routes except admin */}
+      {!isAdminRoute && (
+        <Sidebar
+          defaultOpenGroup="database"
+          activeChild={activeChild}
+          onChildSelect={setActiveChild}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+          unreadCount={unreadCount}
+        />
+      )}
       <MusicPlayer ref={musicPlayerRef} videoId={currentSongId} />
 
       {/* Only routes fade — nothing else */}
