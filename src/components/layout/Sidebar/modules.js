@@ -77,12 +77,6 @@ export const MODULES = [
       { id: 'erd',   label: 'ERD Visualizer.js', route: '/erd' },
     ],
   },
-  {
-    id: 'Miscellaneous',
-    label: 'Miscellaneous',
-    Icon: FileCode,
-    tools: []
-  },
 
   // Coming soon — declare with just { id, label, Icon }. Add `tools` to activate.
   {
