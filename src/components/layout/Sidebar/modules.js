@@ -128,7 +128,11 @@ export const MODULES = [
     label: 'Operating Systems',
     Icon: HardDrive,
     notes: [
-      { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' },
+      { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' 
+    notes: [
+      { filename: 'notes/testing', label: 'testing.md' },
+    ],
+  },
       { filename: 'Labs/C Programming/c-fundamentals',              label: 'c-fundamentals.md' },
       { filename: 'Labs/C Programming/the-quadratic-equation-question', label: 'the-quadratic-equation-question.md' },
       { filename: 'Labs/C Programming/system-calls-part-1',         label: 'system-calls-part-1.md' },
