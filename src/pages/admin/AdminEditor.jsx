@@ -125,8 +125,16 @@ function removeModuleSource(modulesJs, moduleId) {
 
 function findModuleBlock(modulesJs, moduleId) {
   const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm')
-  const startMatch = modulesJs.match(startPattern)
+  
+  // Try multi-line format first
+  let startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm')
+  let startMatch = modulesJs.match(startPattern)
+  
+  // If not found, try single-line format: { id: 'module-id', label: '...', Icon: ... }
+  if (!startMatch) {
+    startPattern = new RegExp(`\\{\\s*id:\\s*'${escapedId}'\\s*,`, 'm')
+    startMatch = modulesJs.match(startPattern)
+  }
 
   if (!startMatch || startMatch.index == null) {
     throw new Error(`Could not find module: ${moduleId}`)
@@ -167,16 +175,48 @@ function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
   let updatedSource
 
   if (notesMatch) {
+    // Module already has notes array, append to it
     updatedSource = source.replace(notesPattern, `$1$2      ${newNoteEntry}\n    $3`)
   } else {
-    const toolsIndex = source.indexOf('\n    tools:')
-    const notesSource = `\n    notes: [\n      ${newNoteEntry}\n    ],`
-
-    if (toolsIndex !== -1) {
-      updatedSource = `${source.slice(0, toolsIndex)}${notesSource}${source.slice(toolsIndex)}`
+    // Module doesn't have notes array, need to add it
+    // Check if it's a single-line format: { id: '...', label: '...', Icon: ... }
+    const isSingleLine = !source.includes('\n    ')
+    
+    if (isSingleLine) {
+      // Convert single-line to multi-line and add notes
+      const idMatch = source.match(/id:\s*'([^']+)'/)
+      const labelMatch = source.match(/label:\s*'([^']+)'/)
+      const iconMatch = source.match(/Icon:\s*(\w+)/)
+      
+      if (idMatch && labelMatch && iconMatch) {
+        updatedSource = `{
+    id: '${idMatch[1]}',
+    label: '${labelMatch[1]}',
+    Icon: ${iconMatch[1]},
+    notes: [
+      ${newNoteEntry}
+    ],
+  }`
+      } else {
+        throw new Error('Could not parse single-line module format')
+      }
     } else {
-      const closingIndex = source.lastIndexOf('\n  }')
-      updatedSource = `${source.slice(0, closingIndex)}${notesSource}${source.slice(closingIndex)}`
+      // Multi-line format, insert notes before tools or at the end
+      const toolsIndex = source.indexOf('\n    tools:')
+      const notesSource = `\n    notes: [\n      ${newNoteEntry}\n    ],`
+
+      if (toolsIndex !== -1) {
+        updatedSource = `${source.slice(0, toolsIndex)}${notesSource}${source.slice(toolsIndex)}`
+      } else {
+        const closingIndex = source.lastIndexOf('\n  }')
+        if (closingIndex !== -1) {
+          updatedSource = `${source.slice(0, closingIndex)}${notesSource}${source.slice(closingIndex)}`
+        } else {
+          // Try to find the closing brace
+          const lastBrace = source.lastIndexOf('}')
+          updatedSource = `${source.slice(0, lastBrace)}${notesSource}\n  }`
+        }
+      }
     }
   }
 
@@ -216,6 +256,175 @@ function extractMarkdownImages(markdown) {
     alt: match[1],
     src: match[2],
   }))
+}
+
+// Create Monaco content widget for inline image preview
+function createImageWidget(editor, monaco, src, alt, startPos, endPos, fullMatch, onDelete, onReplace) {
+  const resolvedSrc = resolveAdminImageSrc(src)
+  const widgetId = `image-widget-${startPos.lineNumber}-${startPos.column}`
+
+  return {
+    getId: () => widgetId,
+    getDomNode: () => {
+      const container = document.createElement('div')
+      container.className = 'monaco-image-widget'
+      container.style.cssText = `
+        position: relative;
+        display: inline-block;
+        max-width: 400px;
+        margin: 8px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid ${colors.border};
+        background: ${colors.surface};
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        animation: imageWidgetFadeIn 200ms ease-out;
+        z-index: 100;
+      `
+
+      // Keep widget visible when hovering over it
+      container.addEventListener('mouseenter', () => {
+        clearTimeout(editor._imageWidgetHideTimeout)
+      })
+
+      container.addEventListener('mouseleave', () => {
+        editor._imageWidgetHideTimeout = setTimeout(() => {
+          hideImageWidget(editor)
+        }, 300)
+      })
+
+      const img = document.createElement('img')
+      img.src = resolvedSrc
+      img.alt = alt || 'Image'
+      img.style.cssText = `
+        display: block;
+        max-width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        cursor: pointer;
+      `
+
+      // Context menu on right-click
+      img.addEventListener('contextmenu', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        showImageContextMenu(e, container, editor, startPos, endPos, onDelete, onReplace)
+      })
+
+      // Click to view full size
+      img.addEventListener('click', (e) => {
+        e.stopPropagation()
+        window.open(resolvedSrc, '_blank')
+      })
+
+      const caption = document.createElement('div')
+      caption.textContent = src
+      caption.style.cssText = `
+        padding: 6px 10px;
+        font-size: 11px;
+        color: ${colors.textMuted};
+        background: ${colors.surface};
+        border-top: 1px solid ${colors.border};
+        font-family: 'JetBrains Mono', monospace;
+      `
+
+      container.appendChild(img)
+      container.appendChild(caption)
+
+      return container
+    },
+    getPosition: () => ({
+      position: {
+        lineNumber: endPos.lineNumber,
+        column: endPos.column,
+      },
+      preference: [monaco.editor.ContentWidgetPositionPreference.BELOW]
+    })
+  }
+}
+
+// Helper function to hide widget (needs to be accessible)
+function hideImageWidget(editor) {
+  if (editor._currentImageWidget) {
+    editor.removeContentWidget(editor._currentImageWidget)
+    editor._currentImageWidget = null
+  }
+}
+
+// Show context menu for image widget
+function showImageContextMenu(e, container, editor, startPos, endPos, onDelete, onReplace) {
+  // Remove any existing context menu
+  const existingMenu = document.querySelector('.monaco-image-context-menu')
+  if (existingMenu) existingMenu.remove()
+
+  const menu = document.createElement('div')
+  menu.className = 'monaco-image-context-menu'
+  menu.style.cssText = `
+    position: fixed;
+    left: ${e.clientX}px;
+    top: ${e.clientY}px;
+    background: ${colors.surface};
+    border: 1px solid ${colors.border};
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    min-width: 160px;
+  `
+
+  const replaceOption = createMenuOption('Replace image', () => {
+    menu.remove()
+    onReplace(editor, startPos, endPos)
+  })
+
+  const deleteOption = createMenuOption('Delete image', () => {
+    menu.remove()
+    onDelete(editor, startPos, endPos)
+  }, colors.error)
+
+  menu.appendChild(replaceOption)
+  menu.appendChild(deleteOption)
+  document.body.appendChild(menu)
+
+  // Close menu on click outside
+  const closeMenu = (event) => {
+    if (!menu.contains(event.target)) {
+      menu.remove()
+      document.removeEventListener('click', closeMenu)
+    }
+  }
+  setTimeout(() => document.addEventListener('click', closeMenu), 0)
+}
+
+function createMenuOption(text, onClick, color = colors.text) {
+  const option = document.createElement('button')
+  option.textContent = text
+  option.style.cssText = `
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: ${color};
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 150ms ease;
+    font-family: inherit;
+  `
+
+  option.addEventListener('mouseenter', () => {
+    option.style.background = 'rgba(255, 255, 255, 0.06)'
+  })
+
+  option.addEventListener('mouseleave', () => {
+    option.style.background = 'transparent'
+  })
+
+  option.addEventListener('click', onClick)
+
+  return option
 }
 
 function AdminEditorContent() {
@@ -290,7 +499,6 @@ function AdminEditorContent() {
     : profile?.allowed_directories || []
 
   const unusedIconOptions = getUnusedIconOptions(modules)
-  const imagePreviews = extractMarkdownImages(content)
 
   // Monaco theme setup
   const handleBeforeMount = (monaco) => {
@@ -308,13 +516,179 @@ function AdminEditorContent() {
     })
   }
 
-  const handleEditorMount = (editor) => {
+  const handleEditorMount = (editor, monaco) => {
     editorRef.current = editor
     
     // Listen for cursor position changes to detect current style
     editor.onDidChangeCursorPosition(() => {
       detectCurrentStyle()
     })
+
+    // Render inline image decorations
+    renderInlineImages(editor, monaco)
+    
+    // Re-render decorations when content changes
+    editor.onDidChangeModelContent(() => {
+      renderInlineImages(editor, monaco)
+      // Hide widget when content changes (user is typing)
+      hideImageWidget(editor)
+    })
+
+    // Hide widget when mouse leaves editor
+    const editorDomNode = editor.getDomNode()
+    if (editorDomNode) {
+      editorDomNode.addEventListener('mouseleave', () => {
+        editor._imageWidgetHideTimeout = setTimeout(() => {
+          hideImageWidget(editor)
+        }, 300)
+      })
+    }
+  }
+
+  // Render inline image previews as hover decorations
+  const renderInlineImages = (editor, monaco) => {
+    if (!editor || !monaco) return
+
+    const model = editor.getModel()
+    if (!model) return
+
+    const text = model.getValue()
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
+    const decorations = []
+    let match
+
+    while ((match = imageRegex.exec(text)) !== null) {
+      const [fullMatch, alt, src] = match
+      const startOffset = match.index
+      const endOffset = startOffset + fullMatch.length
+      const startPos = model.getPositionAt(startOffset)
+      const endPos = model.getPositionAt(endOffset)
+
+      // Add decoration for hover detection
+      decorations.push({
+        range: new monaco.Range(
+          startPos.lineNumber,
+          startPos.column,
+          endPos.lineNumber,
+          endPos.column
+        ),
+        options: {
+          inlineClassName: 'monaco-image-markdown',
+          hoverMessage: {
+            value: `**Image Preview** - Hover to see preview, right-click to manage`,
+            isTrusted: true
+          },
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
+      })
+    }
+
+    // Apply decorations
+    editor._imageDecorations = editor.deltaDecorations(
+      editor._imageDecorations || [],
+      decorations
+    )
+
+    // Set up hover provider if not already done
+    if (!editor._imageHoverProviderRegistered) {
+      editor.onMouseMove((e) => {
+        handleImageHover(editor, monaco, e)
+      })
+      editor._imageHoverProviderRegistered = true
+    }
+  }
+
+  // Handle hover over image markdown
+  const handleImageHover = (editor, monaco, e) => {
+    if (!e.target || !e.target.position) return
+
+    const model = editor.getModel()
+    if (!model) return
+
+    const position = e.target.position
+    const text = model.getValue()
+    const offset = model.getOffsetAt(position)
+
+    // Find if cursor is over an image markdown
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g
+    let match
+
+    while ((match = imageRegex.exec(text)) !== null) {
+      const [fullMatch, alt, src] = match
+      const startOffset = match.index
+      const endOffset = startOffset + fullMatch.length
+
+      if (offset >= startOffset && offset <= endOffset) {
+        const startPos = model.getPositionAt(startOffset)
+        const endPos = model.getPositionAt(endOffset)
+        
+        // Show widget
+        showImageWidget(editor, monaco, src, alt, startPos, endPos, fullMatch)
+        return
+      }
+    }
+
+    // Hide widget if not hovering over image
+    hideImageWidget(editor)
+  }
+
+  // Show image widget on hover
+  const showImageWidget = (editor, monaco, src, alt, startPos, endPos, fullMatch) => {
+    // Remove existing widget
+    hideImageWidget(editor)
+
+    const widget = createImageWidget(
+      editor,
+      monaco,
+      src,
+      alt,
+      startPos,
+      endPos,
+      fullMatch,
+      handleImageDelete,
+      handleImageReplace
+    )
+
+    editor._currentImageWidget = widget
+    editor.addContentWidget(widget)
+  }
+
+  // Hide image widget
+  const hideImageWidget = (editor) => {
+    if (editor._currentImageWidget) {
+      editor.removeContentWidget(editor._currentImageWidget)
+      editor._currentImageWidget = null
+    }
+  }
+
+  // Delete image from editor
+  const handleImageDelete = (editor, startPos, endPos) => {
+    const model = editor.getModel()
+    if (!model) return
+
+    const range = {
+      startLineNumber: startPos.lineNumber,
+      startColumn: startPos.column,
+      endLineNumber: endPos.lineNumber,
+      endColumn: endPos.column,
+    }
+
+    editor.executeEdits('', [{
+      range,
+      text: '',
+    }])
+
+    showToast('Image removed', 'success')
+  }
+
+  // Replace image
+  const handleImageReplace = (editor, startPos, endPos) => {
+    // Trigger file input
+    if (fileInputRef.current) {
+      // Store position for replacement
+      editor._imageReplacePosition = { startPos, endPos }
+      fileInputRef.current.click()
+    }
   }
 
   const handleContentChange = (value) => {
@@ -453,33 +827,53 @@ function AdminEditorContent() {
       const arrayBuffer = await file.arrayBuffer()
       await uploadImage(uploadPath, arrayBuffer)
       
-      // 4. Insert into editor at cursor position
+      // 4. Insert or replace in editor
       const markdownPath = `/notes/img/${moduleId}/${newFilename}`
       const imageMarkdown = `![image](${markdownPath})`
       
       if (editorRef.current) {
         const editor = editorRef.current
-        const position = editor.getPosition()
-        const range = {
-          startLineNumber: position.lineNumber,
-          startColumn: position.column,
-          endLineNumber: position.lineNumber,
-          endColumn: position.column,
+        
+        // Check if this is a replacement operation
+        if (editor._imageReplacePosition) {
+          const { startPos, endPos } = editor._imageReplacePosition
+          const range = {
+            startLineNumber: startPos.lineNumber,
+            startColumn: startPos.column,
+            endLineNumber: endPos.lineNumber,
+            endColumn: endPos.column,
+          }
+          editor.executeEdits('', [{
+            range,
+            text: imageMarkdown,
+          }])
+          editor._imageReplacePosition = null
+          showToast('Image replaced', 'success')
+        } else {
+          // Normal insertion at cursor
+          const position = editor.getPosition()
+          const range = {
+            startLineNumber: position.lineNumber,
+            startColumn: position.column,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          }
+          editor.executeEdits('', [{
+            range,
+            text: imageMarkdown,
+          }])
+          editor.setPosition({
+            lineNumber: position.lineNumber,
+            column: position.column + imageMarkdown.length,
+          })
+          showToast('Image uploaded and inserted', 'success')
         }
-        editor.executeEdits('', [{
-          range,
-          text: imageMarkdown,
-        }])
-        editor.setPosition({
-          lineNumber: position.lineNumber,
-          column: position.column + imageMarkdown.length,
-        })
+        
         editor.focus()
       } else {
         setContent(prev => prev + '\n' + imageMarkdown)
+        showToast('Image uploaded and inserted', 'success')
       }
-      
-      showToast('Image uploaded and inserted', 'success')
       
     } catch (error) {
       console.error('Image upload failed:', error)
@@ -877,16 +1271,6 @@ function AdminEditorContent() {
               padding: { top: 0, bottom: 120 },
             }}
           />
-          {imagePreviews.length > 0 && (
-            <div className={styles.imagePreviewPanel} aria-label="Inserted image previews">
-              {imagePreviews.map((image, index) => (
-                <figure className={styles.imagePreview} key={`${image.src}-${index}`}>
-                  <img src={resolveAdminImageSrc(image.src)} alt={image.alt || 'Inserted image'} />
-                  <figcaption>{image.src}</figcaption>
-                </figure>
-              ))}
-            </div>
-          )}
         </div>
         
         {isDragActive && (
