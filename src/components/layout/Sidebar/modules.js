@@ -70,6 +70,7 @@ export const MODULES = [
     Icon: Database,
     notes: [
       { filename: 'getting-started.md', label: 'getting-started.md' },
+          { filename: 'notes/file-testing-again', label: 'file-testing-again.md' },
     ],
     tools: [
       { id: 'btree', label: 'B+ Tree.js',        route: '/tree' },
