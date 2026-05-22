@@ -1,3 +1,4 @@
-hello there
-![image](/notes/img/computer-vision/1.png)
+hello chum
+
+![image](/notes/img/computer-vision/4.png)
 
