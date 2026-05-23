@@ -140,6 +140,7 @@ export const MODULES = [
       { filename: 'Labs/C Programming/threads-and-mutex-locks',     label: 'threads-and-mutex-locks.md' },
       { filename: 'Labs/C Programming/directory-operations',        label: 'directory-operations.md' },
           { filename: 'notes/test-note', label: 'test-note.md' },
+          { filename: 'notes/processes-threads', label: 'processes-threads.md' },
     ],
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
