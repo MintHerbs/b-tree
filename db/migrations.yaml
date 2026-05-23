@@ -19,7 +19,7 @@
 # See db/README.md for how to apply migrations against a Supabase project.
 
 project: b-tree
-schema_version: 15
+schema_version: 16
 
 migrations:
   - id: "0001"
@@ -139,5 +139,13 @@ migrations:
     description: "add social tables to supabase_realtime publication"
     author: agent
     created: 2026-05-16
+    applied_envs: []
+    related_issues: []
+
+  - id: "0016"
+    file: sql/0016_init_admin_users.sql
+    description: "Create admin_users table for content editor management with roles and directory permissions"
+    author: agent
+    created: 2026-05-23
     applied_envs: []
     related_issues: []

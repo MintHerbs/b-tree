@@ -10,6 +10,7 @@ import {
   Users,
   UserCircle,
   SignOut,
+  Key,
   TextB,
   TextItalic,
   TextStrikethrough,
@@ -17,7 +18,8 @@ import {
   Image,
   CaretDown,
   FilePlus,
-  DotsThreeVertical
+  DotsThreeVertical,
+  Function as FunctionIcon
 } from '@phosphor-icons/react'
 import StyleDropdown from './StyleDropdown'
 import styles from './EditorNavbar.module.css'
@@ -35,9 +37,11 @@ export default function EditorNavbar({
   isOwner,
   username,
   onSignOut,
+  onChangePassword,
   editorRef,
   onFormatAction,
   onInsertImage,
+  onInsertFormula,
   currentStyle,
   onStyleChange,
   onNewModule,
@@ -163,6 +167,10 @@ export default function EditorNavbar({
                   <span className={styles.role}>{isOwner ? 'Owner' : 'Contributor'}</span>
                 </div>
                 <div className={styles.divider} />
+                <button className={styles.menuItem} onClick={onChangePassword}>
+                  <Key size={16} />
+                  <span>Change password</span>
+                </button>
                 <button className={styles.menuItem} onClick={onSignOut}>
                   <SignOut size={16} />
                   <span>Sign out</span>
@@ -236,6 +244,22 @@ export default function EditorNavbar({
             <Tooltip.Portal>
               <Tooltip.Content className={styles.tooltip} sideOffset={5}>
                 Code block
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                className={styles.formatButton}
+                onClick={onInsertFormula}
+              >
+                <FunctionIcon size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                Insert formula (LaTeX)
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>

@@ -8,7 +8,8 @@ import {
   FolderPlus,
   DotsThreeVertical,
   X,
-  Warning
+  Warning,
+  FileMd
 } from '@phosphor-icons/react'
 import {
   Files,
@@ -32,10 +33,17 @@ export default function DirectoryDrawer({
   onDeleteSubfolder,
   onNewModule,
   onDeleteModule,
+  onRenameModule,
   onMoveFile,
+  onLoadFile,
+  onClearEditor,
+  onRestoreEditor,
+  currentEditorState,
   isLoading = false,
   iconOptions = []
 }) {
+  const [mode, setMode] = useState('create') // 'create' or 'edit'
+  const [savedEditorState, setSavedEditorState] = useState(null) // Save editor state when switching modes
   const [newSubfolderModule, setNewSubfolderModule] = useState(null)
   const [newSubfolderValue, setNewSubfolderValue] = useState('')
   const [renamingPath, setRenamingPath] = useState(null)
@@ -45,6 +53,11 @@ export default function DirectoryDrawer({
   const [newModuleIcon, setNewModuleIcon] = useState(iconOptions[0]?.name || '')
   const [dragOverPath, setDragOverPath] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [expandedFolders, setExpandedFolders] = useState({}) // Track which subfolders are expanded
+  const [folderFiles, setFolderFiles] = useState({}) // Cache files for each folder
+  const [loadingFiles, setLoadingFiles] = useState({}) // Track loading state per folder
+  const [renamingModule, setRenamingModule] = useState(null)
+  const [renameModuleValue, setRenameModuleValue] = useState('')
 
   const newSubfolderInputRef = useRef(null)
   const renameInputRef = useRef(null)
@@ -104,6 +117,67 @@ export default function DirectoryDrawer({
     }
   }
 
+  const handleRenameModule = () => {
+    if (renameModuleValue.trim() && renamingModule) {
+      onRenameModule(renamingModule, renameModuleValue.trim())
+      setRenamingModule(null)
+      setRenameModuleValue('')
+    }
+  }
+
+  const toggleFolder = async (moduleId, subfolder) => {
+    const key = `${moduleId}/${subfolder}`
+    const isExpanded = expandedFolders[key]
+    
+    setExpandedFolders(prev => ({
+      ...prev,
+      [key]: !isExpanded
+    }))
+
+    // Load files if not already loaded and we're expanding
+    if (!isExpanded && !folderFiles[key] && mode === 'edit') {
+      await loadFolderFiles(moduleId, subfolder)
+    }
+  }
+
+  const loadFolderFiles = async (moduleId, subfolder) => {
+    const key = `${moduleId}/${subfolder}`
+    setLoadingFiles(prev => ({ ...prev, [key]: true }))
+
+    try {
+      const path = `src/content/notes/${moduleId}/${subfolder}`
+      const { listDirectory } = await import('../../lib/githubApi')
+      const files = await listDirectory(path)
+      
+      // Filter for markdown files only
+      const mdFiles = files
+        .filter(f => f.type === 'file' && f.name.endsWith('.md'))
+        .map(f => ({
+          name: f.name,
+          path: f.path
+        }))
+
+      setFolderFiles(prev => ({
+        ...prev,
+        [key]: mdFiles
+      }))
+    } catch (error) {
+      console.error('Failed to load folder files:', error)
+      setFolderFiles(prev => ({
+        ...prev,
+        [key]: []
+      }))
+    } finally {
+      setLoadingFiles(prev => ({ ...prev, [key]: false }))
+    }
+  }
+
+  const handleFileClick = (filePath) => {
+    if (onLoadFile) {
+      onLoadFile(filePath)
+    }
+  }
+
   const handleDragStart = (e, moduleId, subfolder) => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('application/json', JSON.stringify({
@@ -160,7 +234,35 @@ export default function DirectoryDrawer({
       <div className={`${styles.drawer} ${open ? styles.open : ''}`}>
         {/* Header */}
         <div className={styles.header}>
-          <h2 className={styles.title}>Files</h2>
+          <div className={styles.modeToggle}>
+            <button
+              className={`${styles.modeButton} ${mode === 'create' ? styles.active : ''}`}
+              onClick={() => {
+                if (mode === 'edit') {
+                  // Save current editor state before clearing
+                  if (currentEditorState && onClearEditor) {
+                    setSavedEditorState(currentEditorState)
+                    onClearEditor()
+                  }
+                }
+                setMode('create')
+              }}
+            >
+              Files
+            </button>
+            <button
+              className={`${styles.modeButton} ${mode === 'edit' ? styles.active : ''}`}
+              onClick={() => {
+                if (mode === 'create' && savedEditorState && onRestoreEditor) {
+                  // Restore saved editor state when switching back to edit mode
+                  onRestoreEditor(savedEditorState)
+                }
+                setMode('edit')
+              }}
+            >
+              Edit Files
+            </button>
+          </div>
           <button className={styles.closeButton} onClick={onClose} aria-label="Close">
             <X size={18} weight="bold" />
           </button>
@@ -191,7 +293,26 @@ export default function DirectoryDrawer({
                       {module.Icon && (
                         <module.Icon size={15} weight="regular" className={styles.moduleIcon} />
                       )}
-                      {module.label}
+                      {renamingModule === module.id ? (
+                        <input
+                          type="text"
+                          className={styles.inlineInput}
+                          value={renameModuleValue}
+                          onChange={(e) => setRenameModuleValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRenameModule()
+                            if (e.key === 'Escape') {
+                              setRenamingModule(null)
+                              setRenameModuleValue('')
+                            }
+                          }}
+                          onBlur={handleRenameModule}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
+                      ) : (
+                        module.label
+                      )}
                     </FolderTrigger>
                     
                     {isOwner && (
@@ -222,6 +343,15 @@ export default function DirectoryDrawer({
                               <button
                                 className={styles.menuItem}
                                 onClick={() => {
+                                  setRenamingModule(module.id)
+                                  setRenameModuleValue(module.label)
+                                }}
+                              >
+                                Rename subject
+                              </button>
+                              <button
+                                className={styles.menuItem}
+                                onClick={() => {
                                   setDeleteConfirm({ type: 'module', moduleId: module.id })
                                 }}
                               >
@@ -238,82 +368,123 @@ export default function DirectoryDrawer({
                     {subfolders.map(subfolder => {
                       const isRenaming = renamingPath?.moduleId === module.id && 
                                         renamingPath?.subfolder === subfolder
+                      const folderKey = `${module.id}/${subfolder}`
+                      const isExpanded = expandedFolders[folderKey]
+                      const files = folderFiles[folderKey] || []
+                      const isLoadingFolder = loadingFiles[folderKey]
 
                       return (
-                        <div
-                          key={subfolder}
-                          className={`${styles.subfolderRow} ${
-                            isSelected(module.id, subfolder) ? styles.selected : ''
-                          } ${isDragOver(module.id, subfolder) ? styles.dragOver : ''}`}
-                          onClick={() => !isRenaming && onSelectPath({ moduleId: module.id, subfolder })}
-                          draggable={!isRenaming}
-                          onDragStart={(e) => handleDragStart(e, module.id, subfolder)}
-                          onDragOver={(e) => handleDragOver(e, module.id, subfolder)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, module.id, subfolder)}
-                        >
-                          <div className={styles.subfolderContent}>
-                            <File size={14} className={styles.fileIcon} />
-                            
-                            {isRenaming ? (
-                              <input
-                                ref={renameInputRef}
-                                type="text"
-                                className={styles.inlineInput}
-                                value={renameValue}
-                                onChange={(e) => setRenameValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleRename()
-                                  if (e.key === 'Escape') {
-                                    setRenamingPath(null)
-                                    setRenameValue('')
-                                  }
-                                }}
-                                onBlur={handleRename}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            ) : (
-                              <span className={styles.subfolderLabel}>{subfolder}</span>
+                        <div key={subfolder}>
+                          <div
+                            className={`${styles.subfolderRow} ${
+                              mode === 'create' && isSelected(module.id, subfolder) ? styles.selected : ''
+                            } ${isDragOver(module.id, subfolder) ? styles.dragOver : ''}`}
+                            onClick={() => {
+                              if (mode === 'create') {
+                                !isRenaming && onSelectPath({ moduleId: module.id, subfolder })
+                              } else {
+                                toggleFolder(module.id, subfolder)
+                              }
+                            }}
+                            draggable={!isRenaming && mode === 'create'}
+                            onDragStart={(e) => mode === 'create' && handleDragStart(e, module.id, subfolder)}
+                            onDragOver={(e) => mode === 'create' && handleDragOver(e, module.id, subfolder)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => mode === 'create' && handleDrop(e, module.id, subfolder)}
+                          >
+                            <div className={styles.subfolderContent}>
+                              {mode === 'edit' ? (
+                                isExpanded ? <FolderOpen size={14} className={styles.fileIcon} /> : <Folder size={14} className={styles.fileIcon} />
+                              ) : (
+                                <Folder size={14} className={styles.fileIcon} />
+                              )}
+                              
+                              {isRenaming ? (
+                                <input
+                                  ref={renameInputRef}
+                                  type="text"
+                                  className={styles.inlineInput}
+                                  value={renameValue}
+                                  onChange={(e) => setRenameValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRename()
+                                    if (e.key === 'Escape') {
+                                      setRenamingPath(null)
+                                      setRenameValue('')
+                                    }
+                                  }}
+                                  onBlur={handleRename}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              ) : (
+                                <span className={styles.subfolderLabel}>{subfolder}</span>
+                              )}
+                            </div>
+
+                            {isOwner && !isRenaming && (
+                              <Popover.Root>
+                                <Popover.Trigger asChild>
+                                  <button
+                                    className={styles.iconButton}
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Subfolder actions"
+                                  >
+                                    <DotsThreeVertical size={14} />
+                                  </button>
+                                </Popover.Trigger>
+                                <Popover.Portal>
+                                  <Popover.Content className={styles.popoverContent} sideOffset={5}>
+                                    <button
+                                      className={styles.menuItem}
+                                      onClick={() => {
+                                        setRenamingPath({ moduleId: module.id, subfolder, oldName: subfolder })
+                                        setRenameValue(subfolder)
+                                      }}
+                                    >
+                                      Rename
+                                    </button>
+                                    <button
+                                      className={styles.menuItem}
+                                      onClick={() => {
+                                        setDeleteConfirm({ 
+                                          type: 'subfolder', 
+                                          moduleId: module.id, 
+                                          subfolder 
+                                        })
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </Popover.Content>
+                                </Popover.Portal>
+                              </Popover.Root>
                             )}
                           </div>
 
-                          {isOwner && !isRenaming && (
-                            <Popover.Root>
-                              <Popover.Trigger asChild>
-                                <button
-                                  className={styles.iconButton}
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="Subfolder actions"
-                                >
-                                  <DotsThreeVertical size={14} />
-                                </button>
-                              </Popover.Trigger>
-                              <Popover.Portal>
-                                <Popover.Content className={styles.popoverContent} sideOffset={5}>
-                                  <button
-                                    className={styles.menuItem}
-                                    onClick={() => {
-                                      setRenamingPath({ moduleId: module.id, subfolder, oldName: subfolder })
-                                      setRenameValue(subfolder)
-                                    }}
+                          {/* File list in edit mode */}
+                          {mode === 'edit' && isExpanded && (
+                            <div className={styles.fileList}>
+                              {isLoadingFolder ? (
+                                <div className={styles.fileItem}>
+                                  <span className={styles.loadingText}>Loading files...</span>
+                                </div>
+                              ) : files.length === 0 ? (
+                                <div className={styles.fileItem}>
+                                  <span className={styles.emptyText}>No files found</span>
+                                </div>
+                              ) : (
+                                files.map(file => (
+                                  <div
+                                    key={file.path}
+                                    className={styles.fileItem}
+                                    onClick={() => handleFileClick(file.path)}
                                   >
-                                    Rename
-                                  </button>
-                                  <button
-                                    className={styles.menuItem}
-                                    onClick={() => {
-                                      setDeleteConfirm({ 
-                                        type: 'subfolder', 
-                                        moduleId: module.id, 
-                                        subfolder 
-                                      })
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                </Popover.Content>
-                              </Popover.Portal>
-                            </Popover.Root>
+                                    <FileMd size={14} className={styles.fileIcon} />
+                                    <span className={styles.fileName}>{file.name}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
                           )}
                         </div>
                       )

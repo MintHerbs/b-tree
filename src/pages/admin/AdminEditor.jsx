@@ -11,10 +11,14 @@ import EditorNavbar from '../../components/admin/EditorNavbar'
 import DirectoryDrawer from '../../components/admin/DirectoryDrawer'
 import PreviewModal from '../../components/admin/PreviewModal'
 import UsersDrawer from '../../components/admin/UsersDrawer'
+import ChangePasswordModal from '../../components/admin/ChangePasswordModal'
+import FormulaModal from '../../components/admin/FormulaModal'
 import ToastNotification, { useToast } from '../../components/admin/ToastNotification'
 import { ADMIN_ICON_OPTIONS, getIconNameForComponent, getIconOptionByName } from '../../components/admin/adminIconOptions'
 import { Monitor } from '@phosphor-icons/react'
 import styles from './AdminEditor.module.css'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 // Title to filename conversion
 function titleToFilename(title) {
@@ -427,6 +431,198 @@ function createMenuOption(text, onClick, color = colors.text) {
   return option
 }
 
+// Clear all active LaTeX view zones and legacy content widgets from editor
+function clearLatexWidgets(editor) {
+  if (editor._latexWidgets) {
+    editor._latexWidgets.forEach(widget => editor.removeContentWidget(widget))
+  }
+  editor._latexWidgets = []
+  // View zones are removed inside the changeViewZones callback in renderInlineLaTeX
+}
+
+// Render LaTeX inline / block preview dynamically in Monaco
+function renderInlineLaTeX(editor, monaco) {
+  if (!editor || !monaco) return
+
+  // Prevent infinite recursive event loops synchronously
+  if (editor._isRenderingLaTeX) return
+
+  const model = editor.getModel()
+  if (!model) return
+
+  // Debounce updates to avoid Monaco's synchronous rendering/layout event cycle conflicts
+  if (editor._latexRenderTimeout) {
+    clearTimeout(editor._latexRenderTimeout)
+  }
+
+  editor._latexRenderTimeout = setTimeout(() => {
+    if (editor._isRenderingLaTeX) return
+    editor._isRenderingLaTeX = true
+
+    try {
+      const text = model.getValue()
+      const selection = editor.getSelection()
+
+      // If no selection yet (initial mount), treat cursor as outside all formulas so all get rendered
+      const selectionStart = selection ? model.getOffsetAt(selection.getStartPosition()) : -1
+      const selectionEnd = selection ? model.getOffsetAt(selection.getEndPosition()) : -1
+
+      const formulas = []
+
+      // 1. Scan for block formulas: $$formula$$
+      const blockRegex = /\$\$([\s\S]*?)\$\$/g
+      let match
+      while ((match = blockRegex.exec(text)) !== null) {
+        formulas.push({
+          type: 'block',
+          raw: match[0],
+          latex: match[1],
+          startOffset: match.index,
+          endOffset: match.index + match[0].length
+        })
+      }
+
+      // 2. Scan for inline formulas: $formula$ (making sure not to overlap with block formulas)
+      const inlineRegex = /\$([^$\n]+)\$/g
+      while ((match = inlineRegex.exec(text)) !== null) {
+        const startOffset = match.index
+        const endOffset = startOffset + match[0].length
+
+        // Check if this overlaps with any block formulas
+        const overlaps = formulas.some(f => 
+          (startOffset >= f.startOffset && startOffset < f.endOffset) ||
+          (endOffset > f.startOffset && endOffset <= f.endOffset)
+        )
+
+        if (!overlaps) {
+          formulas.push({
+            type: 'inline',
+            raw: match[0],
+            latex: match[1],
+            startOffset,
+            endOffset
+          })
+        }
+      }
+
+      // Optimization: Check which formulas are active (overlapping with cursor/selection)
+      const activeFormulaIndexes = formulas
+        .map((f, idx) => {
+          const cursorOverlaps = !(selectionEnd < f.startOffset || selectionStart > f.endOffset)
+          return cursorOverlaps ? idx : null
+        })
+        .filter(val => val !== null)
+
+      // State Signature optimization to prevent redrawing/flickering and layout churn
+      const stateSignature = `${text.length}-${formulas.length}-${activeFormulaIndexes.join(',')}`
+      if (editor._lastLatexStateSignature === stateSignature) {
+        return
+      }
+      editor._lastLatexStateSignature = stateSignature
+
+      // Clear legacy content widgets
+      clearLatexWidgets(editor)
+
+      const decorations = []
+
+      // Use view zones so each rendered formula occupies its own line — no overlap possible
+      editor.changeViewZones((accessor) => {
+        // Remove previous view zones
+        ;(editor._latexViewZoneIds || []).forEach(id => accessor.removeZone(id))
+        editor._latexViewZoneIds = []
+
+        formulas.forEach((f, idx) => {
+          const startPos = model.getPositionAt(f.startOffset)
+          const endPos = model.getPositionAt(f.endOffset)
+
+          if (activeFormulaIndexes.includes(idx)) {
+            // User is editing this formula — show raw text, no zone
+            return
+          }
+
+          // Hide the raw LaTeX text
+          decorations.push({
+            range: new monaco.Range(
+              startPos.lineNumber, startPos.column,
+              endPos.lineNumber, endPos.column
+            ),
+            options: {
+              inlineClassName: 'monaco-latex-hidden',
+              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+            }
+          })
+
+          // Build the zone DOM node
+          const domNode = document.createElement('div')
+          const isBlock = f.type === 'block'
+          domNode.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: ${isBlock ? 'center' : 'flex-start'};
+            padding: ${isBlock ? '14px 24px' : '8px 16px'};
+            cursor: pointer;
+            border-left: 2px solid rgba(139, 92, 246, 0.35);
+            background: rgba(139, 92, 246, 0.04);
+            border-radius: 0 6px 6px 0;
+            overflow: visible;
+            box-sizing: border-box;
+            color: #ffffff;
+            transition: background 150ms ease, border-color 150ms ease;
+          `
+
+          try {
+            domNode.innerHTML = katex.renderToString(f.latex, {
+              displayMode: isBlock,
+              throwOnError: true,
+              output: 'html'
+            })
+          } catch (err) {
+            domNode.textContent = `⚠️ Math Error: ${err.message}`
+            domNode.style.color = 'var(--color-error)'
+            domNode.style.fontSize = '12px'
+            domNode.style.background = 'var(--color-error-soft)'
+            domNode.style.borderLeftColor = 'var(--color-error-border)'
+          }
+
+          domNode.addEventListener('click', () => {
+            editor.setPosition({
+              lineNumber: startPos.lineNumber,
+              column: startPos.column + (isBlock ? 2 : 1)
+            })
+            editor.focus()
+          })
+          domNode.addEventListener('mouseenter', () => {
+            domNode.style.background = 'rgba(139, 92, 246, 0.10)'
+            domNode.style.borderLeftColor = 'rgba(139, 92, 246, 0.65)'
+          })
+          domNode.addEventListener('mouseleave', () => {
+            domNode.style.background = 'rgba(139, 92, 246, 0.04)'
+            domNode.style.borderLeftColor = 'rgba(139, 92, 246, 0.35)'
+          })
+
+          const zoneId = accessor.addZone({
+            afterLineNumber: endPos.lineNumber,
+            heightInPx: isBlock ? 80 : 52,
+            domNode,
+            suppressMouseDown: false,
+          })
+          editor._latexViewZoneIds.push(zoneId)
+        })
+      })
+
+      // Apply hidden-text decorations
+      editor._latexDecorations = editor.deltaDecorations(
+        editor._latexDecorations || [],
+        decorations
+      )
+    } catch (e) {
+      console.error('Error rendering LaTeX in Monaco Editor:', e)
+    } finally {
+      editor._isRenderingLaTeX = false
+    }
+  }, 16) // ~1 frame delay to batch updates smoothly
+}
+
 function AdminEditorContent() {
   const location = useLocation()
   const { user, profile, loading } = useAdmin()
@@ -440,6 +636,8 @@ function AdminEditorContent() {
   const [directoryOpen, setDirectoryOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [usersOpen, setUsersOpen] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [formulaModalOpen, setFormulaModalOpen] = useState(false)
   const [selectedPath, setSelectedPath] = useState(null) // { moduleId, subfolder }
   const [modules, setModules] = useState(MODULES)
   const [modulesLoading, setModulesLoading] = useState(true)
@@ -519,17 +717,20 @@ function AdminEditorContent() {
   const handleEditorMount = (editor, monaco) => {
     editorRef.current = editor
     
-    // Listen for cursor position changes to detect current style
+    // Listen for cursor position changes to detect current style and toggle LaTeX edit mode
     editor.onDidChangeCursorPosition(() => {
       detectCurrentStyle()
+      renderInlineLaTeX(editor, monaco)
     })
 
-    // Render inline image decorations
+    // Render inline image and LaTeX decorations
     renderInlineImages(editor, monaco)
+    renderInlineLaTeX(editor, monaco)
     
     // Re-render decorations when content changes
     editor.onDidChangeModelContent(() => {
       renderInlineImages(editor, monaco)
+      renderInlineLaTeX(editor, monaco)
       // Hide widget when content changes (user is typing)
       hideImageWidget(editor)
     })
@@ -762,6 +963,20 @@ function AdminEditorContent() {
         column: position.column - (action === 'bold' ? 2 : (action === 'strike' ? 2 : 1)),
       })
     }
+    
+    editor.focus()
+  }
+
+  const handleInsertFormula = (formula) => {
+    if (!editorRef.current) return
+    
+    const editor = editorRef.current
+    const selection = editor.getSelection()
+    
+    editor.executeEdits('', [{
+      range: selection,
+      text: formula,
+    }])
     
     editor.focus()
   }
@@ -1101,6 +1316,59 @@ function AdminEditorContent() {
     }
   }
 
+  const handleRenameModule = async (moduleId, newLabel) => {
+    showToast(`Renaming subject to ${newLabel}...`, 'success')
+
+    try {
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const moduleRegex = new RegExp(
+        `(\\{[^}]*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'[^}]*label:\\s*')([^']+)(')`
+      )
+      const updatedModulesJs = currentModulesJs.replace(moduleRegex, `$1${newLabel}$3`)
+
+      await commitFile(
+        MODULES_JS_PATH,
+        updatedModulesJs,
+        `feat: rename ${moduleId} to ${newLabel}`
+      )
+
+      refreshModuleState(setModules, prev =>
+        prev.map(m => m.id === moduleId ? { ...m, label: newLabel } : m)
+      )
+      showToast(`Subject renamed to ${newLabel}`, 'success')
+    } catch (error) {
+      showToast(`Failed to rename subject: ${error.message}`, 'error')
+    }
+  }
+
+  const handleLoadFile = async (filePath) => {
+    try {
+      showToast('Loading file...', 'success')
+      const fileContent = await getFileContent(filePath)
+      
+      // Extract filename without extension for title
+      const fileName = filePath.split('/').pop().replace('.md', '')
+      
+      setContent(fileContent)
+      setTitle(fileName)
+      setUnsaved(false)
+      setDirectoryOpen(false)
+      
+      // Extract module and subfolder from path
+      // Path format: src/content/notes/{moduleId}/{subfolder}/{filename}
+      const pathParts = filePath.split('/')
+      if (pathParts.length >= 5) {
+        const moduleId = pathParts[3]
+        const subfolder = pathParts[4]
+        setSelectedPath({ moduleId, subfolder })
+      }
+      
+      showToast(`Loaded ${fileName}`, 'success')
+    } catch (error) {
+      showToast(`Failed to load file: ${error.message}`, 'error')
+    }
+  }
+
   const handleNewSubfolder = async (moduleId, subfolderName) => {
     try {
       await commitFile(
@@ -1185,6 +1453,26 @@ function AdminEditorContent() {
         onDeleteSubfolder={handleDeleteSubfolder}
         onNewModule={handleNewModule}
         onDeleteModule={handleDeleteModule}
+        onRenameModule={handleRenameModule}
+        onLoadFile={handleLoadFile}
+        currentEditorState={{
+          content,
+          title,
+          unsaved,
+          selectedPath
+        }}
+        onClearEditor={() => {
+          setContent('')
+          setTitle('')
+          setUnsaved(false)
+          setSelectedPath(null)
+        }}
+        onRestoreEditor={(state) => {
+          setContent(state.content)
+          setTitle(state.title)
+          setUnsaved(state.unsaved)
+          setSelectedPath(state.selectedPath)
+        }}
         onMoveFile={handleMoveFile}
         isLoading={modulesLoading}
         iconOptions={unusedIconOptions}
@@ -1206,6 +1494,17 @@ function AdminEditorContent() {
         />
       )}
 
+      <ChangePasswordModal
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
+
+      <FormulaModal
+        open={formulaModalOpen}
+        onClose={() => setFormulaModalOpen(false)}
+        onInsert={handleInsertFormula}
+      />
+
       {/* Navbar Row 1 + Row 2 */}
       <EditorNavbar
         title={title}
@@ -1220,9 +1519,11 @@ function AdminEditorContent() {
         isOwner={profile?.role === 'owner'}
         username={profile?.username}
         onSignOut={handleSignOut}
+        onChangePassword={() => setChangePasswordOpen(true)}
         editorRef={editorRef}
         onFormatAction={handleFormatAction}
         onInsertImage={() => fileInputRef.current?.click()}
+        onInsertFormula={() => setFormulaModalOpen(true)}
         currentStyle={currentStyle}
         onStyleChange={handleStyleChange}
         onNewModule={handleNewModule}

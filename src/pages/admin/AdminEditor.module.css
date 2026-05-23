@@ -111,3 +111,10 @@
     transform: translateY(0);
   }
 }
+
+:global(.monaco-latex-hidden) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+

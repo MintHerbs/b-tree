@@ -340,6 +340,24 @@
   color: var(--accent);
 }
 
+.toggleButton {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggleButton:hover {
+  background: var(--color-hover-faint);
+  border-color: var(--accent);
+}
+
 .directoryGrid {
   display: grid;
   grid-template-columns: 1fr;

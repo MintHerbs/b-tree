@@ -50,7 +50,14 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       
       if (error) throw error
       
-      setUsers(data)
+      // Sort users: owners first, then contributors
+      const sortedUsers = data.sort((a, b) => {
+        if (a.role === 'owner' && b.role !== 'owner') return -1
+        if (a.role !== 'owner' && b.role === 'owner') return 1
+        return 0
+      })
+      
+      setUsers(sortedUsers)
     } catch (error) {
       console.error('Failed to load users:', error)
       setStatus({ message: `Failed to load users: ${error.message}`, type: 'error' })
@@ -87,7 +94,13 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
     }
     
     if (!email || !username || !generatedPassword) {
-      setStatus({ message: 'Please fill all fields and generate a password', type: 'error' })
+      setStatus({ message: 'Please fill all fields including password', type: 'error' })
+      setTimeout(() => setStatus({ message: '', type: '' }), 3000)
+      return
+    }
+    
+    if (generatedPassword.length < 8) {
+      setStatus({ message: 'Password must be at least 8 characters', type: 'error' })
       setTimeout(() => setStatus({ message: '', type: '' }), 3000)
       return
     }
@@ -337,10 +350,12 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                   <div className={styles.passwordGroup}>
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Click generate"
+                      placeholder="Type or generate password"
                       value={generatedPassword}
-                      readOnly
+                      onChange={(e) => setGeneratedPassword(e.target.value)}
                       className={styles.input}
+                      minLength={8}
+                      required
                     />
                     <button
                       type="button"
@@ -348,6 +363,14 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                       className={styles.generateButton}
                     >
                       Generate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={styles.toggleButton}
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
                     </button>
                   </div>
                 </div>

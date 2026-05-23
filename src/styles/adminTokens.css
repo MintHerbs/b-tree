@@ -60,3 +60,37 @@
   --warning: var(--color-warning);
   --success: var(--color-success);
 }
+
+/* KaTeX color overrides for dark theme */
+.katex {
+  color: var(--color-text) !important;
+}
+
+.katex .mord,
+.katex .mbin,
+.katex .mrel,
+.katex .mop,
+.katex .mpunct,
+.katex .mopen,
+.katex .mclose,
+.katex .minner,
+.katex .base {
+  color: var(--color-text) !important;
+}
+
+.katex .vlist-t {
+  color: var(--color-text) !important;
+}
+
+.katex .strut {
+  color: var(--color-text) !important;
+}
+
+.katex .frac-line {
+  border-bottom-color: var(--color-text) !important;
+}
+
+.katex .sqrt > .root {
+  color: var(--color-text) !important;
+}
+
