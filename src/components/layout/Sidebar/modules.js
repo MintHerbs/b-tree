@@ -128,6 +128,19 @@ export const MODULES = [
     id: 'operating-systems',
     label: 'Operating Systems',
     Icon: HardDrive,
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    Icon: BookOpen,
+    notes: [
+      { filename: 'notes/process-threads', label: 'process-threads.md' },
+    ],
+  },
+  {
+    id: 'labs',
+    label: 'Labs',
+    Icon: Flask,
     notes: [
       { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' },
       { filename: 'Labs/C Programming/c-fundamentals',              label: 'c-fundamentals.md' },
