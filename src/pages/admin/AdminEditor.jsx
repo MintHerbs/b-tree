@@ -1030,6 +1030,7 @@ function AdminEditorContent() {
       
       // 1. Get current image count in public/notes/img/[moduleId]/
       const moduleId = selectedPath.moduleId
+      console.log('[IMG UPLOAD DEBUG]', { selectedPath, moduleId, imgDir: `public/notes/img/${moduleId}` })
       const imgDir = `public/notes/img/${moduleId}`
       let existingFiles
       try {
