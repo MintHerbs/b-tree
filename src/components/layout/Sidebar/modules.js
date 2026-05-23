@@ -58,6 +58,7 @@ import {
   TreeStructure,
   WifiHigh,
   Wrench,
+  Atom,
 } from '@phosphor-icons/react'
 
 // ── Modules ─────────────────────────────────────────────────────────────────
@@ -143,6 +144,15 @@ export const MODULES = [
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
   { id: 'software-engineering',  label: 'Software Engineering',  Icon: Code },
+  {
+    id: 'experimental',
+    label: 'experimental',
+    Icon: Atom,
+    notes: [
+    ],
+    tools: [
+    ],
+  },
 ]
 
 // ── Standalone tools (below the divider) ────────────────────────────────────
