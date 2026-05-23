@@ -1,0 +1,86 @@
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+      throw new Error('Supabase function environment is not configured')
+    }
+
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return json({ error: 'Missing authorization header' }, 401)
+    }
+
+    const callerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    })
+    const adminClient = createClient(supabaseUrl, serviceRoleKey)
+
+    const { data: callerData, error: callerError } = await callerClient.auth.getUser()
+    if (callerError || !callerData.user) {
+      return json({ error: 'Not authenticated' }, 401)
+    }
+
+    const { data: profile, error: profileError } = await adminClient
+      .from('admin_users')
+      .select('role')
+      .eq('id', callerData.user.id)
+      .single()
+
+    if (profileError || profile?.role !== 'owner') {
+      return json({ error: 'Only owners can delete users' }, 403)
+    }
+
+    const { userId } = await req.json()
+    if (!userId) {
+      return json({ error: 'Missing user id' }, 400)
+    }
+
+    if (userId === callerData.user.id) {
+      return json({ error: 'You cannot delete yourself' }, 400)
+    }
+
+    const { error: authError } = await adminClient.auth.admin.deleteUser(userId)
+    if (authError) {
+      return json({ error: authError.message }, 400)
+    }
+
+    const { error: deleteError } = await adminClient
+      .from('admin_users')
+      .delete()
+      .eq('id', userId)
+
+    if (deleteError) {
+      return json({ error: deleteError.message }, 400)
+    }
+
+    return json({ ok: true })
+  } catch (error) {
+    return json({ error: error.message || 'Unexpected error' }, 500)
+  }
+})
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    },
+  })
+}

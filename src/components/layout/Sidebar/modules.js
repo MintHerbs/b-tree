@@ -27,20 +27,38 @@
 
 import {
   Brain,
+  BookOpen,
+  BracketsCurly,
+  Bug,
   Calculator,
   ChartLineUp,
+  Circuitry,
+  Cloud,
   Code,
   Cpu,
+  Cube,
   Database,
   Eye,
   FileCode,
   FileJs,
+  Flask,
   Function as FunctionIcon,
+  Gear,
+  GitBranch,
+  Globe,
+  Graph,
   HardDrive,
+  Laptop,
   Network,
+  Robot,
   ShieldCheck,
   Sparkle,
+  Terminal,
   TerminalWindow,
+  TreeStructure,
+  WifiHigh,
+  Wrench,
+  Atom,
 } from '@phosphor-icons/react'
 
 // ── Modules ─────────────────────────────────────────────────────────────────
@@ -76,12 +94,6 @@ export const MODULES = [
       { id: 'btree', label: 'B+ Tree.js',        route: '/tree' },
       { id: 'erd',   label: 'ERD Visualizer.js', route: '/erd' },
     ],
-  },
-  {
-    id: 'Miscellaneous',
-    label: 'Miscellaneous',
-    Icon: FileCode,
-    tools: []
   },
 
   // Coming soon — declare with just { id, label, Icon }. Add `tools` to activate.
@@ -132,6 +144,15 @@ export const MODULES = [
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
   { id: 'software-engineering',  label: 'Software Engineering',  Icon: Code },
+  {
+    id: 'experimental',
+    label: 'experimental',
+    Icon: Atom,
+    notes: [
+    ],
+    tools: [
+    ],
+  },
 ]
 
 // ── Standalone tools (below the divider) ────────────────────────────────────
