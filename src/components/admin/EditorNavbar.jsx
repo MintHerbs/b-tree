@@ -19,7 +19,8 @@ import {
   CaretDown,
   FilePlus,
   DotsThreeVertical,
-  Function as FunctionIcon
+  Function as FunctionIcon,
+  ShareNetwork
 } from '@phosphor-icons/react'
 import StyleDropdown from './StyleDropdown'
 import styles from './EditorNavbar.module.css'
@@ -42,6 +43,7 @@ export default function EditorNavbar({
   onFormatAction,
   onInsertImage,
   onInsertFormula,
+  onInsertSocialLink,
   currentStyle,
   onStyleChange,
   onNewModule,
@@ -260,6 +262,22 @@ export default function EditorNavbar({
             <Tooltip.Portal>
               <Tooltip.Content className={styles.tooltip} sideOffset={5}>
                 Insert formula (LaTeX)
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                className={styles.formatButton}
+                onClick={onInsertSocialLink}
+              >
+                <ShareNetwork size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                Insert social link
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>

@@ -13,6 +13,7 @@ import PreviewModal from '../../components/admin/PreviewModal'
 import UsersDrawer from '../../components/admin/UsersDrawer'
 import ChangePasswordModal from '../../components/admin/ChangePasswordModal'
 import FormulaModal from '../../components/admin/FormulaModal'
+import SocialLinkModal from '../../components/admin/SocialLinkModal'
 import ToastNotification, { useToast } from '../../components/admin/ToastNotification'
 import { ADMIN_ICON_OPTIONS, getIconNameForComponent, getIconOptionByName } from '../../components/admin/adminIconOptions'
 import { Monitor } from '@phosphor-icons/react'
@@ -638,6 +639,7 @@ function AdminEditorContent() {
   const [usersOpen, setUsersOpen] = useState(false)
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [formulaModalOpen, setFormulaModalOpen] = useState(false)
+  const [socialLinkModalOpen, setSocialLinkModalOpen] = useState(false)
   const [selectedPath, setSelectedPath] = useState(null) // { moduleId, subfolder }
   const [modules, setModules] = useState(MODULES)
   const [modulesLoading, setModulesLoading] = useState(true)
@@ -1505,6 +1507,12 @@ function AdminEditorContent() {
         onInsert={handleInsertFormula}
       />
 
+      <SocialLinkModal
+        open={socialLinkModalOpen}
+        onClose={() => setSocialLinkModalOpen(false)}
+        onInsert={handleInsertFormula}
+      />
+
       {/* Navbar Row 1 + Row 2 */}
       <EditorNavbar
         title={title}
@@ -1524,6 +1532,7 @@ function AdminEditorContent() {
         onFormatAction={handleFormatAction}
         onInsertImage={() => fileInputRef.current?.click()}
         onInsertFormula={() => setFormulaModalOpen(true)}
+        onInsertSocialLink={() => setSocialLinkModalOpen(true)}
         currentStyle={currentStyle}
         onStyleChange={handleStyleChange}
         onNewModule={handleNewModule}
