@@ -54,9 +54,11 @@ function ExpandedView({
             {MODULES.filter(module => module.id !== 'Miscellaneous').map((module) => {
               const notes = module.notes ?? []
               const tools = module.tools ?? []
+              const folders = module.folders ?? []
               const hasNotesFolder = Object.prototype.hasOwnProperty.call(module, 'notes')
               const hasToolsFolder = Object.prototype.hasOwnProperty.call(module, 'tools')
-              const populated = moduleHasContent(module)
+              const hasFolders = folders.length > 0
+              const populated = moduleHasContent(module) || hasFolders
 
               return (
                 <FolderItem key={module.id} value={module.id}>
@@ -66,6 +68,30 @@ function ExpandedView({
                   </FolderTrigger>
                   <FolderContent>
                     <SubFiles>
+                      {hasFolders && folders.map((folder) => (
+                        <FolderItem key={`${module.id}-${folder.name}`} value={`${module.id}-${folder.name}`}>
+                          <FolderTrigger variant="folder">{folder.name}</FolderTrigger>
+                          <FolderContent>
+                            <SubFiles>
+                              {folder.items.length > 0 ? folder.items.map((item) => {
+                                const route = noteRoute(module.id, item.filename)
+                                return (
+                                  <FileItem
+                                    key={item.filename}
+                                    onClick={() => go(route, 'notes')}
+                                    className={path === route ? styles.activeFile : undefined}
+                                  >
+                                    {item.label}
+                                  </FileItem>
+                                )
+                              }) : (
+                                <div className={styles.emptyState}>(empty)</div>
+                              )}
+                            </SubFiles>
+                          </FolderContent>
+                        </FolderItem>
+                      ))}
+
                       {hasNotesFolder && (
                         <FolderItem value={`${module.id}-notes`}>
                           <FolderTrigger variant="folder">notes</FolderTrigger>
