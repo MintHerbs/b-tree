@@ -5,7 +5,7 @@ import { useDropzone } from 'react-dropzone'
 import { colors } from '../../constants/colors'
 import '../../styles/adminTokens.css'
 import { MODULES } from '../../components/layout/Sidebar/modules'
-import { listDirectory, uploadImage, commitFile, getFileContent, deleteFile } from '../../lib/githubApi'
+import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../../lib/githubApi'
 import { useAdmin } from './useAdmin'
 import EditorNavbar from '../../components/admin/EditorNavbar'
 import DirectoryDrawer from '../../components/admin/DirectoryDrawer'
@@ -1031,7 +1031,17 @@ function AdminEditorContent() {
       // 1. Get current image count in public/notes/img/[moduleId]/
       const moduleId = selectedPath.moduleId
       const imgDir = `public/notes/img/${moduleId}`
-      const existingFiles = await listDirectory(imgDir)
+      let existingFiles
+      try {
+        existingFiles = await listDirectory(imgDir)
+      } catch (err) {
+        if (err.status === 404) {
+          existingFiles = []
+        } else {
+          throw err
+        }
+      }
+      existingFiles = existingFiles.filter(f => f.name !== '.gitkeep')
       const imageCount = existingFiles.length
       
       // 2. Rename file to (count + 1).[ext]
@@ -1170,7 +1180,7 @@ function AdminEditorContent() {
         `${subfolder}/${filename}`
       )
       
-      await commitFile(
+      await commitFileWithRetry(
         MODULES_JS_PATH,
         updatedModulesJs,
         `feat: add ${filename} to ${moduleId} notes`
@@ -1276,7 +1286,7 @@ function AdminEditorContent() {
         '',
         `feat: add tools folder to ${moduleId}`
       )
-      await commitFile(
+      await commitFileWithRetry(
         MODULES_JS_PATH,
         updatedModulesJs,
         `feat: add ${moduleId} subject`
@@ -1296,7 +1306,7 @@ function AdminEditorContent() {
       const currentModulesJs = await getFileContent(MODULES_JS_PATH)
       const updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
 
-      await commitFile(
+      await commitFileWithRetry(
         MODULES_JS_PATH,
         updatedModulesJs,
         `feat: remove ${moduleId} subject`
@@ -1328,7 +1338,7 @@ function AdminEditorContent() {
       )
       const updatedModulesJs = currentModulesJs.replace(moduleRegex, `$1${newLabel}$3`)
 
-      await commitFile(
+      await commitFileWithRetry(
         MODULES_JS_PATH,
         updatedModulesJs,
         `feat: rename ${moduleId} to ${newLabel}`

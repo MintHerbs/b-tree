@@ -37,6 +37,23 @@ export async function commitFile(path, content, message) {
   return res.json()
 }
 
+// Wraps commitFile with retry logic for 409 (SHA conflict) errors
+export async function commitFileWithRetry(path, content, message) {
+  let lastError
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      return await commitFile(path, content, message)
+    } catch (err) {
+      if (!err.message?.includes('409')) throw err
+      lastError = err
+      if (attempt === 4) break
+      await getFileContent(path)
+      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
+    }
+  }
+  throw lastError
+}
+
 // Upload a binary file (image)
 export async function uploadImage(path, fileArrayBuffer) {
   const sha = await getFileSha(path)
