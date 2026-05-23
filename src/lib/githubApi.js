@@ -87,7 +87,11 @@ export async function uploadImage(path, fileArrayBuffer) {
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
     { method: 'PUT', headers, body: JSON.stringify(body) }
   )
-  if (!res.ok) throw new Error(`Image upload failed: ${res.status}`)
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}))
+    console.log('[UPLOAD 404 DETAIL]', { status: res.status, message: errBody.message, url: `${OWNER}/${REPO}/contents/${path}`, branch: BRANCH })
+    throw new Error(`Image upload failed: ${res.status} — ${errBody.message}`)
+  }
   return res.json()
 }
 
