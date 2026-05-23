@@ -128,6 +128,19 @@ export const MODULES = [
     id: 'operating-systems',
     label: 'Operating Systems',
     Icon: HardDrive,
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    Icon: BookOpen,
+    notes: [
+      { filename: 'notes/process-threads', label: 'process-threads.md' },
+    ],
+  },
+  {
+    id: 'labs',
+    label: 'Labs',
+    Icon: Flask,
     notes: [
       { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' },
       { filename: 'Labs/C Programming/c-fundamentals',              label: 'c-fundamentals.md' },
@@ -139,7 +152,6 @@ export const MODULES = [
       { filename: 'Labs/C Programming/signals',                     label: 'signals.md' },
       { filename: 'Labs/C Programming/threads-and-mutex-locks',     label: 'threads-and-mutex-locks.md' },
       { filename: 'Labs/C Programming/directory-operations',        label: 'directory-operations.md' },
-          { filename: 'notes/test-note', label: 'test-note.md' },
     ],
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },

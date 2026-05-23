@@ -650,6 +650,7 @@ function AdminEditorContent() {
   
   const editorRef = useRef(null)
   const fileInputRef = useRef(null)
+  const imageCountRef = useRef({})
 
   useEffect(() => {
     const handleResize = () => {
@@ -1032,18 +1033,13 @@ function AdminEditorContent() {
       const moduleId = selectedPath.moduleId
       console.log('[IMG UPLOAD DEBUG]', { selectedPath, moduleId, imgDir: `public/notes/img/${moduleId}` })
       const imgDir = `public/notes/img/${moduleId}`
-      let existingFiles
-      try {
-        existingFiles = await listDirectory(imgDir)
-      } catch (err) {
-        if (err.status === 404) {
-          existingFiles = []
-        } else {
-          throw err
-        }
+      // Use local count if we've already fetched for this module this session
+      // This avoids GitHub API cache returning stale directory listings
+      if (imageCountRef.current[moduleId] === undefined) {
+        const files = await listDirectory(imgDir)
+        imageCountRef.current[moduleId] = files.length
       }
-      existingFiles = existingFiles.filter(f => f.name !== '.gitkeep')
-      const imageCount = existingFiles.length
+      const imageCount = imageCountRef.current[moduleId]
       
       // 2. Rename file to (count + 1).[ext]
       const ext = file.name.split('.').pop()
@@ -1054,6 +1050,7 @@ function AdminEditorContent() {
       const uploadPath = `${imgDir}/${newFilename}`
       const arrayBuffer = await file.arrayBuffer()
       await uploadImage(uploadPath, arrayBuffer)
+      imageCountRef.current[moduleId] = newNumber
       
       // 4. Insert or replace in editor
       const markdownPath = `/notes/img/${moduleId}/${newFilename}`
