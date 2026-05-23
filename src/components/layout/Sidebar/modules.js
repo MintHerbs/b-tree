@@ -128,11 +128,7 @@ export const MODULES = [
     label: 'Operating Systems',
     Icon: HardDrive,
     notes: [
-      { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' 
-    notes: [
-      { filename: 'notes/testing', label: 'testing.md' },
-    ],
-  },
+      { filename: 'Labs/C Programming/introduction',                label: 'introduction.md' },
       { filename: 'Labs/C Programming/c-fundamentals',              label: 'c-fundamentals.md' },
       { filename: 'Labs/C Programming/the-quadratic-equation-question', label: 'the-quadratic-equation-question.md' },
       { filename: 'Labs/C Programming/system-calls-part-1',         label: 'system-calls-part-1.md' },
@@ -142,6 +138,7 @@ export const MODULES = [
       { filename: 'Labs/C Programming/signals',                     label: 'signals.md' },
       { filename: 'Labs/C Programming/threads-and-mutex-locks',     label: 'threads-and-mutex-locks.md' },
       { filename: 'Labs/C Programming/directory-operations',        label: 'directory-operations.md' },
+      { filename: 'notes/testing', label: 'testing.md' },
     ],
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
