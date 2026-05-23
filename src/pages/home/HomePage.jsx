@@ -1,5 +1,6 @@
 import PageShell from '../../components/layout/PageShell';
 import Card from '../../components/ui/Card';
+import RichTooltip, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../../components/ui/smoothui/rich-popover/index.tsx';
 import styles from './home.module.css';
 
 const FACULTIES = [
@@ -22,6 +23,39 @@ const FACULTIES = [
     acronym: 'Engineering',
     name: 'Engineering & Architecture',
     icon: '⚙️',
+  },
+];
+
+const SOCIAL_DEMOS = [
+  {
+    platform: 'youtube',
+    icon: <YouTubeIcon />,
+    triggerLabel: 'YouTube',
+    title: 'Codex on YouTube',
+    description: 'Video walkthroughs of B+ trees, ER diagrams, logic proofs, and more.',
+    meta: '12 videos',
+    actionLabel: 'Watch now',
+    href: 'https://youtube.com',
+  },
+  {
+    platform: 'instagram',
+    icon: <InstagramIcon />,
+    triggerLabel: 'Instagram',
+    title: '@codex.dev',
+    description: 'Visual breakdowns, cheat sheets, and study tips posted weekly.',
+    meta: '2.4k followers',
+    actionLabel: 'Follow',
+    href: 'https://instagram.com',
+  },
+  {
+    platform: 'linkedin',
+    icon: <LinkedInIcon />,
+    triggerLabel: 'LinkedIn',
+    title: 'Codex on LinkedIn',
+    description: 'Project updates, contributor spotlights, and open-source news.',
+    meta: '850 connections',
+    actionLabel: 'Connect',
+    href: 'https://linkedin.com',
   },
 ];
 
@@ -54,6 +88,35 @@ export default function HomePage() {
               title={f.acronym}
               description={f.name}
               icon={f.icon}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Find us online</h2>
+        <p className={styles.sectionSubtitle}>
+          Click a link to see where we post content.
+        </p>
+        <div className={styles.socialRow}>
+          {SOCIAL_DEMOS.map(item => (
+            <RichTooltip
+              key={item.platform}
+              platform={item.platform}
+              title={item.title}
+              description={item.description}
+              meta={item.meta}
+              actionLabel={item.actionLabel}
+              actionHref={item.href}
+              href={item.href}
+              side="top"
+              align="center"
+              trigger={
+                <button className={styles.socialTrigger} type="button">
+                  {item.icon}
+                  <span>{item.triggerLabel}</span>
+                </button>
+              }
             />
           ))}
         </div>

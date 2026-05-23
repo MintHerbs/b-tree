@@ -145,17 +145,54 @@ export default function DirectoryDrawer({
     setLoadingFiles(prev => ({ ...prev, [key]: true }))
 
     try {
+      // Try to load files from the GitHub API
       const path = `src/content/notes/${moduleId}/${subfolder}`
       const { listDirectory } = await import('../../lib/githubApi')
-      const files = await listDirectory(path)
+      
+      let files = []
+      try {
+        const result = await listDirectory(path)
+        files = result
+      } catch (error) {
+        console.warn(`Failed to list directory ${path}:`, error)
+        // If the directory doesn't exist or is empty, return empty array
+        files = []
+      }
       
       // Filter for markdown files only
       const mdFiles = files
-        .filter(f => f.type === 'file' && f.name.endsWith('.md'))
+        .filter(f => f && f.type === 'file' && f.name && f.name.endsWith('.md'))
         .map(f => ({
           name: f.name,
           path: f.path
         }))
+
+      // If no files found via API, try to extract from modules.js
+      if (mdFiles.length === 0) {
+        const module = modules.find(m => m.id === moduleId)
+        if (module && module.notes) {
+          const notesInFolder = module.notes
+            .filter(note => {
+              const parts = note.filename.split('/')
+              const noteSubfolder = parts.length > 1 ? parts[0] : 'notes'
+              return noteSubfolder === subfolder
+            })
+            .map(note => {
+              const fileName = note.filename.split('/').pop()
+              return {
+                name: fileName.endsWith('.md') ? fileName : `${fileName}.md`,
+                path: `src/content/notes/${moduleId}/${note.filename}${note.filename.endsWith('.md') ? '' : '.md'}`
+              }
+            })
+          
+          setFolderFiles(prev => ({
+            ...prev,
+            [key]: notesInFolder
+          }))
+          setLoadingFiles(prev => ({ ...prev, [key]: false }))
+          return
+        }
+      }
 
       setFolderFiles(prev => ({
         ...prev,

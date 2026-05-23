@@ -5,6 +5,7 @@ import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import 'katex/dist/katex.min.css'
+import RichTooltip, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../ui/smoothui/rich-popover/index.tsx'
 import styles from './MarkdownRenderer.module.css'
 
 function resolveImageSrc(src = '') {
@@ -19,124 +20,194 @@ function resolveImageSrc(src = '') {
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/public${src}`
 }
 
-/**
- * MarkdownRenderer - Renders markdown content with support for:
- * - LaTeX math formulas (inline and block)
- * - Tables (GitHub Flavored Markdown)
- * - Code blocks with syntax highlighting
- * - Headers, lists, blockquotes, etc.
- */
-function MarkdownRenderer({ content }) {
-  return (
-    <div className={styles.markdownContainer}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={{
-          // Custom rendering for code blocks with syntax highlighting
-          code({ node, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '')
-            const language = match ? match[1] : ''
-            const codeString = String(children).replace(/\n$/, '')
-            const isBlock = Boolean(match) || codeString.includes('\n')
+function parseRichPopoverProps(attrString) {
+  const props = {}
+  const attrRegex = /(\w+)="((?:[^"\\]|\\.)*)"/g
+  let match
+  while ((match = attrRegex.exec(attrString)) !== null) {
+    props[match[1]] = match[2].replace(/\\"/g, '"')
+  }
+  return props
+}
 
-            return isBlock ? (
-              <SyntaxHighlighter
-                style={vscDarkPlus}
-                language={language || 'text'}
-                PreTag="div"
-                className={styles.codeBlock}
-                showLineNumbers={false}
-                customStyle={{
-                  margin: '1.5rem 0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  padding: '1.5rem',
-                  background: 'rgba(0, 0, 0, 0.4)',
-                }}
-                codeTagProps={{
-                  style: {
-                    fontFamily: "'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
-                  }
-                }}
-              >
-                {codeString}
-              </SyntaxHighlighter>
-            ) : (
-              <code className={styles.inlineCode} {...props}>
-                {children}
-              </code>
-            )
-          },
-          // Custom rendering for tables
-          table({ children }) {
-            return (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>{children}</table>
-              </div>
-            )
-          },
-          thead({ children }) {
-            return <thead className={styles.thead}>{children}</thead>
-          },
-          tbody({ children }) {
-            return <tbody className={styles.tbody}>{children}</tbody>
-          },
-          tr({ children }) {
-            return <tr className={styles.tr}>{children}</tr>
-          },
-          th({ children }) {
-            return <th className={styles.th}>{children}</th>
-          },
-          td({ children }) {
-            return <td className={styles.td}>{children}</td>
-          },
-          // Custom rendering for headers
-          h1({ children }) {
-            return <h1 className={styles.h1}>{children}</h1>
-          },
-          h2({ children }) {
-            return <h2 className={styles.h2}>{children}</h2>
-          },
-          h3({ children }) {
-            return <h3 className={styles.h3}>{children}</h3>
-          },
-          // Custom rendering for blockquotes
-          blockquote({ children }) {
-            return <blockquote className={styles.blockquote}>{children}</blockquote>
-          },
-          // Custom rendering for horizontal rules
-          hr() {
-            return <hr className={styles.hr} />
-          },
-          // Custom rendering for paragraphs
-          p({ children }) {
-            return <p className={styles.paragraph}>{children}</p>
-          },
-          // Custom rendering for lists
-          ul({ children }) {
-            return <ul className={styles.ul}>{children}</ul>
-          },
-          ol({ children }) {
-            return <ol className={styles.ol}>{children}</ol>
-          },
-          li({ children }) {
-            return <li className={styles.li}>{children}</li>
-          },
-          img({ src, alt }) {
-            return (
-              <img
-                className={styles.image}
-                src={resolveImageSrc(src)}
-                alt={alt || ''}
-                loading="lazy"
-              />
-            )
-          },
+function getPlatformTriggerIcon(platform) {
+  switch (platform) {
+    case 'youtube': return <YouTubeIcon className="h-3.5 w-3.5 fill-red-600" />
+    case 'instagram': return <InstagramIcon className="h-3.5 w-3.5" />
+    case 'linkedin': return <LinkedInIcon className="h-3.5 w-3.5 fill-[#0A66C2]" />
+    default: return null
+  }
+}
+
+function RichPopoverChip({ platform, title, href, description, meta, actionLabel }) {
+  const triggerIcon = getPlatformTriggerIcon(platform)
+
+  const trigger = (
+    <button className={styles.richPopoverTrigger} type="button">
+      {triggerIcon}
+      <span>{title}</span>
+    </button>
+  )
+
+  return (
+    <RichTooltip
+      trigger={trigger}
+      platform={platform}
+      title={title}
+      href={href}
+      description={description}
+      meta={meta}
+      actionLabel={actionLabel}
+      actionHref={href}
+      side="top"
+      align="center"
+    />
+  )
+}
+
+function splitContentByRichPopovers(content) {
+  const parts = []
+  // Matches <RichPopover ... /> potentially spanning multiple lines
+  const regex = /<RichPopover([\s\S]*?)\/>/g
+  let lastIndex = 0
+  let match
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'markdown', content: content.slice(lastIndex, match.index) })
+    }
+    const props = parseRichPopoverProps(match[1])
+    parts.push({ type: 'richpopover', props })
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < content.length) {
+    parts.push({ type: 'markdown', content: content.slice(lastIndex) })
+  }
+
+  return parts
+}
+
+const markdownComponents = {
+  code({ node, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '')
+    const language = match ? match[1] : ''
+    const codeString = String(children).replace(/\n$/, '')
+    const isBlock = Boolean(match) || codeString.includes('\n')
+
+    return isBlock ? (
+      <SyntaxHighlighter
+        style={vscDarkPlus}
+        language={language || 'text'}
+        PreTag="div"
+        className={styles.codeBlock}
+        showLineNumbers={false}
+        customStyle={{
+          margin: '1.5rem 0',
+          borderRadius: '8px',
+          fontSize: '14px',
+          padding: '1.5rem',
+          background: 'rgba(0, 0, 0, 0.4)',
+        }}
+        codeTagProps={{
+          style: {
+            fontFamily: "'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
+          }
         }}
       >
-        {content}
-      </ReactMarkdown>
+        {codeString}
+      </SyntaxHighlighter>
+    ) : (
+      <code className={styles.inlineCode} {...props}>
+        {children}
+      </code>
+    )
+  },
+  table({ children }) {
+    return (
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>{children}</table>
+      </div>
+    )
+  },
+  thead({ children }) {
+    return <thead className={styles.thead}>{children}</thead>
+  },
+  tbody({ children }) {
+    return <tbody className={styles.tbody}>{children}</tbody>
+  },
+  tr({ children }) {
+    return <tr className={styles.tr}>{children}</tr>
+  },
+  th({ children }) {
+    return <th className={styles.th}>{children}</th>
+  },
+  td({ children }) {
+    return <td className={styles.td}>{children}</td>
+  },
+  h1({ children }) {
+    return <h1 className={styles.h1}>{children}</h1>
+  },
+  h2({ children }) {
+    return <h2 className={styles.h2}>{children}</h2>
+  },
+  h3({ children }) {
+    return <h3 className={styles.h3}>{children}</h3>
+  },
+  blockquote({ children }) {
+    return <blockquote className={styles.blockquote}>{children}</blockquote>
+  },
+  hr() {
+    return <hr className={styles.hr} />
+  },
+  p({ children }) {
+    return <p className={styles.paragraph}>{children}</p>
+  },
+  ul({ children }) {
+    return <ul className={styles.ul}>{children}</ul>
+  },
+  ol({ children }) {
+    return <ol className={styles.ol}>{children}</ol>
+  },
+  li({ children }) {
+    return <li className={styles.li}>{children}</li>
+  },
+  img({ src, alt }) {
+    return (
+      <img
+        className={styles.image}
+        src={resolveImageSrc(src)}
+        alt={alt || ''}
+        loading="lazy"
+      />
+    )
+  },
+}
+
+function MarkdownRenderer({ content }) {
+  const parts = splitContentByRichPopovers(content)
+
+  return (
+    <div className={styles.markdownContainer}>
+      {parts.map((part, i) => {
+        if (part.type === 'richpopover') {
+          return (
+            <span key={i} className={styles.richPopoverWrapper}>
+              <RichPopoverChip {...part.props} />
+            </span>
+          )
+        }
+        return (
+          <ReactMarkdown
+            key={i}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={markdownComponents}
+          >
+            {part.content}
+          </ReactMarkdown>
+        )
+      })}
     </div>
   )
 }
