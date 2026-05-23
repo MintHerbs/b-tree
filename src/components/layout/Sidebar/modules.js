@@ -88,7 +88,7 @@ export const MODULES = [
     Icon: Database,
     notes: [
       { filename: 'getting-started.md', label: 'getting-started.md' },
-          { filename: 'notes/file-testing-again', label: 'file-testing-again.md' },
+          { filename: 'notes/img-push', label: 'img-push.md' },
     ],
     tools: [
       { id: 'btree', label: 'B+ Tree.js',        route: '/tree' },
@@ -139,7 +139,7 @@ export const MODULES = [
       { filename: 'Labs/C Programming/signals',                     label: 'signals.md' },
       { filename: 'Labs/C Programming/threads-and-mutex-locks',     label: 'threads-and-mutex-locks.md' },
       { filename: 'Labs/C Programming/directory-operations',        label: 'directory-operations.md' },
-      { filename: 'notes/testing', label: 'testing.md' },
+          { filename: 'notes/test-note', label: 'test-note.md' },
     ],
   },
   { id: 'programming',           label: 'Programming',           Icon: TerminalWindow },
