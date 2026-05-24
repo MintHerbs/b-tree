@@ -128,6 +128,9 @@ export const MODULES = [
     id: 'operating-systems',
     label: 'Operating Systems',
     Icon: HardDrive,
+    notes: [
+      { filename: 'notes/process-threads', label: 'process-threads.md' },
+    ],
   },
   {
     id: 'notes',

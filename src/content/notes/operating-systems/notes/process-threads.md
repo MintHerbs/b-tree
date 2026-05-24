@@ -26,7 +26,7 @@ A process can be in one of **three states** at any given time:
 | **Blocked** | The process is waiting for an event (e.g., I/O to complete) and cannot run even if the CPU is free. |
 
 
-![image](/notes/img/operating-systems/2.png)
+![image](/notes/img/operating-systems/11.png)
 
 ### State Transitions
 
