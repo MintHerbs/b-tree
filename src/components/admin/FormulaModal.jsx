@@ -44,10 +44,13 @@ export default function FormulaModal({ open, onClose, onInsert }) {
       // Insert with proper markdown syntax
       const formula = displayMode ? `$$${latex}$$` : `$${latex}$`
       onInsert(formula)
-      onClose()
     } catch (err) {
       setError(err.message)
+      return
     }
+    
+    // Close modal after successful insertion
+    onClose()
   }
 
   if (!open) return null
