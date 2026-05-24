@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Eye,
   CloudArrowUp,
+  MagnifyingGlass,
   Users,
   UserCircle,
   SignOut,
@@ -35,6 +36,8 @@ export default function EditorNavbar({
   onSave,
   saving,
   onToggleUsers,
+  onToggleCleanup,
+  cleanupOpen,
   isOwner,
   username,
   onSignOut,
@@ -120,6 +123,25 @@ export default function EditorNavbar({
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
+
+          {isOwner && (
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <button
+                  className={styles.iconButton}
+                  onClick={onToggleCleanup}
+                  style={{ color: cleanupOpen ? colors.accent : undefined }}
+                >
+                  <MagnifyingGlass size={18} />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                  Image cleanup
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          )}
 
           <Tooltip.Root>
             <Tooltip.Trigger asChild>

@@ -1,248 +1,29 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import { useDropzone } from 'react-dropzone'
 import { colors } from '../../constants/colors'
 import '../../styles/adminTokens.css'
 import { MODULES } from '../../components/layout/Sidebar/modules'
-import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../../lib/githubApi'
 import { useAdmin } from './useAdmin'
 import EditorNavbar from '../../components/admin/EditorNavbar'
 import DirectoryDrawer from '../../components/admin/DirectoryDrawer'
 import PreviewModal from '../../components/admin/PreviewModal'
 import UsersDrawer from '../../components/admin/UsersDrawer'
+import ImageCleanupDrawer from '../../components/admin/ImageCleanupDrawer'
 import ChangePasswordModal from '../../components/admin/ChangePasswordModal'
 import FormulaModal from '../../components/admin/FormulaModal'
 import SocialLinkModal from '../../components/admin/SocialLinkModal'
 import ToastNotification, { useToast } from '../../components/admin/ToastNotification'
-import { ADMIN_ICON_OPTIONS, getIconNameForComponent, getIconOptionByName } from '../../components/admin/adminIconOptions'
+import { ADMIN_ICON_OPTIONS, getIconNameForComponent } from '../../components/admin/adminIconOptions'
 import { Monitor } from '@phosphor-icons/react'
 import styles from './AdminEditor.module.css'
-import katex from 'katex'
-import 'katex/dist/katex.min.css'
-
-// Title to filename conversion
-function titleToFilename(title) {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
-
-const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
-
-function moduleToSource(module) {
-  const lines = [
-    '  {',
-    `    id: '${module.id}',`,
-    `    label: '${module.label}',`,
-    `    Icon: ${module.iconName},`,
-  ]
-
-  if (module.notes) {
-    lines.push('    notes: [')
-    module.notes.forEach(note => {
-      lines.push(`      { filename: '${note.filename}', label: '${note.label}' },`)
-    })
-    lines.push('    ],')
-  }
-
-  if (module.tools) {
-    lines.push('    tools: [')
-    module.tools.forEach(tool => {
-      lines.push(`      { id: '${tool.id}', label: '${tool.label}', route: '${tool.route}' },`)
-    })
-    lines.push('    ],')
-  }
-
-  lines.push('  },')
-  return lines.join('\n')
-}
-
-function ensureIconImport(modulesJs, iconName) {
-  if (!iconName || modulesJs.includes(`  ${iconName},`) || modulesJs.includes(`  Function as ${iconName},`)) {
-    return modulesJs
-  }
-
-  const importStart = modulesJs.indexOf('import {\n')
-  const importEnd = modulesJs.indexOf("} from '@phosphor-icons/react'", importStart)
-
-  if (importStart === -1 || importEnd === -1) {
-    throw new Error('Could not update icon imports in modules.js')
-  }
-
-  const importLine = iconName === 'FunctionIcon'
-    ? '  Function as FunctionIcon,'
-    : `  ${iconName},`
-
-  return `${modulesJs.slice(0, importEnd)}${importLine}\n${modulesJs.slice(importEnd)}`
-}
-
-function insertModuleSource(modulesJs, module) {
-  if (modulesJs.includes(`id: '${module.id}'`)) {
-    throw new Error(`Subject "${module.id}" already exists`)
-  }
-
-  const standaloneIndex = modulesJs.indexOf('export const STANDALONE_TOOLS')
-  const moduleSection = standaloneIndex >= 0 ? modulesJs.slice(0, standaloneIndex) : modulesJs
-  const rest = standaloneIndex >= 0 ? modulesJs.slice(standaloneIndex) : ''
-  const arrayEnd = moduleSection.lastIndexOf('\n]')
-
-  if (arrayEnd === -1) {
-    throw new Error('Could not find MODULES array end')
-  }
-
-  return `${moduleSection.slice(0, arrayEnd)}\n${moduleToSource(module)}${moduleSection.slice(arrayEnd)}${rest}`
-}
-
-function removeModuleSource(modulesJs, moduleId) {
-  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}',`, 'm')
-  const startMatch = modulesJs.match(startPattern)
-
-  if (!startMatch || startMatch.index == null) {
-    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
-  }
-
-  const start = startMatch.index
-  let index = start + 1
-  let depth = 0
-
-  for (; index < modulesJs.length; index++) {
-    const char = modulesJs[index]
-    if (char === '{') depth += 1
-    if (char === '}') {
-      depth -= 1
-      if (depth === 0) {
-        let end = index + 1
-        if (modulesJs[end] === ',') end += 1
-        if (modulesJs[end] === '\r') end += 1
-        if (modulesJs[end] === '\n') end += 1
-        return `${modulesJs.slice(0, start)}\n${modulesJs.slice(end)}`
-      }
-    }
-  }
-
-  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
-}
-
-function findModuleBlock(modulesJs, moduleId) {
-  const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  
-  // Try multi-line format first
-  let startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm')
-  let startMatch = modulesJs.match(startPattern)
-  
-  // If not found, try single-line format: { id: 'module-id', label: '...', Icon: ... }
-  if (!startMatch) {
-    startPattern = new RegExp(`\\{\\s*id:\\s*'${escapedId}'\\s*,`, 'm')
-    startMatch = modulesJs.match(startPattern)
-  }
-
-  if (!startMatch || startMatch.index == null) {
-    throw new Error(`Could not find module: ${moduleId}`)
-  }
-
-  const start = startMatch.index
-  let index = start + 1
-  let depth = 0
-
-  for (; index < modulesJs.length; index++) {
-    const char = modulesJs[index]
-    if (char === '{') depth += 1
-    if (char === '}') {
-      depth -= 1
-      if (depth === 0) {
-        return {
-          start,
-          end: index + 1,
-          source: modulesJs.slice(start, index + 1),
-        }
-      }
-    }
-  }
-
-  throw new Error(`Could not parse module: ${moduleId}`)
-}
-
-function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
-  const block = findModuleBlock(modulesJs, moduleId)
-  const source = block.source
-
-  if (source.includes(`filename: '${notePath}'`)) {
-    throw new Error('A note with this filename already exists')
-  }
-
-  const notesPattern = /(notes:\s*\[)([\s\S]*?)(\])/m
-  const notesMatch = source.match(notesPattern)
-  let updatedSource
-
-  if (notesMatch) {
-    // Module already has notes array, append to it
-    updatedSource = source.replace(notesPattern, `$1$2      ${newNoteEntry}\n    $3`)
-  } else {
-    // Module doesn't have notes array, need to add it
-    // Check if it's a single-line format: { id: '...', label: '...', Icon: ... }
-    const isSingleLine = !source.includes('\n    ')
-    
-    if (isSingleLine) {
-      // Convert single-line to multi-line and add notes
-      const idMatch = source.match(/id:\s*'([^']+)'/)
-      const labelMatch = source.match(/label:\s*'([^']+)'/)
-      const iconMatch = source.match(/Icon:\s*(\w+)/)
-      
-      if (idMatch && labelMatch && iconMatch) {
-        updatedSource = `{
-    id: '${idMatch[1]}',
-    label: '${labelMatch[1]}',
-    Icon: ${iconMatch[1]},
-    notes: [
-      ${newNoteEntry}
-    ],
-  }`
-      } else {
-        throw new Error('Could not parse single-line module format')
-      }
-    } else {
-      // Multi-line format, insert notes before tools or at the end
-      const toolsIndex = source.indexOf('\n    tools:')
-      const notesSource = `\n    notes: [\n      ${newNoteEntry}\n    ],`
-
-      if (toolsIndex !== -1) {
-        updatedSource = `${source.slice(0, toolsIndex)}${notesSource}${source.slice(toolsIndex)}`
-      } else {
-        const closingIndex = source.lastIndexOf('\n  }')
-        if (closingIndex !== -1) {
-          updatedSource = `${source.slice(0, closingIndex)}${notesSource}${source.slice(closingIndex)}`
-        } else {
-          // Try to find the closing brace
-          const lastBrace = source.lastIndexOf('}')
-          updatedSource = `${source.slice(0, lastBrace)}${notesSource}\n  }`
-        }
-      }
-    }
-  }
-
-  return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
-}
-
-function refreshModuleState(setModules, updater) {
-  setModules(prev => updater(prev))
-}
-
-function getUnusedIconOptions(modules, selectedIconName = null) {
-  const usedIconNames = new Set(
-    modules
-      .map(module => getIconNameForComponent(module.Icon))
-      .filter(Boolean)
-  )
-
-  return ADMIN_ICON_OPTIONS.filter(option => (
-    option.name === selectedIconName || !usedIconNames.has(option.name)
-  ))
-}
+import { useEditorState } from '../../hooks/useEditorState'
+import { useEditorSave } from '../../hooks/useEditorSave'
+import { useEditorImages } from '../../hooks/useEditorImages'
+import { useEditorModules } from '../../hooks/useEditorModules'
+import { useEditorFormatting, renderInlineLaTeX } from '../../hooks/useEditorFormatting'
+import { useEditorFiles } from '../../hooks/useEditorFiles'
 
 function resolveAdminImageSrc(src = '') {
   if (!src.startsWith('/notes/img/')) return src
@@ -254,13 +35,6 @@ function resolveAdminImageSrc(src = '') {
   if (!owner || !repo) return src
 
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/public${src}`
-}
-
-function extractMarkdownImages(markdown) {
-  return [...markdown.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)].map(match => ({
-    alt: match[1],
-    src: match[2],
-  }))
 }
 
 // Create Monaco content widget for inline image preview
@@ -432,225 +206,59 @@ function createMenuOption(text, onClick, color = colors.text) {
   return option
 }
 
-// Clear all active LaTeX view zones and legacy content widgets from editor
-function clearLatexWidgets(editor) {
-  if (editor._latexWidgets) {
-    editor._latexWidgets.forEach(widget => editor.removeContentWidget(widget))
-  }
-  editor._latexWidgets = []
-  // View zones are removed inside the changeViewZones callback in renderInlineLaTeX
-}
+function getUnusedIconOptions(modules, selectedIconName = null) {
+  const usedIconNames = new Set(
+    modules
+      .map(module => getIconNameForComponent(module.Icon))
+      .filter(Boolean)
+  )
 
-// Render LaTeX inline / block preview dynamically in Monaco
-function renderInlineLaTeX(editor, monaco) {
-  if (!editor || !monaco) return
-
-  // Prevent infinite recursive event loops synchronously
-  if (editor._isRenderingLaTeX) return
-
-  const model = editor.getModel()
-  if (!model) return
-
-  // Debounce updates to avoid Monaco's synchronous rendering/layout event cycle conflicts
-  if (editor._latexRenderTimeout) {
-    clearTimeout(editor._latexRenderTimeout)
-  }
-
-  editor._latexRenderTimeout = setTimeout(() => {
-    if (editor._isRenderingLaTeX) return
-    editor._isRenderingLaTeX = true
-
-    try {
-      const text = model.getValue()
-      const selection = editor.getSelection()
-
-      // If no selection yet (initial mount), treat cursor as outside all formulas so all get rendered
-      const selectionStart = selection ? model.getOffsetAt(selection.getStartPosition()) : -1
-      const selectionEnd = selection ? model.getOffsetAt(selection.getEndPosition()) : -1
-
-      const formulas = []
-
-      // 1. Scan for block formulas: $$formula$$
-      const blockRegex = /\$\$([\s\S]*?)\$\$/g
-      let match
-      while ((match = blockRegex.exec(text)) !== null) {
-        formulas.push({
-          type: 'block',
-          raw: match[0],
-          latex: match[1],
-          startOffset: match.index,
-          endOffset: match.index + match[0].length
-        })
-      }
-
-      // 2. Scan for inline formulas: $formula$ (making sure not to overlap with block formulas)
-      const inlineRegex = /\$([^$\n]+)\$/g
-      while ((match = inlineRegex.exec(text)) !== null) {
-        const startOffset = match.index
-        const endOffset = startOffset + match[0].length
-
-        // Check if this overlaps with any block formulas
-        const overlaps = formulas.some(f => 
-          (startOffset >= f.startOffset && startOffset < f.endOffset) ||
-          (endOffset > f.startOffset && endOffset <= f.endOffset)
-        )
-
-        if (!overlaps) {
-          formulas.push({
-            type: 'inline',
-            raw: match[0],
-            latex: match[1],
-            startOffset,
-            endOffset
-          })
-        }
-      }
-
-      // Optimization: Check which formulas are active (overlapping with cursor/selection)
-      const activeFormulaIndexes = formulas
-        .map((f, idx) => {
-          const cursorOverlaps = !(selectionEnd < f.startOffset || selectionStart > f.endOffset)
-          return cursorOverlaps ? idx : null
-        })
-        .filter(val => val !== null)
-
-      // State Signature optimization to prevent redrawing/flickering and layout churn
-      const stateSignature = `${text.length}-${formulas.length}-${activeFormulaIndexes.join(',')}`
-      if (editor._lastLatexStateSignature === stateSignature) {
-        return
-      }
-      editor._lastLatexStateSignature = stateSignature
-
-      // Clear legacy content widgets
-      clearLatexWidgets(editor)
-
-      const decorations = []
-
-      // Use view zones so each rendered formula occupies its own line — no overlap possible
-      editor.changeViewZones((accessor) => {
-        // Remove previous view zones
-        ;(editor._latexViewZoneIds || []).forEach(id => accessor.removeZone(id))
-        editor._latexViewZoneIds = []
-
-        formulas.forEach((f, idx) => {
-          const startPos = model.getPositionAt(f.startOffset)
-          const endPos = model.getPositionAt(f.endOffset)
-
-          if (activeFormulaIndexes.includes(idx)) {
-            // User is editing this formula — show raw text, no zone
-            return
-          }
-
-          // Hide the raw LaTeX text
-          decorations.push({
-            range: new monaco.Range(
-              startPos.lineNumber, startPos.column,
-              endPos.lineNumber, endPos.column
-            ),
-            options: {
-              inlineClassName: 'monaco-latex-hidden',
-              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
-            }
-          })
-
-          // Build the zone DOM node
-          const domNode = document.createElement('div')
-          const isBlock = f.type === 'block'
-          domNode.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: ${isBlock ? 'center' : 'flex-start'};
-            padding: ${isBlock ? '14px 24px' : '8px 16px'};
-            cursor: pointer;
-            border-left: 2px solid rgba(139, 92, 246, 0.35);
-            background: rgba(139, 92, 246, 0.04);
-            border-radius: 0 6px 6px 0;
-            overflow: visible;
-            box-sizing: border-box;
-            color: #ffffff;
-            transition: background 150ms ease, border-color 150ms ease;
-          `
-
-          try {
-            domNode.innerHTML = katex.renderToString(f.latex, {
-              displayMode: isBlock,
-              throwOnError: true,
-              output: 'html'
-            })
-          } catch (err) {
-            domNode.textContent = `⚠️ Math Error: ${err.message}`
-            domNode.style.color = 'var(--color-error)'
-            domNode.style.fontSize = '12px'
-            domNode.style.background = 'var(--color-error-soft)'
-            domNode.style.borderLeftColor = 'var(--color-error-border)'
-          }
-
-          domNode.addEventListener('click', () => {
-            editor.setPosition({
-              lineNumber: startPos.lineNumber,
-              column: startPos.column + (isBlock ? 2 : 1)
-            })
-            editor.focus()
-          })
-          domNode.addEventListener('mouseenter', () => {
-            domNode.style.background = 'rgba(139, 92, 246, 0.10)'
-            domNode.style.borderLeftColor = 'rgba(139, 92, 246, 0.65)'
-          })
-          domNode.addEventListener('mouseleave', () => {
-            domNode.style.background = 'rgba(139, 92, 246, 0.04)'
-            domNode.style.borderLeftColor = 'rgba(139, 92, 246, 0.35)'
-          })
-
-          const zoneId = accessor.addZone({
-            afterLineNumber: endPos.lineNumber,
-            heightInPx: isBlock ? 80 : 52,
-            domNode,
-            suppressMouseDown: false,
-          })
-          editor._latexViewZoneIds.push(zoneId)
-        })
-      })
-
-      // Apply hidden-text decorations
-      editor._latexDecorations = editor.deltaDecorations(
-        editor._latexDecorations || [],
-        decorations
-      )
-    } catch (e) {
-      console.error('Error rendering LaTeX in Monaco Editor:', e)
-    } finally {
-      editor._isRenderingLaTeX = false
-    }
-  }, 16) // ~1 frame delay to batch updates smoothly
+  return ADMIN_ICON_OPTIONS.filter(option => (
+    option.name === selectedIconName || !usedIconNames.has(option.name)
+  ))
 }
 
 function AdminEditorContent() {
   const location = useLocation()
   const { user, profile, loading } = useAdmin()
   const { showToast } = useToast()
-  
-  // Editor state
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [unsaved, setUnsaved] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [directoryOpen, setDirectoryOpen] = useState(false)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [usersOpen, setUsersOpen] = useState(false)
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
-  const [formulaModalOpen, setFormulaModalOpen] = useState(false)
-  const [socialLinkModalOpen, setSocialLinkModalOpen] = useState(false)
-  const [selectedPath, setSelectedPath] = useState(null) // { moduleId, subfolder }
-  const [modules, setModules] = useState(MODULES)
-  const [modulesLoading, setModulesLoading] = useState(true)
-  const [currentStyle, setCurrentStyle] = useState('body')
-  const [isTooNarrow, setIsTooNarrow] = useState(() => (
-    typeof window !== 'undefined' ? window.innerWidth < 960 : false
-  ))
-  
-  const editorRef = useRef(null)
-  const fileInputRef = useRef(null)
-  const imageCountRef = useRef({})
+
+  const {
+    title, setTitle, content, setContent,
+    unsaved, setUnsaved, saving, setSaving,
+    directoryOpen, setDirectoryOpen, previewOpen, setPreviewOpen,
+    usersOpen, setUsersOpen, changePasswordOpen, setChangePasswordOpen,
+    formulaModalOpen, setFormulaModalOpen, socialLinkModalOpen, setSocialLinkModalOpen,
+    selectedPath, setSelectedPath, modules, setModules,
+    modulesLoading, setModulesLoading, currentStyle, setCurrentStyle,
+    isTooNarrow, setIsTooNarrow, editorRef, fileInputRef,
+  } = useEditorState()
+
+  const [cleanupOpen, setCleanupOpen] = useState(false)
+
+  const unusedIconOptions = getUnusedIconOptions(modules)
+
+  const { imageQueueRef, imageCountRef, handleImageUpload } = useEditorImages({
+    selectedPath, showToast, editorRef, setContent,
+  })
+
+  const { handleSave } = useEditorSave({
+    title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent,
+    imageQueueRef, imageCountRef,
+  })
+
+  const {
+    handleNewModule, handleDeleteModule, handleRenameModule,
+    handleNewSubfolder, handleRenameSubfolder, handleDeleteSubfolder, handleMoveFile,
+  } = useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions })
+
+  const { handleFormatAction, handleStyleChange, detectCurrentStyle } = useEditorFormatting({
+    editorRef, setCurrentStyle,
+  })
+
+  const { handleLoadFile } = useEditorFiles({
+    showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath,
+  })
 
   useEffect(() => {
     const handleResize = () => {
@@ -695,11 +303,9 @@ function AdminEditorContent() {
     ? modules
     : modules.filter(m => profile?.allowed_directories?.includes(m.id))
 
-  const allowedDirectories = profile?.role === 'owner' 
-    ? null 
+  const allowedDirectories = profile?.role === 'owner'
+    ? null
     : profile?.allowed_directories || []
-
-  const unusedIconOptions = getUnusedIconOptions(modules)
 
   // Monaco theme setup
   const handleBeforeMount = (monaco) => {
@@ -719,7 +325,7 @@ function AdminEditorContent() {
 
   const handleEditorMount = (editor, monaco) => {
     editorRef.current = editor
-    
+
     // Listen for cursor position changes to detect current style and toggle LaTeX edit mode
     editor.onDidChangeCursorPosition(() => {
       detectCurrentStyle()
@@ -729,7 +335,7 @@ function AdminEditorContent() {
     // Render inline image and LaTeX decorations
     renderInlineImages(editor, monaco)
     renderInlineLaTeX(editor, monaco)
-    
+
     // Re-render decorations when content changes
     editor.onDidChangeModelContent(() => {
       renderInlineImages(editor, monaco)
@@ -825,7 +431,7 @@ function AdminEditorContent() {
       if (offset >= startOffset && offset <= endOffset) {
         const startPos = model.getPositionAt(startOffset)
         const endPos = model.getPositionAt(endOffset)
-        
+
         // Show widget
         showImageWidget(editor, monaco, src, alt, startPos, endPos, fullMatch)
         return
@@ -855,14 +461,6 @@ function AdminEditorContent() {
 
     editor._currentImageWidget = widget
     editor.addContentWidget(widget)
-  }
-
-  // Hide image widget
-  const hideImageWidget = (editor) => {
-    if (editor._currentImageWidget) {
-      editor.removeContentWidget(editor._currentImageWidget)
-      editor._currentImageWidget = null
-    }
   }
 
   // Delete image from editor
@@ -900,210 +498,18 @@ function AdminEditorContent() {
     setUnsaved(true)
   }
 
-  // Detect current line style (title/subtitle/body)
-  const detectCurrentStyle = () => {
-    if (!editorRef.current) return
-    
-    const editor = editorRef.current
-    const position = editor.getPosition()
-    const model = editor.getModel()
-    const lineContent = model.getLineContent(position.lineNumber)
-    
-    if (lineContent.startsWith('# ')) {
-      setCurrentStyle('title')
-    } else if (lineContent.startsWith('## ')) {
-      setCurrentStyle('subtitle')
-    } else {
-      setCurrentStyle('body')
-    }
-  }
-
-  // Formatting actions
-  const handleFormatAction = (action) => {
-    if (!editorRef.current) return
-    
-    const editor = editorRef.current
-    const selection = editor.getSelection()
-    const model = editor.getModel()
-    const selectedText = model.getValueInRange(selection)
-    
-    let newText = ''
-    
-    switch (action) {
-      case 'bold':
-        newText = selectedText ? `**${selectedText}**` : '**bold**'
-        break
-      case 'italic':
-        newText = selectedText ? `*${selectedText}*` : '*italic*'
-        break
-      case 'strike':
-        newText = selectedText ? `~~${selectedText}~~` : '~~strikethrough~~'
-        break
-      case 'code':
-        newText = '```\n\n```'
-        break
-      default:
-        return
-    }
-    
-    editor.executeEdits('', [{
-      range: selection,
-      text: newText,
-    }])
-    
-    // Move cursor appropriately
-    if (action === 'code') {
-      const position = editor.getPosition()
-      editor.setPosition({
-        lineNumber: position.lineNumber + 1,
-        column: 1,
-      })
-    } else if (!selectedText) {
-      const position = editor.getPosition()
-      const offset = action === 'bold' ? 2 : 1
-      editor.setPosition({
-        lineNumber: position.lineNumber,
-        column: position.column - (action === 'bold' ? 2 : (action === 'strike' ? 2 : 1)),
-      })
-    }
-    
-    editor.focus()
-  }
-
   const handleInsertFormula = (formula) => {
     if (!editorRef.current) return
-    
+
     const editor = editorRef.current
     const selection = editor.getSelection()
-    
+
     editor.executeEdits('', [{
       range: selection,
       text: formula,
     }])
-    
+
     editor.focus()
-  }
-
-  // Style change (title/subtitle/body)
-  const handleStyleChange = (style) => {
-    if (!editorRef.current) return
-    
-    const editor = editorRef.current
-    const position = editor.getPosition()
-    const model = editor.getModel()
-    const lineContent = model.getLineContent(position.lineNumber)
-    
-    // Strip existing # or ##
-    let cleanedLine = lineContent.replace(/^##?\s*/, '')
-    
-    // Add new prefix
-    let newLine = cleanedLine
-    if (style === 'title') {
-      newLine = `# ${cleanedLine}`
-    } else if (style === 'subtitle') {
-      newLine = `## ${cleanedLine}`
-    }
-    
-    // Replace the line
-    editor.executeEdits('', [{
-      range: {
-        startLineNumber: position.lineNumber,
-        startColumn: 1,
-        endLineNumber: position.lineNumber,
-        endColumn: lineContent.length + 1,
-      },
-      text: newLine,
-    }])
-    
-    editor.focus()
-    setCurrentStyle(style)
-  }
-
-  // Image upload handler
-  const handleImageUpload = async (file) => {
-    if (!selectedPath) {
-      showToast('Please select a directory first', 'error')
-      return
-    }
-
-    try {
-      showToast(`Uploading ${file.name}...`, 'success')
-      
-      // 1. Get current image count in public/notes/img/[moduleId]/
-      const moduleId = selectedPath.moduleId
-      console.log('[IMG UPLOAD DEBUG]', { selectedPath, moduleId, imgDir: `public/notes/img/${moduleId}` })
-      const imgDir = `public/notes/img/${moduleId}`
-      // Use local count if we've already fetched for this module this session
-      // This avoids GitHub API cache returning stale directory listings
-      if (imageCountRef.current[moduleId] === undefined) {
-        const files = await listDirectory(imgDir)
-        imageCountRef.current[moduleId] = files.length
-      }
-      const imageCount = imageCountRef.current[moduleId]
-      
-      // 2. Rename file to (count + 1).[ext]
-      const ext = file.name.split('.').pop()
-      const newNumber = imageCount + 1
-      const newFilename = `${newNumber}.${ext}`
-      
-      // 3. Upload to public/notes/img/[moduleId]/[number].[ext]
-      const uploadPath = `${imgDir}/${newFilename}`
-      const arrayBuffer = await file.arrayBuffer()
-      await uploadImage(uploadPath, arrayBuffer)
-      imageCountRef.current[moduleId] = newNumber
-      
-      // 4. Insert or replace in editor
-      const markdownPath = `/notes/img/${moduleId}/${newFilename}`
-      const imageMarkdown = `![image](${markdownPath})`
-      
-      if (editorRef.current) {
-        const editor = editorRef.current
-        
-        // Check if this is a replacement operation
-        if (editor._imageReplacePosition) {
-          const { startPos, endPos } = editor._imageReplacePosition
-          const range = {
-            startLineNumber: startPos.lineNumber,
-            startColumn: startPos.column,
-            endLineNumber: endPos.lineNumber,
-            endColumn: endPos.column,
-          }
-          editor.executeEdits('', [{
-            range,
-            text: imageMarkdown,
-          }])
-          editor._imageReplacePosition = null
-          showToast('Image replaced', 'success')
-        } else {
-          // Normal insertion at cursor
-          const position = editor.getPosition()
-          const range = {
-            startLineNumber: position.lineNumber,
-            startColumn: position.column,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column,
-          }
-          editor.executeEdits('', [{
-            range,
-            text: imageMarkdown,
-          }])
-          editor.setPosition({
-            lineNumber: position.lineNumber,
-            column: position.column + imageMarkdown.length,
-          })
-          showToast('Image uploaded and inserted', 'success')
-        }
-        
-        editor.focus()
-      } else {
-        setContent(prev => prev + '\n' + imageMarkdown)
-        showToast('Image uploaded and inserted', 'success')
-      }
-      
-    } catch (error) {
-      console.error('Image upload failed:', error)
-      showToast(`Upload failed: ${error.message}`, 'error')
-    }
   }
 
   // Dropzone for canvas
@@ -1126,80 +532,6 @@ function AdminEditorContent() {
     noClick: true,
     noKeyboard: true,
   })
-
-  // Save handler
-  const handleSave = async () => {
-    if (!title.trim()) {
-      showToast('Please enter a title', 'error')
-      return
-    }
-    
-    if (!selectedPath) {
-      showToast('Please select a directory', 'error')
-      return
-    }
-    
-    setSaving(true)
-    
-    try {
-      const filename = titleToFilename(title)
-      if (!filename) {
-        throw new Error('Invalid title - could not generate filename')
-      }
-      
-      const { moduleId, subfolder } = selectedPath
-      
-      // Commit .md to GitHub
-      const mdPath = `src/content/notes/${moduleId}/${subfolder}/${filename}.md`
-      const commitMessage = `docs: add ${filename} to ${moduleId}/${subfolder}`
-      
-      await commitFile(mdPath, content, commitMessage)
-      
-      // Read current modules.js
-      let currentModulesJs
-      
-      try {
-        currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      } catch (error) {
-        throw new Error(`Could not read modules.js: ${error.message}`)
-      }
-      
-      if (!currentModulesJs) {
-        throw new Error('modules.js file is empty or does not exist')
-      }
-      
-      // Insert new note entry
-      const newNoteEntry = `{ filename: '${subfolder}/${filename}', label: '${filename}.md' },`
-      
-      const updatedModulesJs = upsertNoteEntry(
-        currentModulesJs,
-        moduleId,
-        newNoteEntry,
-        `${subfolder}/${filename}`
-      )
-      
-      await commitFileWithRetry(
-        MODULES_JS_PATH,
-        updatedModulesJs,
-        `feat: add ${filename} to ${moduleId} notes`
-      )
-      
-      showToast('Published! Vercel is deploying...', 'success')
-      setUnsaved(false)
-      
-      // Clear form
-      setTimeout(() => {
-        setTitle('')
-        setContent('')
-      }, 2000)
-      
-    } catch (error) {
-      console.error('Save failed:', error)
-      showToast(`Save failed: ${error.message}`, 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -1246,184 +578,6 @@ function AdminEditorContent() {
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [unsaved])
-
-  // Module management handlers
-  const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
-    const moduleId = titleToFilename(name)
-    if (!moduleId) {
-      showToast('Please enter a subject name', 'error')
-      return
-    }
-
-    showToast(`Creating subject ${moduleId}...`, 'success')
-    
-    try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      const label = name.trim()
-      const iconOption = getIconOptionByName(iconName)
-      const newModule = {
-        id: moduleId,
-        label,
-        iconName: iconOption.name,
-        Icon: iconOption.Icon,
-        notes: [],
-        tools: [],
-      }
-      const updatedModulesJs = insertModuleSource(
-        ensureIconImport(currentModulesJs, iconOption.name),
-        newModule
-      )
-
-      await commitFile(
-        `src/content/notes/${moduleId}/notes/.gitkeep`,
-        '',
-        `feat: create ${moduleId} notes folder`
-      )
-      await commitFile(
-        `src/content/notes/${moduleId}/tools/.gitkeep`,
-        '',
-        `feat: add tools folder to ${moduleId}`
-      )
-      await commitFileWithRetry(
-        MODULES_JS_PATH,
-        updatedModulesJs,
-        `feat: add ${moduleId} subject`
-      )
-
-      refreshModuleState(setModules, prev => [...prev, newModule])
-      showToast(`Subject ${label} created`, 'success')
-    } catch (error) {
-      showToast(`Failed to create subject: ${error.message}`, 'error')
-    }
-  }
-
-  const handleDeleteModule = async (moduleId) => {
-    showToast(`Removing subject ${moduleId}...`, 'success')
-
-    try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      const updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
-
-      await commitFileWithRetry(
-        MODULES_JS_PATH,
-        updatedModulesJs,
-        `feat: remove ${moduleId} subject`
-      )
-      await deleteFile(
-        `src/content/notes/${moduleId}/notes/.gitkeep`,
-        `chore: remove ${moduleId} notes placeholder`
-      )
-      await deleteFile(
-        `src/content/notes/${moduleId}/tools/.gitkeep`,
-        `chore: remove ${moduleId} tools placeholder`
-      )
-
-      refreshModuleState(setModules, prev => prev.filter(module => module.id !== moduleId))
-      setSelectedPath(prev => prev?.moduleId === moduleId ? null : prev)
-      showToast(`Subject ${moduleId} removed from the filesystem`, 'success')
-    } catch (error) {
-      showToast(`Failed to remove subject: ${error.message}`, 'error')
-    }
-  }
-
-  const handleRenameModule = async (moduleId, newLabel) => {
-    showToast(`Renaming subject to ${newLabel}...`, 'success')
-
-    try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      const moduleRegex = new RegExp(
-        `(\\{[^}]*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'[^}]*label:\\s*')([^']+)(')`
-      )
-      const updatedModulesJs = currentModulesJs.replace(moduleRegex, `$1${newLabel}$3`)
-
-      await commitFileWithRetry(
-        MODULES_JS_PATH,
-        updatedModulesJs,
-        `feat: rename ${moduleId} to ${newLabel}`
-      )
-
-      refreshModuleState(setModules, prev =>
-        prev.map(m => m.id === moduleId ? { ...m, label: newLabel } : m)
-      )
-      showToast(`Subject renamed to ${newLabel}`, 'success')
-    } catch (error) {
-      showToast(`Failed to rename subject: ${error.message}`, 'error')
-    }
-  }
-
-  const handleLoadFile = async (filePath) => {
-    try {
-      showToast('Loading file...', 'success')
-      const fileContent = await getFileContent(filePath)
-      
-      // Extract filename without extension for title
-      const fileName = filePath.split('/').pop().replace('.md', '')
-      
-      setContent(fileContent)
-      setTitle(fileName)
-      setUnsaved(false)
-      setDirectoryOpen(false)
-      
-      // Extract module and subfolder from path
-      // Path format: src/content/notes/{moduleId}/{subfolder}/{filename}
-      const pathParts = filePath.split('/')
-      if (pathParts.length >= 5) {
-        const moduleId = pathParts[3]
-        const subfolder = pathParts[4]
-        setSelectedPath({ moduleId, subfolder })
-      }
-      
-      showToast(`Loaded ${fileName}`, 'success')
-    } catch (error) {
-      showToast(`Failed to load file: ${error.message}`, 'error')
-    }
-  }
-
-  const handleNewSubfolder = async (moduleId, subfolderName) => {
-    try {
-      await commitFile(
-        `src/content/notes/${moduleId}/${subfolderName}/.gitkeep`,
-        '',
-        `feat: add ${subfolderName} to ${moduleId}`
-      )
-      showToast(`Subfolder ${subfolderName} created`, 'success')
-    } catch (error) {
-      showToast(`Failed to create subfolder: ${error.message}`, 'error')
-    }
-  }
-
-  const handleRenameSubfolder = async (moduleId, oldName, newName) => {
-    showToast(`Renaming ${oldName} to ${newName}...`, 'success')
-    // Implementation would update modules.js references
-    showToast(`Subfolder renamed`, 'success')
-  }
-
-  const handleDeleteSubfolder = async (moduleId, subfolderName) => {
-    showToast(`Deleting subfolder ${subfolderName}...`, 'success')
-    // Implementation would update modules.js
-    showToast(`Subfolder deleted`, 'success')
-  }
-
-  const handleMoveFile = async ({ fromModule, fromSubfolder, filename, toModule, toSubfolder }) => {
-    showToast(`Moving ${filename}...`, 'success')
-    
-    try {
-      // Read file content
-      const oldPath = `src/content/notes/${fromModule}/${fromSubfolder}/${filename}`
-      const fileContent = await getFileContent(oldPath)
-      
-      // Commit to new location
-      const newPath = `src/content/notes/${toModule}/${toSubfolder}/${filename}`
-      await commitFile(newPath, fileContent, `feat: move ${filename} to ${toModule}/${toSubfolder}`)
-      
-      // Delete from old location (would need delete API)
-      // Update modules.js
-      
-      showToast(`File moved successfully`, 'success')
-    } catch (error) {
-      showToast(`Failed to move file: ${error.message}`, 'error')
-    }
-  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -1504,6 +658,15 @@ function AdminEditorContent() {
         />
       )}
 
+      {profile?.role === 'owner' && (
+        <ImageCleanupDrawer
+          open={cleanupOpen}
+          onClose={() => setCleanupOpen(false)}
+          modules={modules}
+          isOwner={profile?.role === 'owner'}
+        />
+      )}
+
       <ChangePasswordModal
         open={changePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}
@@ -1532,6 +695,8 @@ function AdminEditorContent() {
         onSave={handleSave}
         saving={saving}
         onToggleUsers={() => setUsersOpen(!usersOpen)}
+        onToggleCleanup={() => setCleanupOpen(o => !o)}
+        cleanupOpen={cleanupOpen}
         isOwner={profile?.role === 'owner'}
         username={profile?.username}
         onSignOut={handleSignOut}
@@ -1558,7 +723,7 @@ function AdminEditorContent() {
           style={{ display: 'none' }}
           onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
         />
-        
+
         <div className={styles.writingArea}>
           {content === '' && (
             <div className={styles.emptyPlaceholder}>Start writing…</div>
@@ -1590,7 +755,7 @@ function AdminEditorContent() {
             }}
           />
         </div>
-        
+
         {isDragActive && (
           <div className={styles.dropOverlay}>
             <p>Drop images here...</p>
