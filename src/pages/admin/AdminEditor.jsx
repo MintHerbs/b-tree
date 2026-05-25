@@ -10,6 +10,7 @@ import UsersDrawer from '../../components/admin/UsersDrawer'
 import ImageCleanupDrawer from '../../components/admin/ImageCleanupDrawer'
 import CourseManagementDrawer from '../../components/admin/CourseManagementDrawer'
 import ChangePasswordModal from '../../components/admin/ChangePasswordModal'
+import ChemModal from '../../components/admin/ChemModal'
 import FormulaModal from '../../components/admin/FormulaModal'
 import SocialLinkModal from '../../components/admin/SocialLinkModal'
 import ToastNotification, { useToast } from '../../components/admin/ToastNotification'
@@ -30,7 +31,7 @@ function AdminEditorContent() {
   const {
     title, setTitle, content, setContent, unsaved, setUnsaved, saving, setSaving, justPublished, setJustPublished,
     directoryOpen, setDirectoryOpen, previewOpen, usersOpen, changePasswordOpen, formulaModalOpen, socialLinkModalOpen,
-    cleanupOpen, courseManagementOpen, selectedPath, setSelectedPath, modules, setModules, modulesLoading, currentStyle, setCurrentStyle,
+    chemOpen, setChemOpen, cleanupOpen, courseManagementOpen, selectedPath, setSelectedPath, modules, setModules, modulesLoading, currentStyle, setCurrentStyle,
     isTooNarrow, editorRef, fileInputRef, selectedCourse, setSelectedCourse, courses, setCourses, handleContentChange,
     closeDirectory, toggleDirectory, openPreview, closePreview, toggleUsers, closeUsers, toggleCleanup, closeCleanup,
     toggleCourseManagement, closeCourseManagement, openChangePassword, closeChangePassword, openFormulaModal, closeFormulaModal,
@@ -50,6 +51,20 @@ function AdminEditorContent() {
   })
   const { handleBeforeMount, handleEditorMount, handleFormatAction, handleStyleChange, handleInsertFormula } = useEditorFormatting({ editorRef, setCurrentStyle, renderInlineImages, hideImageWidget })
   const { handleLoadFile } = useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath })
+
+  function handleChemInsert(markdown) {
+    if (!editorRef.current) return
+    const editor = editorRef.current
+    const position = editor.getPosition()
+    const range = {
+      startLineNumber: position.lineNumber,
+      startColumn: position.column,
+      endLineNumber: position.lineNumber,
+      endColumn: position.column,
+    }
+    editor.executeEdits('', [{ range, text: markdown }])
+    editor.focus()
+  }
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -96,11 +111,12 @@ function AdminEditorContent() {
       {profile?.role === 'owner' && <CourseManagementDrawer open={courseManagementOpen} onClose={closeCourseManagement} isOwner={isOwner} userId={user?.id} />}
 
       <ChangePasswordModal open={changePasswordOpen} onClose={closeChangePassword} />
+      <ChemModal open={chemOpen} onClose={() => setChemOpen(false)} onInsert={handleChemInsert} />
       <FormulaModal open={formulaModalOpen} onClose={closeFormulaModal} onInsert={handleInsertFormula} />
       <SocialLinkModal open={socialLinkModalOpen} onClose={closeSocialLinkModal} onInsert={handleInsertFormula} />
 
       {/* Navbar Row 1 + Row 2 */}
-      <EditorNavbar title={title} onTitleChange={setTitle} unsaved={unsaved} justPublished={justPublished} onToggleDirectory={toggleDirectory} directoryOpen={directoryOpen} onPreview={openPreview} onSave={handleSave} saving={saving} onToggleUsers={toggleUsers} onToggleCleanup={toggleCleanup} cleanupOpen={cleanupOpen} onToggleCourseManagement={toggleCourseManagement} courseManagementOpen={courseManagementOpen} isOwner={isOwner} username={profile?.username} onSignOut={handleSignOut} onChangePassword={openChangePassword} editorRef={editorRef} onFormatAction={handleFormatAction} onInsertImage={clickFileInput} onInsertFormula={openFormulaModal} onInsertSocialLink={openSocialLinkModal} currentStyle={currentStyle} onStyleChange={handleStyleChange} onNewModule={handleNewModule} iconOptions={unusedIconOptions} onDeleteModule={handleDeleteSelectedModule} selectedCourse={selectedCourse} onCourseChange={setSelectedCourse} courses={courses} />
+      <EditorNavbar title={title} onTitleChange={setTitle} unsaved={unsaved} justPublished={justPublished} onToggleDirectory={toggleDirectory} directoryOpen={directoryOpen} onPreview={openPreview} onSave={handleSave} saving={saving} onToggleUsers={toggleUsers} onToggleCleanup={toggleCleanup} cleanupOpen={cleanupOpen} onToggleCourseManagement={toggleCourseManagement} courseManagementOpen={courseManagementOpen} isOwner={isOwner} username={profile?.username} onSignOut={handleSignOut} onChangePassword={openChangePassword} editorRef={editorRef} onFormatAction={handleFormatAction} onInsertImage={clickFileInput} onInsertFormula={openFormulaModal} onChemClick={() => setChemOpen(true)} onInsertSocialLink={openSocialLinkModal} currentStyle={currentStyle} onStyleChange={handleStyleChange} onNewModule={handleNewModule} iconOptions={unusedIconOptions} onDeleteModule={handleDeleteSelectedModule} selectedCourse={selectedCourse} onCourseChange={setSelectedCourse} courses={courses} />
 
       {/* Canvas */}
       <div className={styles.canvas} {...getRootProps()}>

@@ -22,6 +22,7 @@ import {
   FilePlus,
   DotsThreeVertical,
   Function as FunctionIcon,
+  Flask,
   ShareNetwork
 } from '@phosphor-icons/react'
 import DraftStatusIndicator from './DraftStatusIndicator'
@@ -51,6 +52,7 @@ export default function EditorNavbar({
   onFormatAction,
   onInsertImage,
   onInsertFormula,
+  onChemClick,
   onInsertSocialLink,
   currentStyle,
   onStyleChange,
@@ -325,6 +327,22 @@ export default function EditorNavbar({
             <Tooltip.Portal>
               <Tooltip.Content className={styles.tooltip} sideOffset={5}>
                 Insert formula (LaTeX)
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                className={styles.formatButton}
+                onClick={onChemClick}
+              >
+                <Flask size={18} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                Insert chemistry
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>

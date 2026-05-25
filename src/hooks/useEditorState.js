@@ -14,6 +14,7 @@ export function useEditorState({ loading, profile, locationSearch } = {}) {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [formulaModalOpen, setFormulaModalOpen] = useState(false)
   const [socialLinkModalOpen, setSocialLinkModalOpen] = useState(false)
+  const [chemOpen, setChemOpen] = useState(false)
   const [cleanupOpen, setCleanupOpen] = useState(false)
   const [courseManagementOpen, setCourseManagementOpen] = useState(false)
   const [selectedPath, setSelectedPath] = useState(null) // { moduleId, subfolder }
@@ -147,6 +148,7 @@ export function useEditorState({ loading, profile, locationSearch } = {}) {
     changePasswordOpen, setChangePasswordOpen,
     formulaModalOpen, setFormulaModalOpen,
     socialLinkModalOpen, setSocialLinkModalOpen,
+    chemOpen, setChemOpen,
     cleanupOpen, setCleanupOpen,
     courseManagementOpen, setCourseManagementOpen,
     selectedPath, setSelectedPath,

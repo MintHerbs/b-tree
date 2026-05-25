@@ -20,9 +20,11 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
               if (parsed.selectedPath === null || (parsed.selectedPath && typeof parsed.selectedPath === 'object')) {
                 setSelectedPath(parsed.selectedPath)
               }
+              console.log('[DRAFT]', 'restored from', 'localStorage')
               return
             }
           } catch {
+            localStorage.removeItem('admin-draft')
           }
         }
 
@@ -33,6 +35,7 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
           .maybeSingle()
 
         if (!data) return
+        console.log('[DRAFT]', 'restored from', 'supabase')
 
         if (typeof data.title === 'string') setTitle(data.title)
         if (typeof data.content === 'string') setContent(data.content)
@@ -55,6 +58,7 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
 
     const id = setTimeout(() => {
       localStorage.setItem('admin-draft', JSON.stringify({ title, content, selectedPath }))
+      console.log('[DRAFT]', 'saved to localStorage')
     }, 800)
 
     return () => clearTimeout(id)
