@@ -1,0 +1,17 @@
+.label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.published {
+  animation: draftStatusFadeOut 3s ease forwards;
+}
+
+@keyframes draftStatusFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

@@ -10,7 +10,7 @@ import styles from './Sidebar.module.css'
 import CollapsedView from './CollapsedView/CollapsedView'
 import ExpandedView from './ExpandedView/ExpandedView'
 
-function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unreadCount = 0 }) {
+function Sidebar({ courseId = 'computer-science', activeChild, onChildSelect, isChatOpen, setIsChatOpen, unreadCount = 0 }) {
   const navigate  = useNavigate()
   const location  = useLocation()
   const sessionId = localStorage.getItem('session_id') || 'anonymous'
@@ -18,6 +18,8 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
   const [isExpanded, setIsExpanded] = useState(false)
   const [isPackageJsonOpen, setIsPackageJsonOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [modules, setModules] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const path = location.pathname
 
@@ -48,6 +50,19 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
   useEffect(() => {
     if (mode !== 'academia') setIsExpanded(false)
   }, [mode])
+
+  useEffect(() => {
+    setLoading(true)
+    import(`../../../content/notes/${courseId}/modules.js`)
+      .then(mod => {
+        setModules(mod.modules ?? mod.MODULES ?? [])
+        setLoading(false)
+      })
+      .catch(() => {
+        setModules([])
+        setLoading(false)
+      })
+  }, [courseId])
 
   const handleMouseEnter = () => {
     if (mode === 'academia' && !isMobile) {
@@ -107,17 +122,25 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
         style={{ width: mode === 'academia' && isExpanded ? (isMobile ? '280px' : '240px') : '56px' }}
       >
         {mode === 'academia' && isExpanded ? (
-          <ExpandedView
-            path={path}
-            go={go}
-            isPackageJsonOpen={isPackageJsonOpen}
-            onOpenPackageJson={() => setIsPackageJsonOpen(true)}
-            onClosePackageJson={() => setIsPackageJsonOpen(false)}
-            mode={mode}
-            setMode={setMode}
-            sessionId={sessionId}
-            unreadCount={unreadCount}
-          />
+          loading ? (
+            <div className={styles.skeletonList} aria-label="Loading modules">
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+            </div>
+          ) : (
+            <ExpandedView
+              path={path}
+              go={go}
+              isPackageJsonOpen={isPackageJsonOpen}
+              onOpenPackageJson={() => setIsPackageJsonOpen(true)}
+              onClosePackageJson={() => setIsPackageJsonOpen(false)}
+              mode={mode}
+              setMode={setMode}
+              sessionId={sessionId}
+              unreadCount={unreadCount}
+            />
+          )
         ) : (
           <CollapsedView
             path={path}

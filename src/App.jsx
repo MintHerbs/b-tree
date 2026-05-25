@@ -9,6 +9,10 @@ import Sidebar from './components/layout/Sidebar'
 import Starfield from './components/effects/Starfield/Starfield'
 import { ChatPanel, ChatDimOverlay } from './features/chat/components'
 import { AppRoutes, preloadRoutes } from './routes'
+import { MODULES } from './components/layout/Sidebar/modules'
+
+// CS module IDs don't include courseId in the URL — default to computer-science for them
+const CS_MODULE_IDS = new Set(MODULES.map(m => m.id))
 
 export const OnlineCountContext = createContext(1)
 
@@ -27,6 +31,13 @@ function AppContent() {
 
   const isToolsRoute = location.pathname.startsWith('/tools/')
   const isAdminRoute = location.pathname.startsWith('/admin')
+
+  // Derive courseId from URL: /notes/<segment>/... where segment is a course slug.
+  // Legacy CS links use /notes/<moduleId>/... without a course prefix → default to 'computer-science'.
+  const notesSegment = location.pathname.match(/^\/notes\/([^/]+)/)?.[1]
+  const courseId = notesSegment && !CS_MODULE_IDS.has(notesSegment)
+    ? notesSegment
+    : 'computer-science'
 
   useEffect(() => {
     const t = setTimeout(preloadRoutes, 3000)
@@ -71,6 +82,7 @@ function AppContent() {
       {/* Global sidebar - persists across all routes except admin */}
       {!isAdminRoute && (
         <Sidebar
+          courseId={courseId}
           defaultOpenGroup="database"
           activeChild={activeChild}
           onChildSelect={setActiveChild}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, CaretDown, CaretRight } from '@phosphor-icons/react'
+import { X, CaretDown, CaretRight, ArrowUp } from '@phosphor-icons/react'
 import { supabase } from '../../lib/supabaseClient'
+import { useAdminUsers } from '../../hooks/useAdminUsers'
 import { MODULES } from '../layout/Sidebar/modules'
 import styles from './UsersDrawer.module.css'
 
@@ -14,16 +15,23 @@ function generatePassword() {
   return password
 }
 
-export default function UsersDrawer({ open, onClose, currentUserId, isOwner = false }) {
-  // Users list
-  const [users, setUsers] = useState([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
+export default function UsersDrawer({ open, onClose, currentUserId, isOwner = false, filterCourseId = null, currentUserCourseId = null }) {
+  // Use the admin users hook
+  const { users, loadingUsers, fetchUsers, createUser, upgradeToAdmin, deleteUser } = useAdminUsers({
+    isOwner,
+    currentUserCourseId,
+  })
+  
+  // Courses list for dropdown (owners only)
+  const [courses, setCourses] = useState([])
+  const [loadingCourses, setLoadingCourses] = useState(false)
   
   // Add user form
   const [showAddForm, setShowAddForm] = useState(false)
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [role, setRole] = useState('contributor')
+  const [selectedCourseId, setSelectedCourseId] = useState(filterCourseId || '')
   const [selectedDirectories, setSelectedDirectories] = useState([])
   const [generatedPassword, setGeneratedPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -34,36 +42,42 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
 
   // Load users when drawer opens
   useEffect(() => {
-    if (open && isOwner) {
+    if (open) {
       loadUsers()
     }
-  }, [open, isOwner])
+  }, [open, filterCourseId])
+  
+  // Load courses for dropdown (owners only)
+  useEffect(() => {
+    if (open && isOwner && showAddForm) {
+      loadCourses()
+    }
+  }, [open, isOwner, showAddForm])
 
-  // Load all admin users
   const loadUsers = async () => {
-    setLoadingUsers(true)
     try {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      
-      // Sort users: owners first, then contributors
-      const sortedUsers = data.sort((a, b) => {
-        if (a.role === 'owner' && b.role !== 'owner') return -1
-        if (a.role !== 'owner' && b.role === 'owner') return 1
-        return 0
-      })
-      
-      setUsers(sortedUsers)
+      await fetchUsers(filterCourseId)
     } catch (error) {
       console.error('Failed to load users:', error)
       setStatus({ message: `Failed to load users: ${error.message}`, type: 'error' })
       setTimeout(() => setStatus({ message: '', type: '' }), 5000)
+    }
+  }
+  
+  const loadCourses = async () => {
+    setLoadingCourses(true)
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, display_name')
+        .order('display_name', { ascending: true })
+      
+      if (error) throw error
+      setCourses(data ?? [])
+    } catch (error) {
+      console.error('Failed to load courses:', error)
     } finally {
-      setLoadingUsers(false)
+      setLoadingCourses(false)
     }
   }
 
@@ -86,12 +100,6 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
   // Create new user
   const handleCreateUser = async (e) => {
     e.preventDefault()
-
-    if (!isOwner) {
-      setStatus({ message: 'Only owners can create users', type: 'error' })
-      setTimeout(() => setStatus({ message: '', type: '' }), 3000)
-      return
-    }
     
     if (!email || !username || !generatedPassword) {
       setStatus({ message: 'Please fill all fields including password', type: 'error' })
@@ -99,14 +107,8 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       return
     }
     
-    if (generatedPassword.length < 8) {
-      setStatus({ message: 'Password must be at least 8 characters', type: 'error' })
-      setTimeout(() => setStatus({ message: '', type: '' }), 3000)
-      return
-    }
-    
-    if (role === 'contributor' && selectedDirectories.length === 0) {
-      setStatus({ message: 'Contributors must have at least one allowed directory', type: 'error' })
+    if (role !== 'owner' && !selectedCourseId) {
+      setStatus({ message: 'Please select a course', type: 'error' })
       setTimeout(() => setStatus({ message: '', type: '' }), 3000)
       return
     }
@@ -115,18 +117,14 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       setCreatingUser(true)
       setStatus({ message: 'Creating user...', type: 'info' })
 
-      const { data, error } = await supabase.functions.invoke('admin-create-user', {
-        body: {
-          email,
-          password: generatedPassword,
-          username,
-          role,
-          allowedDirectories: role === 'owner' ? [] : selectedDirectories,
-        },
+      await createUser({
+        email,
+        username,
+        role,
+        courseId: role === 'owner' ? null : selectedCourseId,
+        allowedDirectories: role === 'contributor' ? selectedDirectories : [],
+        password: generatedPassword,
       })
-
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
       
       setStatus({ message: `User created! Password: ${generatedPassword}`, type: 'success' })
       
@@ -134,6 +132,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       setEmail('')
       setUsername('')
       setRole('contributor')
+      setSelectedCourseId(filterCourseId || '')
       setSelectedDirectories([])
       setGeneratedPassword('')
       setShowPassword(false)
@@ -153,13 +152,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
   }
 
   // Delete user
-  const handleDeleteUser = async (userId, username) => {
-    if (!isOwner) {
-      setStatus({ message: 'Only owners can delete users', type: 'error' })
-      setTimeout(() => setStatus({ message: '', type: '' }), 3000)
-      return
-    }
-
+  const handleDeleteUser = async (userId, username, userCourseId) => {
     if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
       return
     }
@@ -167,12 +160,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
     try {
       setStatus({ message: 'Deleting user...', type: 'info' })
       
-      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
-        body: { userId },
-      })
-
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
+      await deleteUser(userId, userCourseId)
       
       setStatus({ message: 'User deleted successfully', type: 'success' })
       
@@ -183,6 +171,30 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
     } catch (error) {
       console.error('Failed to delete user:', error)
       setStatus({ message: `Failed to delete user: ${error.message}`, type: 'error' })
+      setTimeout(() => setStatus({ message: '', type: '' }), 5000)
+    }
+  }
+  
+  // Upgrade contributor to admin
+  const handleUpgradeToAdmin = async (userId, username) => {
+    if (!confirm(`Upgrade "${username}" to admin?`)) {
+      return
+    }
+    
+    try {
+      setStatus({ message: 'Upgrading user...', type: 'info' })
+      
+      await upgradeToAdmin(userId)
+      
+      setStatus({ message: 'User upgraded to admin', type: 'success' })
+      
+      // Reload users
+      await loadUsers()
+      
+      setTimeout(() => setStatus({ message: '', type: '' }), 3000)
+    } catch (error) {
+      console.error('Failed to upgrade user:', error)
+      setStatus({ message: `Failed to upgrade user: ${error.message}`, type: 'error' })
       setTimeout(() => setStatus({ message: '', type: '' }), 5000)
     }
   }
@@ -230,6 +242,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                     <tr>
                       <th>Username</th>
                       <th>Role</th>
+                      {isOwner && filterCourseId === null && <th>Course</th>}
                       <th>Directories</th>
                       <th>Actions</th>
                     </tr>
@@ -248,6 +261,13 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                             {user.role}
                           </span>
                         </td>
+                        {isOwner && filterCourseId === null && (
+                          <td>
+                            <span className={styles.courseCell}>
+                              {user.role === 'owner' ? 'Global' : (user.course_id || 'None')}
+                            </span>
+                          </td>
+                        )}
                         <td>
                           {user.role === 'owner' ? (
                             <span className={styles.allAccess}>All</span>
@@ -261,14 +281,26 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                           )}
                         </td>
                         <td>
-                          <button
-                            onClick={() => handleDeleteUser(user.id, user.username)}
-                            className={styles.deleteButton}
-                            disabled={user.id === currentUserId}
-                            title={user.id === currentUserId ? "Can't delete yourself" : "Delete user"}
-                          >
-                            Delete
-                          </button>
+                          <div className={styles.actionsCell}>
+                            {isOwner && user.role === 'contributor' && (
+                              <button
+                                onClick={() => handleUpgradeToAdmin(user.id, user.username)}
+                                className={styles.upgradeButton}
+                                title="Upgrade to admin"
+                              >
+                                <ArrowUp size={14} />
+                                <span>Upgrade</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteUser(user.id, user.username, user.course_id)}
+                              className={styles.deleteButton}
+                              disabled={user.id === currentUserId}
+                              title={user.id === currentUserId ? "Can't delete yourself" : "Delete user"}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -323,9 +355,33 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                     className={styles.select}
                   >
                     <option value="contributor">Contributor</option>
-                    <option value="owner">Owner</option>
+                    {isOwner && <option value="admin">Admin</option>}
+                    {isOwner && <option value="owner">Owner</option>}
                   </select>
                 </div>
+
+                {isOwner && role !== 'owner' && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.label}>Course</label>
+                    {loadingCourses ? (
+                      <p className={styles.loadingText}>Loading courses...</p>
+                    ) : (
+                      <select
+                        value={selectedCourseId}
+                        onChange={(e) => setSelectedCourseId(e.target.value)}
+                        className={styles.select}
+                        required
+                      >
+                        <option value="">Select course</option>
+                        {courses.map(course => (
+                          <option key={course.id} value={course.id}>
+                            {course.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
 
                 {role === 'contributor' && (
                   <div className={styles.formGroup}>

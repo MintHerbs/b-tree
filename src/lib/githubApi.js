@@ -116,6 +116,18 @@ export async function listDirectory(path) {
   return files.filter(f => f.type === 'file' && f.name !== '.gitkeep')
 }
 
+// ─── LIST ALL IMAGES ────────────────────────────────────────────────────────
+// List all image files for a module with their paths and raw CDN URLs
+// Used by the image cleanup scanner to find orphaned images
+export async function listAllImages(moduleId) {
+  const files = await listDirectory(`public/notes/img/${moduleId}`)
+  return files.map(f => ({
+    path: `/notes/img/${moduleId}/${f.name}`,
+    githubPath: f.path,
+    rawUrl: `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/public/notes/img/${moduleId}/${f.name}`
+  }))
+}
+
 // ─── GET FILE CONTENT ────────────────────────────────────────────────────────
 // Reads a text file from the repo and returns its decoded string content.
 // GitHub stores file content as base64 — this decodes it back to plain text.

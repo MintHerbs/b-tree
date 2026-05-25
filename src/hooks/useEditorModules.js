@@ -1,5 +1,5 @@
 import { commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../lib/githubApi'
-import { getIconOptionByName } from '../components/admin/adminIconOptions'
+import { ADMIN_ICON_OPTIONS, getIconNameForComponent, getIconOptionByName } from '../components/admin/adminIconOptions'
 
 // Title to filename conversion
 function titleToFilename(title) {
@@ -108,11 +108,98 @@ function removeModuleSource(modulesJs, moduleId) {
   throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
 }
 
+function addSubfolderToModulesSource(modulesJs, moduleId, subfolderName) {
+  const escapedModuleId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const idPattern = new RegExp(`\\bid:\\s*'${escapedModuleId}'`)
+  const modulesExportIndex = modulesJs.indexOf('export const modules')
+  if (modulesExportIndex === -1) throw new Error('Could not find modules array in modules.js')
+  const arrayStart = modulesJs.indexOf('[', modulesExportIndex)
+  if (arrayStart === -1) throw new Error('Could not find modules array start in modules.js')
+
+  let bracketDepth = 1
+  let braceDepth = 0
+  let objStart = -1
+
+  for (let i = arrayStart + 1; i < modulesJs.length; i++) {
+    const char = modulesJs[i]
+    if (char === '[') bracketDepth += 1
+    if (char === ']') {
+      bracketDepth -= 1
+      if (bracketDepth === 0) break
+    }
+
+    if (char === '{') {
+      if (braceDepth === 0) objStart = i
+      braceDepth += 1
+    } else if (char === '}') {
+      braceDepth -= 1
+      if (braceDepth === 0 && objStart !== -1) {
+        const objEnd = i + 1
+        const objSource = modulesJs.slice(objStart, objEnd)
+        if (idPattern.test(objSource)) {
+          const subfoldersRegex = /(\n\s*subfolders\s*:\s*)\[((?:.|\n)*?)\]/m
+          const subfoldersMatch = objSource.match(subfoldersRegex)
+          let updatedObjSource
+
+          if (subfoldersMatch) {
+            const raw = subfoldersMatch[2].trim()
+            const values = raw
+              ? raw
+                .split(',')
+                .map(v => v.trim())
+                .filter(Boolean)
+                .map(v => v.replace(/^['"`]/, '').replace(/['"`]$/, ''))
+              : []
+            if (!values.includes(subfolderName)) values.push(subfolderName)
+            const rendered = values.map(v => `'${v}'`).join(', ')
+            updatedObjSource = objSource.replace(subfoldersRegex, `$1[${rendered}]`)
+          } else {
+            const closeIndex = objSource.lastIndexOf('}')
+            const closeIndentMatch = objSource.match(/\n(\s*)\}/)
+            const closeIndent = closeIndentMatch ? closeIndentMatch[1] : '  '
+            const propIndent = `${closeIndent}  `
+            updatedObjSource = `${objSource.slice(0, closeIndex)}\n${propIndent}subfolders: ['${subfolderName}'],${objSource.slice(closeIndex)}`
+          }
+
+          return `${modulesJs.slice(0, objStart)}${updatedObjSource}${modulesJs.slice(objEnd)}`
+        }
+        objStart = -1
+      }
+    }
+  }
+
+  throw new Error(`Could not find module "${moduleId}" in modules.js`)
+}
+
 function refreshModuleState(setModules, updater) {
   setModules(prev => updater(prev))
 }
 
-export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions }) {
+function getUnusedIconOptions(modules, selectedIconName = null) {
+  const usedIconNames = new Set(
+    modules
+      .map(module => getIconNameForComponent(module.Icon))
+      .filter(Boolean)
+  )
+
+  return ADMIN_ICON_OPTIONS.filter(option => (
+    option.name === selectedIconName || !usedIconNames.has(option.name)
+  ))
+}
+
+export function useEditorModules({ showToast, setModules, setSelectedPath, modules, profile, selectedCourse, selectedPath }) {
+  const unusedIconOptions = getUnusedIconOptions(modules)
+
+  const isOwner = profile?.role === 'owner'
+
+  const visibleModules = profile?.role === 'owner'
+    ? modules
+    : modules.filter(m => profile?.allowed_directories?.includes(m.id))
+
+  const allowedDirectories = profile?.role === 'owner'
+    ? null
+    : profile?.allowed_directories || []
+
   // Module management handlers
   const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
     const moduleId = titleToFilename(name)
@@ -141,12 +228,12 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
       )
 
       await commitFile(
-        `src/content/notes/${moduleId}/notes/.gitkeep`,
+        `src/content/notes/${selectedCourse}/${moduleId}/notes/.gitkeep`,
         '',
         `feat: create ${moduleId} notes folder`
       )
       await commitFile(
-        `src/content/notes/${moduleId}/tools/.gitkeep`,
+        `src/content/notes/${selectedCourse}/${moduleId}/tools/.gitkeep`,
         '',
         `feat: add tools folder to ${moduleId}`
       )
@@ -176,11 +263,11 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
         `feat: remove ${moduleId} subject`
       )
       await deleteFile(
-        `src/content/notes/${moduleId}/notes/.gitkeep`,
+        `src/content/notes/${selectedCourse}/${moduleId}/notes/.gitkeep`,
         `chore: remove ${moduleId} notes placeholder`
       )
       await deleteFile(
-        `src/content/notes/${moduleId}/tools/.gitkeep`,
+        `src/content/notes/${selectedCourse}/${moduleId}/tools/.gitkeep`,
         `chore: remove ${moduleId} tools placeholder`
       )
 
@@ -219,20 +306,38 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
 
   const handleNewSubfolder = async (moduleId, subfolderName) => {
     try {
-      // Create the subfolder directory on GitHub
       await commitFile(
-        `src/content/notes/${moduleId}/${subfolderName}/.gitkeep`,
+        `src/content/notes/${selectedCourse}/${moduleId}/${subfolderName}/.gitkeep`,
         '',
         `feat: add ${subfolderName} to ${moduleId}`
       )
 
-      // Note: Subfolders are derived from note filenames in modules.js, not explicitly tracked.
-      // The new subfolder will appear in the DirectoryDrawer once:
-      // 1. A note is added to it (which updates modules.js), OR
-      // 2. The user expands the module in edit mode (which calls listDirectory from GitHub)
-      //
-      // For immediate visibility without a note, the DirectoryDrawer would need to be refactored
-      // to call listDirectory on module expansion or maintain a separate subfolders list.
+      const courseModulesPath = `src/content/notes/${selectedCourse}/modules.js`
+      const currentModulesJs = await getFileContent(courseModulesPath)
+      const updatedModulesJs = typeof currentModulesJs === 'string'
+        ? addSubfolderToModulesSource(currentModulesJs, moduleId, subfolderName)
+        : `export const modules = [
+  {
+    id: '${moduleId}',
+    label: '${moduleId}',
+    subfolders: ['${subfolderName}'],
+  },
+]
+`
+
+      await commitFileWithRetry(
+        courseModulesPath,
+        updatedModulesJs,
+        `feat: add ${subfolderName} folder to ${moduleId}`
+      )
+
+      refreshModuleState(setModules, prev =>
+        prev.map(m => {
+          if (m.id !== moduleId) return m
+          const current = Array.isArray(m.subfolders) ? m.subfolders : []
+          return current.includes(subfolderName) ? m : { ...m, subfolders: [...current, subfolderName] }
+        })
+      )
 
       showToast(`Subfolder ${subfolderName} created`, 'success')
     } catch (error) {
@@ -257,11 +362,11 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
 
     try {
       // Read file content
-      const oldPath = `src/content/notes/${fromModule}/${fromSubfolder}/${filename}`
+      const oldPath = `src/content/notes/${selectedCourse}/${fromModule}/${fromSubfolder}/${filename}`
       const fileContent = await getFileContent(oldPath)
 
       // Commit to new location
-      const newPath = `src/content/notes/${toModule}/${toSubfolder}/${filename}`
+      const newPath = `src/content/notes/${selectedCourse}/${toModule}/${toSubfolder}/${filename}`
       await commitFile(newPath, fileContent, `feat: move ${filename} to ${toModule}/${toSubfolder}`)
 
       // Delete from old location (would need delete API)
@@ -274,6 +379,11 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   return {
+    unusedIconOptions,
+    visibleModules,
+    allowedDirectories,
+    isOwner,
+    handleDeleteSelectedModule: () => selectedPath && handleDeleteModule(selectedPath.moduleId),
     handleNewModule,
     handleDeleteModule,
     handleRenameModule,

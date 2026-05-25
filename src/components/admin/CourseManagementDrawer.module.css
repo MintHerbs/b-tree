@@ -74,6 +74,22 @@
   gap: 20px;
 }
 
+.emptyText {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 24px;
+  margin: 0;
+}
+
+.loadingText {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px;
+  margin: 0;
+}
+
 /* Status Message */
 .status {
   padding: 12px 16px;
@@ -101,136 +117,169 @@
   color: var(--accent);
 }
 
-/* Users Section */
-.usersSection {
+/* Courses Section */
+.coursesSection {
   flex-shrink: 0;
 }
 
-.loadingText,
-.emptyText {
-  font-size: 13px;
-  color: var(--text-muted);
-  text-align: center;
-  padding: 24px;
-  margin: 0;
+.coursesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.tableWrapper {
-  overflow-x: auto;
+.courseRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--color-hover-barely);
   border: 1px solid var(--border);
   border-radius: 8px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.table thead {
-  background: var(--color-hover-barely);
-  border-bottom: 1px solid var(--border);
-}
-
-.table th {
-  text-align: left;
-  padding: 10px 12px;
-  font-weight: 600;
-  color: var(--text);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.table tbody tr {
-  border-bottom: 1px solid var(--border);
   transition: background 150ms ease;
 }
 
-.table tbody tr:last-child {
-  border-bottom: none;
+.courseRow:hover {
+  background: var(--color-hover-faint);
 }
 
-.table tbody tr:hover {
-  background: var(--color-hover-barely);
-}
-
-.table td {
-  padding: 12px;
-  color: var(--text);
-}
-
-.userCell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.username {
+.courseName {
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
+  flex: 1;
 }
 
-.email {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.roleBadge {
-  display: inline-block;
-  padding: 4px 8px;
+.renameInput {
+  flex: 1;
+  background: var(--color-input);
+  border: 1px solid var(--accent);
   border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 6px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
 }
 
-.roleBadge.owner {
-  background: var(--color-accent-active);
+.courseActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manageButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 150ms ease;
+  font-family: inherit;
+}
+
+.manageButton:hover {
+  background: var(--color-hover-faint);
+  border-color: var(--accent);
   color: var(--accent);
 }
 
-.roleBadge.contributor {
-  background: var(--color-hover-strong);
-  color: var(--text-muted);
+.contextMenuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 150ms ease;
 }
 
-.allAccess {
-  color: var(--success);
-  font-weight: 500;
+.contextMenuButton:hover {
+  background: var(--color-hover-faint);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-.directories {
-  color: var(--text-muted);
-  font-size: 12px;
+/* Popover Content */
+.popoverContent {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 180px;
 }
 
-.noDirs {
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 4px;
+  transition: background 150ms ease;
+  font-family: inherit;
+  width: 100%;
+}
+
+.menuItem:hover {
+  background: var(--color-hover-faint);
+}
+
+.menuItem.danger {
   color: var(--error);
-  font-size: 12px;
 }
 
-.courseCell {
-  color: var(--text-muted);
-  font-size: 12px;
+.menuItem.danger:hover {
+  background: var(--color-error-soft);
 }
 
-.actionsCell {
+/* Confirmation Popover */
+.confirmPopover {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  max-width: 280px;
+}
+
+.confirmText {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.confirmActions {
   display: flex;
   gap: 8px;
-  align-items: center;
+  justify-content: flex-end;
 }
 
-.upgradeButton {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.cancelButton {
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -238,43 +287,35 @@
   font-family: inherit;
 }
 
-.upgradeButton:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--color-text);
+.cancelButton:hover {
+  background: var(--color-hover-faint);
 }
 
-.deleteButton {
-  background: transparent;
-  border: 1px solid var(--border);
+.confirmButton {
+  background: var(--error);
+  border: none;
   border-radius: 4px;
-  padding: 4px 12px;
+  padding: 6px 12px;
   font-size: 12px;
-  color: var(--text);
+  font-weight: 600;
+  color: var(--color-text);
   cursor: pointer;
   transition: all 150ms ease;
   font-family: inherit;
 }
 
-.deleteButton:hover:not(:disabled) {
-  background: var(--error);
-  border-color: var(--error);
-  color: var(--color-text);
+.confirmButton:hover {
+  background: var(--color-error-hover);
 }
 
-.deleteButton:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* Add User Section */
-.addUserSection {
+/* Create Section */
+.createSection {
   border-top: 1px solid var(--border);
   padding-top: 16px;
   flex-shrink: 0;
 }
 
-.addUserToggle {
+.createToggle {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -291,7 +332,7 @@
   text-align: left;
 }
 
-.addUserToggle:hover {
+.createToggle:hover {
   color: var(--accent);
 }
 
@@ -344,89 +385,28 @@
   cursor: pointer;
 }
 
-.passwordGroup {
-  display: flex;
-  gap: 8px;
-}
-
-.passwordGroup .input {
-  flex: 1;
-}
-
-.generateButton {
+.skipLink {
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-  transition: all 150ms ease;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.generateButton:hover {
-  background: var(--color-hover-faint);
-  border-color: var(--accent);
+  border: none;
   color: var(--accent);
-}
-
-.toggleButton {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 16px;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 150ms ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 4px 0;
+  text-align: left;
+  transition: opacity 150ms ease;
+  font-family: inherit;
 }
 
-.toggleButton:hover {
-  background: var(--color-hover-faint);
-  border-color: var(--accent);
-}
-
-.directoryGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 8px;
-  background: var(--color-overlay-soft);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 150ms ease;
-}
-
-.checkbox:hover {
-  background: var(--color-hover-faint);
-}
-
-.checkbox input[type="checkbox"] {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
+.skipLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .createButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--accent);
   border: none;
   border-radius: 6px;
@@ -439,10 +419,31 @@
   font-family: inherit;
 }
 
-.createButton:hover {
+.createButton:hover:not(:disabled) {
   background: var(--color-accent-hover);
 }
 
-.createButton:active {
+.createButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.createButton:active:not(:disabled) {
   transform: scale(0.98);
+}
+
+/* Spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-text);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

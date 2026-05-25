@@ -1,5 +1,6 @@
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
+import { colors } from '../constants/colors'
 
 // Clear all active LaTeX view zones and legacy content widgets from editor
 export function clearLatexWidgets(editor) {
@@ -194,7 +195,49 @@ export function renderInlineLaTeX(editor, monaco) {
   }, 16) // ~1 frame delay to batch updates smoothly
 }
 
-export function useEditorFormatting({ editorRef, setCurrentStyle }) {
+export function useEditorFormatting({ editorRef, setCurrentStyle, renderInlineImages, hideImageWidget }) {
+  const handleBeforeMount = (monaco) => {
+    monaco.editor.defineTheme('mooner-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': colors.bg,
+        'editor.foreground': colors.text,
+        'editorLineNumber.foreground': colors.border,
+        'editor.selectionBackground': `${colors.accent}40`,
+        'editor.lineHighlightBackground': 'transparent',
+      }
+    })
+  }
+
+  const handleEditorMount = (editor, monaco) => {
+    editorRef.current = editor
+
+    editor.onDidChangeCursorPosition(() => {
+      detectCurrentStyle()
+      renderInlineLaTeX(editor, monaco)
+    })
+
+    renderInlineImages(editor, monaco)
+    renderInlineLaTeX(editor, monaco)
+
+    editor.onDidChangeModelContent(() => {
+      renderInlineImages(editor, monaco)
+      renderInlineLaTeX(editor, monaco)
+      hideImageWidget(editor)
+    })
+
+    const editorDomNode = editor.getDomNode()
+    if (editorDomNode) {
+      editorDomNode.addEventListener('mouseleave', () => {
+        editor._imageWidgetHideTimeout = setTimeout(() => {
+          hideImageWidget(editor)
+        }, 300)
+      })
+    }
+  }
+
   // Detect current line style (title/subtitle/body)
   const detectCurrentStyle = () => {
     if (!editorRef.current) return
@@ -300,5 +343,19 @@ export function useEditorFormatting({ editorRef, setCurrentStyle }) {
     setCurrentStyle(style)
   }
 
-  return { handleFormatAction, handleStyleChange, detectCurrentStyle }
+  const handleInsertFormula = (formula) => {
+    if (!editorRef.current) return
+
+    const editor = editorRef.current
+    const selection = editor.getSelection()
+
+    editor.executeEdits('', [{
+      range: selection,
+      text: formula,
+    }])
+
+    editor.focus()
+  }
+
+  return { handleBeforeMount, handleEditorMount, handleFormatAction, handleStyleChange, detectCurrentStyle, handleInsertFormula }
 }

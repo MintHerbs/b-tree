@@ -1,5 +1,7 @@
 import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent } from '../lib/githubApi'
+import { clearAllImageBlobs } from '../lib/draftDB'
 import { supabase } from '../lib/supabaseClient'
+import { useDraft } from './useDraft'
 
 // Title to filename conversion
 function titleToFilename(title) {
@@ -114,7 +116,24 @@ function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
   return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
 }
 
-export function useEditorSave({ title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent, imageQueueRef, imageCountRef }) {
+export function useEditorSave({
+  userId,
+  title,
+  content,
+  selectedPath,
+  selectedCourse,
+  showToast,
+  setSaving,
+  setUnsaved,
+  setJustPublished,
+  setTitle,
+  setContent,
+  setSelectedPath,
+  imageQueueRef,
+  imageCountRef
+}) {
+  const { clearDraft } = useDraft({ userId, title, content, selectedPath, setTitle, setContent, setSelectedPath })
+
   // Save handler
   const handleSave = async () => {
     if (!title.trim()) {
@@ -140,7 +159,7 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       // Resolve image queue before committing
       let finalContent = content
       for (const [draftKey, { file, ext }] of Object.entries(imageQueueRef.current)) {
-        const imgDir = `public/notes/img/${moduleId}`
+        const imgDir = `public/notes/img/${selectedCourse}/${moduleId}`
         if (imageCountRef.current[moduleId] === undefined) {
           const files = await listDirectory(imgDir)
           imageCountRef.current[moduleId] = files.length
@@ -152,14 +171,14 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
         await uploadImage(`${imgDir}/${filename}`, arrayBuffer)
         finalContent = finalContent.replaceAll(
           `draft://${draftKey}`,
-          `/notes/img/${moduleId}/${filename}`
+          `/notes/img/${selectedCourse}/${moduleId}/${filename}`
         )
       }
       // clear queue after successful upload
       imageQueueRef.current = {}
 
       // Commit .md to GitHub
-      const mdPath = `src/content/notes/${moduleId}/${subfolder}/${filename}.md`
+      const mdPath = `src/content/notes/${selectedCourse}/${moduleId}/${subfolder}/${filename}.md`
       const commitMessage = `docs: add ${filename} to ${moduleId}/${subfolder}`
 
       const commitResult = await commitFile(mdPath, finalContent, commitMessage)
@@ -218,7 +237,11 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       }
 
       showToast('Published! Vercel is deploying...', 'success')
+      await clearDraft()
+      await clearAllImageBlobs()
       setUnsaved(false)
+      setJustPublished(true)
+      setTimeout(() => setJustPublished(false), 3000)
 
       // Clear form
       setTimeout(() => {

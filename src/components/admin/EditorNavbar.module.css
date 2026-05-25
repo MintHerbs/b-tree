@@ -21,6 +21,30 @@
   min-width: 0;
 }
 
+/* Course Selector */
+.courseSelector {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: all 150ms ease;
+}
+
+.courseSelector:hover {
+  border-color: var(--accent);
+  background: var(--color-hover-faint);
+}
+
+.courseSelector:focus {
+  border-color: var(--accent);
+  background: var(--color-accent-soft);
+}
+
 /* Title Input */
 .titleGroup {
   display: flex;

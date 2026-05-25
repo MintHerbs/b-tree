@@ -9,6 +9,7 @@ import {
   CloudArrowUp,
   MagnifyingGlass,
   Users,
+  Briefcase,
   UserCircle,
   SignOut,
   Key,
@@ -23,6 +24,7 @@ import {
   Function as FunctionIcon,
   ShareNetwork
 } from '@phosphor-icons/react'
+import DraftStatusIndicator from './DraftStatusIndicator'
 import StyleDropdown from './StyleDropdown'
 import styles from './EditorNavbar.module.css'
 
@@ -30,6 +32,7 @@ export default function EditorNavbar({
   title,
   onTitleChange,
   unsaved,
+  justPublished,
   onToggleDirectory,
   directoryOpen,
   onPreview,
@@ -38,6 +41,8 @@ export default function EditorNavbar({
   onToggleUsers,
   onToggleCleanup,
   cleanupOpen,
+  onToggleCourseManagement,
+  courseManagementOpen,
   isOwner,
   username,
   onSignOut,
@@ -51,7 +56,10 @@ export default function EditorNavbar({
   onStyleChange,
   onNewModule,
   iconOptions = [],
-  onDeleteModule
+  onDeleteModule,
+  selectedCourse,
+  onCourseChange,
+  courses = []
 }) {
   const [titleWidth, setTitleWidth] = useState('auto')
   const [newModuleName, setNewModuleName] = useState('')
@@ -94,6 +102,20 @@ export default function EditorNavbar({
             </Tooltip.Portal>
           </Tooltip.Root>
 
+          {isOwner && courses.length > 0 && (
+            <select
+              value={selectedCourse || ''}
+              onChange={(e) => onCourseChange?.(e.target.value)}
+              className={styles.courseSelector}
+            >
+              {courses.map(course => (
+                <option key={course.id} value={course.id}>
+                  {course.display_name}
+                </option>
+              ))}
+            </select>
+          )}
+
           <div className={styles.titleGroup}>
             <span ref={mirrorRef} className={styles.titleMirror}>
               {title || 'Untitled'}
@@ -106,7 +128,7 @@ export default function EditorNavbar({
               onChange={(e) => onTitleChange(e.target.value)}
               style={{ width: titleWidth }}
             />
-            {unsaved && <div className={styles.unsavedDot} />}
+            <DraftStatusIndicator unsaved={unsaved} saving={saving} justPublished={justPublished} />
           </div>
         </div>
 
@@ -162,6 +184,25 @@ export default function EditorNavbar({
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
+
+          {isOwner && (
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <button
+                  className={styles.iconButton}
+                  onClick={onToggleCourseManagement}
+                  style={{ color: courseManagementOpen ? colors.accent : undefined }}
+                >
+                  <Briefcase size={18} />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                  Manage courses
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          )}
 
           {isOwner && (
             <Tooltip.Root>
