@@ -541,14 +541,142 @@ describe('useDraft — clearDraft', () => {
   })
 })
 
-describe('draftDB — image queue', () => {
-  it('nextImageKey generates img-1.png on first call', () => {
-    expect(nextImageKey('png')).toBe('img-1.png')
+describe('useDraft — saveDraftNow', () => {
+  it("Calls localStorage.setItem with key 'admin-draft' and correct JSON immediately (no debounce)", async () => {
+    const setTitle = vi.fn()
+    const setContent = vi.fn()
+    const setSelectedPath = vi.fn()
+
+    Storage.prototype.getItem.mockImplementation((key) => {
+      if (key !== 'admin-draft') return null
+      return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
+    })
+
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      maybeSingle: vi.fn(async () => ({ data: null })),
+      upsert: vi.fn(async () => ({ data: null, error: null })),
+      delete: vi.fn(() => query),
+    }
+    supabase.from.mockImplementation(() => query)
+
+    const { result } = renderHook(() =>
+      useDraft({
+        userId: 'u1',
+        title: 'T',
+        content: 'C',
+        selectedPath: { moduleId: 'm1', subfolder: 's1' },
+        setTitle,
+        setContent,
+        setSelectedPath,
+      })
+    )
+
+    Storage.prototype.setItem.mockClear()
+
+    await act(async () => {
+      await result.current.saveDraftNow()
+    })
+
+    expect(Storage.prototype.setItem).toHaveBeenCalledTimes(1)
+    expect(Storage.prototype.setItem.mock.calls[0][0]).toBe('admin-draft')
+    const payload = JSON.parse(Storage.prototype.setItem.mock.calls[0][1])
+    expect(payload).toEqual({
+      title: 'T',
+      content: 'C',
+      selectedPath: { moduleId: 'm1', subfolder: 's1' },
+    })
   })
 
-  it('nextImageKey generates img-2.png on second call', () => {
+  it('Calls supabase upsert with correct fields immediately', async () => {
+    const setTitle = vi.fn()
+    const setContent = vi.fn()
+    const setSelectedPath = vi.fn()
+
+    Storage.prototype.getItem.mockImplementation((key) => {
+      if (key !== 'admin-draft') return null
+      return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
+    })
+
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      maybeSingle: vi.fn(async () => ({ data: null })),
+      upsert: vi.fn(async () => ({ data: null, error: null })),
+      delete: vi.fn(() => query),
+    }
+    supabase.from.mockImplementation(() => query)
+
+    const { result } = renderHook(() =>
+      useDraft({
+        userId: 'u1',
+        title: 'T',
+        content: 'C',
+        selectedPath: { moduleId: 'm1', subfolder: 's1' },
+        setTitle,
+        setContent,
+        setSelectedPath,
+      })
+    )
+
+    await act(async () => {
+      await result.current.saveDraftNow()
+    })
+
+    expect(supabase.from).toHaveBeenCalledWith('drafts')
+    expect(query.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'u1',
+        title: 'T',
+        content: 'C',
+        module_id: 'm1',
+        subfolder: 's1',
+        updated_at: expect.any(String),
+      }),
+      { onConflict: 'user_id' }
+    )
+  })
+
+  it('Does not call supabase if userId is null', async () => {
+    const setTitle = vi.fn()
+    const setContent = vi.fn()
+    const setSelectedPath = vi.fn()
+
+    Storage.prototype.getItem.mockReturnValue(null)
+
+    const { result } = renderHook(() =>
+      useDraft({
+        userId: null,
+        title: 'T',
+        content: 'C',
+        selectedPath: { moduleId: 'm1', subfolder: 's1' },
+        setTitle,
+        setContent,
+        setSelectedPath,
+      })
+    )
+
+    await act(async () => {
+      await result.current.saveDraftNow()
+    })
+
+    expect(supabase.from).not.toHaveBeenCalled()
+    expect(Storage.prototype.setItem).toHaveBeenCalledWith(
+      'admin-draft',
+      expect.any(String)
+    )
+  })
+})
+
+describe('draftDB — image queue', () => {
+  it('nextImageKey falls back to the legacy draftId on first call', () => {
+    expect(nextImageKey('png')).toBe('legacy:img-1.png')
+  })
+
+  it('nextImageKey increments the legacy counter on the second call', () => {
     nextImageKey('png')
-    expect(nextImageKey('png')).toBe('img-2.png')
+    expect(nextImageKey('png')).toBe('legacy:img-2.png')
   })
 
   it('extractDraftKeys returns correct keys from markdown with multiple draft:// references', () => {

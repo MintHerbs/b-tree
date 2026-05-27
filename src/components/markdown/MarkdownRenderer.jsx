@@ -1,4 +1,5 @@
 import 'katex/contrib/mhchem'
+import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import remarkGfm from 'remark-gfm'
@@ -6,7 +7,7 @@ import rehypeKatex from 'rehype-katex'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import 'katex/dist/katex.min.css'
-import RichTooltip, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../ui/smoothui/rich-popover/index.tsx'
+import RichPopover, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../ui/RichPopover'
 import styles from './MarkdownRenderer.module.css'
 
 function resolveImageSrc(src = '') {
@@ -21,37 +22,35 @@ function resolveImageSrc(src = '') {
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/public${src}`
 }
 
-function parseRichPopoverProps(attrString) {
+function parseTagProps(attrString) {
   const props = {}
   const attrRegex = /(\w+)="((?:[^"\\]|\\.)*)"/g
   let match
   while ((match = attrRegex.exec(attrString)) !== null) {
-    props[match[1]] = match[2].replace(/\\"/g, '"')
+    props[match[1]] = match[2].replace(/\\"/g, '"').replace(/&quot;/g, '"')
   }
   return props
 }
 
 function getPlatformTriggerIcon(platform) {
   switch (platform) {
-    case 'youtube': return <YouTubeIcon className="h-3.5 w-3.5 fill-red-600" />
-    case 'instagram': return <InstagramIcon className="h-3.5 w-3.5" />
-    case 'linkedin': return <LinkedInIcon className="h-3.5 w-3.5 fill-[#0A66C2]" />
-    default: return null
+    case 'youtube': return <YouTubeIcon className={styles.socialTriggerIcon} />
+    case 'instagram': return <InstagramIcon className={styles.socialTriggerIcon} />
+    case 'linkedin': return <LinkedInIcon className={styles.socialTriggerIcon} />
+    default: return <YouTubeIcon className={styles.socialTriggerIcon} />
   }
 }
 
-function RichPopoverChip({ platform, title, href, description, meta, actionLabel }) {
-  const triggerIcon = getPlatformTriggerIcon(platform)
-
+function SocialLinkPopover({ platform, title, href, description, meta, actionLabel }) {
+  // Trigger is always a 36×36 rounded square showing only the platform icon.
   const trigger = (
-    <button className={styles.richPopoverTrigger} type="button">
-      {triggerIcon}
-      <span>{title}</span>
+    <button className={styles.socialTrigger} type="button" aria-label={title || 'social link'}>
+      {getPlatformTriggerIcon(platform)}
     </button>
   )
 
   return (
-    <RichTooltip
+    <RichPopover
       trigger={trigger}
       platform={platform}
       title={title}
@@ -66,10 +65,31 @@ function RichPopoverChip({ platform, title, href, description, meta, actionLabel
   )
 }
 
-function splitContentByRichPopovers(content) {
+function MoleculeChip({ alt, data }) {
+  const [hasError, setHasError] = useState(false)
+  const src = `data:image/svg+xml;base64,${data}`
+
+  return (
+    <div className={styles.moleculeWrapper}>
+      {hasError ? (
+        <div className={styles.moleculeError}>[molecule: {alt}]</div>
+      ) : (
+        <img
+          className={styles.moleculeImage}
+          src={src}
+          alt={alt || ''}
+          loading="lazy"
+          onError={() => setHasError(true)}
+        />
+      )}
+      <div className={styles.moleculeLabel}>{alt}</div>
+    </div>
+  )
+}
+
+function splitContentByCustomTags(content) {
   const parts = []
-  // Matches <RichPopover ... /> potentially spanning multiple lines
-  const regex = /<RichPopover([\s\S]*?)\/>/g
+  const regex = /<(SocialLink|MoleculeStructure)([\s\S]*?)\/>/g
   let lastIndex = 0
   let match
 
@@ -77,8 +97,9 @@ function splitContentByRichPopovers(content) {
     if (match.index > lastIndex) {
       parts.push({ type: 'markdown', content: content.slice(lastIndex, match.index) })
     }
-    const props = parseRichPopoverProps(match[1])
-    parts.push({ type: 'richpopover', props })
+    const tagName = match[1].toLowerCase()
+    const props = parseTagProps(match[2])
+    parts.push({ type: tagName, props })
     lastIndex = match.index + match[0].length
   }
 
@@ -186,17 +207,20 @@ const markdownComponents = {
 }
 
 function MarkdownRenderer({ content }) {
-  const parts = splitContentByRichPopovers(content)
+  const parts = splitContentByCustomTags(content)
 
   return (
     <div className={styles.markdownContainer}>
       {parts.map((part, i) => {
-        if (part.type === 'richpopover') {
+        if (part.type === 'sociallink') {
           return (
-            <span key={i} className={styles.richPopoverWrapper}>
-              <RichPopoverChip {...part.props} />
+            <span key={i} className={styles.socialLinkWrapper}>
+              <SocialLinkPopover {...part.props} />
             </span>
           )
+        }
+        if (part.type === 'moleculestructure') {
+          return <MoleculeChip key={i} {...part.props} />
         }
         return (
           <ReactMarkdown

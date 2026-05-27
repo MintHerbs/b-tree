@@ -94,5 +94,21 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
     await supabase.from('drafts').delete().eq('user_id', userId)
   }, [userId])
 
-  return { clearDraft }
+  const saveDraftNow = useCallback(async () => {
+    localStorage.setItem(
+      'admin-draft',
+      JSON.stringify({ title, content, selectedPath })
+    )
+    if (!userId) return
+    await supabase.from('drafts').upsert({
+      user_id:    userId,
+      title,
+      content,
+      module_id:  selectedPath?.moduleId ?? null,
+      subfolder:  selectedPath?.subfolder ?? null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+  }, [userId, title, content, selectedPath])
+
+  return { clearDraft, saveDraftNow }
 }

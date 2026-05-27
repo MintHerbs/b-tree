@@ -132,7 +132,9 @@ export async function clearAllImageBlobs() {
 export function extractDraftKeys(markdown) {
   const keys = []
   const seen = new Set()
-  const regex = /draft:\/\/([A-Za-z0-9._-]+)/g
+  // `:` is allowed so draft-scoped keys (`${draftId}:img-N.ext`) are captured
+  // whole; the closing `)` of a markdown image still terminates the match.
+  const regex = /draft:\/\/([A-Za-z0-9._:-]+)/g
 
   let match
   while ((match = regex.exec(markdown)) !== null) {
@@ -173,13 +175,63 @@ export async function patchDraftUrls(markdown) {
   return { patched, cleanup }
 }
 
-export function nextImageKey(ext) {
-  const normalizedExt = String(ext || '').replace(/^\./, '')
-  const raw = localStorage.getItem('admin-draft-img-counter')
+// Allocate the next blob key for a draft, scoped as `${draftId}:img-N.ext`.
+// Each draft keeps its own counter in localStorage so numbering never collides
+// across drafts.
+//
+// Backward-compatibility shim: older callers invoke `nextImageKey(ext)` with a
+// single argument. In that case we fall back to the `'legacy'` draftId, so the
+// call keeps working (returning e.g. `legacy:img-1.png`) instead of treating an
+// extension as a draftId.
+export function nextImageKey(draftIdOrExt, ext) {
+  let draftId
+  let extension
+  if (ext === undefined) {
+    draftId = 'legacy'
+    extension = draftIdOrExt
+  } else {
+    draftId = draftIdOrExt
+    extension = ext
+  }
+
+  const normalizedExt = String(extension || '').replace(/^\./, '')
+  const counterKey = `admin-draft-img-counter-${draftId}`
+  const raw = localStorage.getItem(counterKey)
   const current = Number.parseInt(raw || '0', 10)
   const next = (Number.isFinite(current) ? current : 0) + 1
 
-  localStorage.setItem('admin-draft-img-counter', String(next))
-  return `img-${next}.${normalizedExt}`
+  localStorage.setItem(counterKey, String(next))
+  return `${draftId}:img-${next}.${normalizedExt}`
+}
+
+// All blob keys belonging to a specific draft.
+export async function getDraftImageKeys(draftId) {
+  const all = await getAllImageKeys()
+  return all.filter((key) => typeof key === 'string' && key.startsWith(`${draftId}:`))
+}
+
+// Delete every blob belonging to a specific draft (e.g. when the draft is
+// deleted or published).
+export async function clearDraftBlobs(draftId) {
+  const keys = await getDraftImageKeys(draftId)
+  for (const key of keys) {
+    await deleteImageBlob(key)
+  }
+}
+
+// Load every blob for a draft into a queue map keyed by blob key. Used when
+// switching to a draft so the editor's pending-image queue is repopulated.
+// Shape mirrors the in-memory queue: `{ [key]: { file: Blob, ext: string } }`.
+export async function restoreDraftBlobs(draftId) {
+  const keys = await getDraftImageKeys(draftId)
+  const result = {}
+  for (const key of keys) {
+    const blob = await getImageBlob(key)
+    if (blob) {
+      const ext = key.split('.').pop()
+      result[key] = { file: blob, ext }
+    }
+  }
+  return result
 }
 

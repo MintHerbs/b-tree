@@ -23,6 +23,7 @@ import { useEditorModules } from '../../hooks/useEditorModules'
 import { useEditorFormatting } from '../../hooks/useEditorFormatting'
 import { useEditorFiles } from '../../hooks/useEditorFiles'
 import { useCourses } from '../../hooks/useCourses'
+import { useDrafts } from '../../hooks/useDrafts'
 
 function AdminEditorContent() {
   const location = useLocation()
@@ -44,10 +45,15 @@ function AdminEditorContent() {
     if (profile.role === 'owner') { if (!selectedCourse) setSelectedCourse(courses[0]?.id ?? null) } else { setSelectedCourse(profile.course_id) }
   }, [profile, courses, selectedCourse])
   const { unusedIconOptions, visibleModules, allowedDirectories, isOwner, handleNewModule, handleDeleteModule, handleRenameModule, handleNewSubfolder, handleRenameSubfolder, handleDeleteSubfolder, handleMoveFile, handleDeleteSelectedModule } = useEditorModules({ showToast, setModules, setSelectedPath, modules, profile, selectedCourse, selectedPath })
-  const { imageQueueRef, imageCountRef, handleFileInputChange, getRootProps, getInputProps, isDragActive, renderInlineImages, hideImageWidget } = useEditorImages({ selectedPath, showToast, editorRef, fileInputRef, setContent })
-  const { handleSave } = useEditorSave({
+  const {
+    drafts, activeDraftId, saveStatus,
+    createDraft, switchDraft, deleteDraft, renameDraft,
+    flushSave, clearActiveDraft,
+  } = useDrafts({ userId: user?.id, selectedCourse, title, setTitle, content, setContent, selectedPath, setSelectedPath, editorRef })
+  const { imageQueueRef, imageCountRef, handleFileInputChange, getRootProps, getInputProps, isDragActive, renderInlineImages, hideImageWidget } = useEditorImages({ selectedPath, showToast, editorRef, fileInputRef, setContent, activeDraftId })
+  const { handleSave, saveDraftNow } = useEditorSave({
     userId: user?.id, title, content, selectedPath, selectedCourse, showToast, setSaving, setUnsaved, setJustPublished, setTitle, setContent, setSelectedPath,
-    imageQueueRef, imageCountRef,
+    imageQueueRef, imageCountRef, flushSave, clearActiveDraft,
   })
   const { handleBeforeMount, handleEditorMount, handleFormatAction, handleStyleChange, handleInsertFormula } = useEditorFormatting({ editorRef, setCurrentStyle, renderInlineImages, hideImageWidget })
   const { handleLoadFile } = useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath })
@@ -66,6 +72,20 @@ function AdminEditorContent() {
     editor.focus()
   }
 
+  function handleInsertSocialLink(tagString) {
+    if (!editorRef.current) return
+    const editor = editorRef.current
+    const position = editor.getPosition()
+    const range = {
+      startLineNumber: position.lineNumber,
+      startColumn: position.column,
+      endLineNumber: position.lineNumber,
+      endColumn: position.column,
+    }
+    editor.executeEdits('', [{ range, text: tagString }])
+    editor.focus()
+  }
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       const isModifierPressed = event.metaKey || event.ctrlKey
@@ -75,7 +95,7 @@ function AdminEditorContent() {
 
       if (key === 's') {
         event.preventDefault()
-        handleSave()
+        saveDraftNow()
       } else if (key === 'b') {
         event.preventDefault()
         handleFormatAction('bold')
@@ -93,14 +113,14 @@ function AdminEditorContent() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [handleSave, handleFormatAction, openPreview])
+  }, [saveDraftNow, handleFormatAction, openPreview])
   if (loading) return <div className={styles.loading}><div className={styles.loadingSpinner}>Loading...</div></div>
   if (isTooNarrow) return <div className={styles.responsiveGuard}><Monitor size={32} weight="regular" /><p>Admin panel requires a larger screen.</p></div>
 
   return (
     <div className={styles.adminEditor}>
       {/* Fixed overlays */}
-      <DirectoryDrawer open={directoryOpen} onClose={closeDirectory} modules={visibleModules} allowedDirectories={allowedDirectories} selectedPath={selectedPath} onSelectPath={setSelectedPath} isOwner={isOwner} onNewSubfolder={handleNewSubfolder} onRenameSubfolder={handleRenameSubfolder} onDeleteSubfolder={handleDeleteSubfolder} onNewModule={handleNewModule} onDeleteModule={handleDeleteModule} onRenameModule={handleRenameModule} onLoadFile={handleLoadFile} currentEditorState={currentEditorState} onClearEditor={clearEditor} onRestoreEditor={restoreEditor} onMoveFile={handleMoveFile} isLoading={modulesLoading} iconOptions={unusedIconOptions} />
+      <DirectoryDrawer open={directoryOpen} onClose={closeDirectory} modules={visibleModules} allowedDirectories={allowedDirectories} selectedPath={selectedPath} onSelectPath={setSelectedPath} isOwner={isOwner} onNewSubfolder={handleNewSubfolder} onRenameSubfolder={handleRenameSubfolder} onDeleteSubfolder={handleDeleteSubfolder} onNewModule={handleNewModule} onDeleteModule={handleDeleteModule} onRenameModule={handleRenameModule} onLoadFile={handleLoadFile} currentEditorState={currentEditorState} onClearEditor={clearEditor} onRestoreEditor={restoreEditor} onMoveFile={handleMoveFile} isLoading={modulesLoading} iconOptions={unusedIconOptions} drafts={drafts} activeDraftId={activeDraftId} onSwitchDraft={switchDraft} onCreateDraft={createDraft} onDeleteDraft={deleteDraft} onRenameDraft={renameDraft} />
 
       <PreviewModal open={previewOpen} onClose={closePreview} title={title} content={content} />
 
@@ -113,10 +133,10 @@ function AdminEditorContent() {
       <ChangePasswordModal open={changePasswordOpen} onClose={closeChangePassword} />
       <ChemModal open={chemOpen} onClose={() => setChemOpen(false)} onInsert={handleChemInsert} />
       <FormulaModal open={formulaModalOpen} onClose={closeFormulaModal} onInsert={handleInsertFormula} />
-      <SocialLinkModal open={socialLinkModalOpen} onClose={closeSocialLinkModal} onInsert={handleInsertFormula} />
+      <SocialLinkModal open={socialLinkModalOpen} onClose={closeSocialLinkModal} onInsert={handleInsertSocialLink} />
 
       {/* Navbar Row 1 + Row 2 */}
-      <EditorNavbar title={title} onTitleChange={setTitle} unsaved={unsaved} justPublished={justPublished} onToggleDirectory={toggleDirectory} directoryOpen={directoryOpen} onPreview={openPreview} onSave={handleSave} saving={saving} onToggleUsers={toggleUsers} onToggleCleanup={toggleCleanup} cleanupOpen={cleanupOpen} onToggleCourseManagement={toggleCourseManagement} courseManagementOpen={courseManagementOpen} isOwner={isOwner} username={profile?.username} onSignOut={handleSignOut} onChangePassword={openChangePassword} editorRef={editorRef} onFormatAction={handleFormatAction} onInsertImage={clickFileInput} onInsertFormula={openFormulaModal} onChemClick={() => setChemOpen(true)} onInsertSocialLink={openSocialLinkModal} currentStyle={currentStyle} onStyleChange={handleStyleChange} onNewModule={handleNewModule} iconOptions={unusedIconOptions} onDeleteModule={handleDeleteSelectedModule} selectedCourse={selectedCourse} onCourseChange={setSelectedCourse} courses={courses} />
+      <EditorNavbar title={title} onTitleChange={setTitle} unsaved={unsaved} justPublished={justPublished} saveStatus={saveStatus} onToggleDirectory={toggleDirectory} directoryOpen={directoryOpen} onPreview={openPreview} onSave={handleSave} saving={saving} onToggleUsers={toggleUsers} onToggleCleanup={toggleCleanup} cleanupOpen={cleanupOpen} onToggleCourseManagement={toggleCourseManagement} courseManagementOpen={courseManagementOpen} isOwner={isOwner} username={profile?.username} onSignOut={handleSignOut} onChangePassword={openChangePassword} editorRef={editorRef} onFormatAction={handleFormatAction} onInsertImage={clickFileInput} onInsertFormula={openFormulaModal} onChemClick={() => setChemOpen(true)} onInsertSocialLink={openSocialLinkModal} currentStyle={currentStyle} onStyleChange={handleStyleChange} onNewModule={handleNewModule} iconOptions={unusedIconOptions} onDeleteModule={handleDeleteSelectedModule} selectedCourse={selectedCourse} onCourseChange={setSelectedCourse} courses={courses} />
 
       {/* Canvas */}
       <div className={styles.canvas} {...getRootProps()}>

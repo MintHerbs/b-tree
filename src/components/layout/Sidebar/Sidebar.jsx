@@ -55,7 +55,7 @@ function Sidebar({ courseId = 'computer-science', activeChild, onChildSelect, is
     setLoading(true)
     import(`../../../content/notes/${courseId}/modules.js`)
       .then(mod => {
-        setModules(mod.modules ?? mod.MODULES ?? [])
+        setModules(mod.MODULES ?? mod.modules ?? [])
         setLoading(false)
       })
       .catch(() => {

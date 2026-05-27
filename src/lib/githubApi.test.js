@@ -59,6 +59,67 @@ describe('listDirectory', () => {
   })
 })
 
+describe('listDirectory — gitkeep filtering', () => {
+  it('filters out entries where name === \'.gitkeep\'', async () => {
+    const { listDirectory } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({
+        json: async () => ([
+          { name: '.gitkeep', type: 'file' },
+          { name: 'a.md', type: 'file' },
+        ])
+      })
+    )
+
+    const result = await listDirectory('some/path')
+    expect(result.some(f => f.name === '.gitkeep')).toBe(false)
+  })
+
+  it('filters out entries where type !== \'file\'', async () => {
+    const { listDirectory } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({
+        json: async () => ([
+          { name: 'subdir', type: 'dir' },
+          { name: 'a.md', type: 'file' },
+        ])
+      })
+    )
+
+    const result = await listDirectory('some/path')
+    expect(result.every(f => f.type === 'file')).toBe(true)
+  })
+
+  it('returns empty array when GitHub responds with 404', async () => {
+    const { listDirectory } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(mockResponse({ status: 404, ok: false }))
+
+    await expect(listDirectory('some/path')).resolves.toEqual([])
+  })
+
+  it('never returns an entry with a data: download_url', async () => {
+    const { listDirectory } = await loadGithubApi()
+
+    // GitHub serves tiny files like .gitkeep with a data: download_url
+    // (e.g. data:text/plain;base64,Cg==). Such an entry must never survive
+    // the filter, because fetch() on a data: URL throws a CORS error.
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({
+        json: async () => ([
+          { name: '.gitkeep', type: 'file', download_url: 'data:text/plain;base64,Cg==' },
+          { name: 'a.md', type: 'file', download_url: 'https://raw.githubusercontent.com/acme/repo/main/a.md' },
+        ])
+      })
+    )
+
+    const result = await listDirectory('some/path')
+    expect(result.every(f => !String(f.download_url ?? '').startsWith('data:'))).toBe(true)
+  })
+})
+
 describe('commitFileWithRetry', () => {
   it('retries on 409 and succeeds on second attempt', async () => {
     vi.useFakeTimers()

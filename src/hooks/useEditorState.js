@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MODULES } from '../components/layout/Sidebar/modules'
+import { loadCourseModules } from '../lib/loadCourseModules'
 import { supabase } from '../lib/supabaseClient'
 
 export function useEditorState({ loading, profile, locationSearch } = {}) {
@@ -18,7 +18,7 @@ export function useEditorState({ loading, profile, locationSearch } = {}) {
   const [cleanupOpen, setCleanupOpen] = useState(false)
   const [courseManagementOpen, setCourseManagementOpen] = useState(false)
   const [selectedPath, setSelectedPath] = useState(null) // { moduleId, subfolder }
-  const [modules, setModules] = useState(MODULES)
+  const [modules, setModules] = useState([])
   const [modulesLoading, setModulesLoading] = useState(true)
   const [currentStyle, setCurrentStyle] = useState('body')
   const [isTooNarrow, setIsTooNarrow] = useState(() => (
@@ -45,20 +45,31 @@ export function useEditorState({ loading, profile, locationSearch } = {}) {
     }
   }, [])
 
+  // Load the selected course's modules.js dynamically (mirroring Sidebar.jsx),
+  // re-running whenever the selected course changes. Replaces the old static
+  // import that was hardwired to a single course and never reflected the
+  // course the admin was actually editing.
   useEffect(() => {
     if (loading) return
 
-    setModulesLoading(true)
-    setModules(MODULES)
+    if (!selectedCourse) {
+      setModules([])
+      return
+    }
 
-    const loadingTimer = window.setTimeout(() => {
+    let cancelled = false
+    setModulesLoading(true)
+
+    loadCourseModules(selectedCourse).then(loaded => {
+      if (cancelled) return
+      setModules(loaded)
       setModulesLoading(false)
-    }, 250)
+    })
 
     return () => {
-      window.clearTimeout(loadingTimer)
+      cancelled = true
     }
-  }, [loading])
+  }, [loading, selectedCourse])
 
   useEffect(() => {
     if (!loading && profile?.role === 'owner') {

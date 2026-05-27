@@ -61,11 +61,18 @@ export function useCourses({ isOwner, userId }) {
       `feat: init ${id} image folder`
     )
 
-    // Create initial modules.js for the course
-    const initialModules = `export const modules = [
+    // Create initial modules.js for the course (canonical `MODULES` export).
+    // Includes a phosphor-icons import block so adding a subject with an icon
+    // can extend it; the default module references FileCode to keep it valid.
+    const initialModules = `import {
+  FileCode,
+} from '@phosphor-icons/react'
+
+export const MODULES = [
   {
     id: 'notes',
     label: 'Notes',
+    Icon: FileCode,
     subfolders: ['notes'],
   },
 ]

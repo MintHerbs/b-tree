@@ -53,6 +53,24 @@ describe('createCourse', () => {
     await expect(result.current.createCourse({ displayName: 'X' })).rejects.toThrow('Owners only')
   })
 
+  // Casing fix: the initial modules.js must use the canonical `MODULES` export
+  // so the dynamic loader (and addSubfolderToModulesSource) can read it.
+  it('writes the initial modules.js with the canonical MODULES export', async () => {
+    const { result } = renderHook(() => useCourses({ isOwner: true, userId: 'u1' }))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await result.current.createCourse({ displayName: 'Organic Chemistry' })
+    })
+
+    const modulesCall = commitFile.mock.calls.find(
+      ([path]) => path === 'src/content/notes/organic-chemistry/modules.js'
+    )
+    expect(modulesCall).toBeTruthy()
+    expect(modulesCall[1]).toContain('export const MODULES')
+    expect(modulesCall[1]).not.toContain('export const modules')
+  })
+
   it('courses state updates immediately after createCourse succeeds', async () => {
     const { result } = renderHook(() => useCourses({ isOwner: true, userId: 'u1' }))
     await waitFor(() => expect(result.current.loading).toBe(false))

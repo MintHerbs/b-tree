@@ -1,0 +1,111 @@
+.contentRoot {
+  /* Above admin modals/dialogs (preview dialog is z-index 9999) so the
+     popover is never hidden behind them. */
+  z-index: 10001;
+}
+
+/* Dark card matching the smoothui demo */
+.card {
+  position: relative;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px;
+  color: #ffffff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Title row: platform icon + title text */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.titleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+}
+
+.externalIcon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+/* Body text */
+.description {
+  margin-top: 12px;
+  max-width: 280px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+/* Bottom row holding meta badge + action button */
+.bottomRow {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Meta badge: pill with small clock icon */
+.metaBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.metaIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Action button: white pill, black text, play icon */
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.actionButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.actionIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Popover tail matching the card background */
+.arrow {
+  fill: #000000;
+}

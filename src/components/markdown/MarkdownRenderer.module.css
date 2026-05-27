@@ -349,32 +349,61 @@
   color: #E8E0D5 !important;
 }
 
-/* RichPopover inline chip trigger */
-.richPopoverWrapper {
+/* SocialLink inline trigger — 36×36 rounded square, platform icon only */
+.socialLinkWrapper {
   display: inline-flex;
   align-items: center;
   margin: 0 2px;
   vertical-align: middle;
 }
 
-.richPopoverTrigger {
+.socialTrigger {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 10px 2px 7px;
-  border-radius: 999px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.8rem;
-  font-weight: 500;
   cursor: pointer;
   transition: background 150ms ease, border-color 150ms ease;
-  white-space: nowrap;
-  line-height: 1.6;
 }
 
-.richPopoverTrigger:hover {
+.socialTrigger:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.28);
+}
+
+.socialTriggerIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.moleculeWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 1.25rem 0;
+}
+
+.moleculeImage {
+  display: block;
+  max-width: 300px;
+  width: 100%;
+  height: auto;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.moleculeLabel {
+  font-size: 0.75rem;
+  color: rgba(232, 224, 213, 0.7);
+  line-height: 1.4;
+}
+
+.moleculeError {
+  color: #f87171;
+  font-size: 0.875rem;
 }

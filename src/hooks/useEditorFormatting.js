@@ -11,6 +11,240 @@ export function clearLatexWidgets(editor) {
   // View zones are removed inside the changeViewZones callback in renderInlineLaTeX
 }
 
+// CSS class per platform for the inline SocialLink token shown in Monaco.
+const SOCIAL_TOKEN_CLASS = {
+  youtube: 'monaco-social-token-youtube',
+  instagram: 'monaco-social-token-instagram',
+  linkedin: 'monaco-social-token-linkedin',
+}
+
+export function clearInlineWidgets(editor) {
+  if (!editor) return
+
+  if (editor._inlineWidgets) {
+    editor._inlineWidgets.forEach(w => editor.removeContentWidget(w))
+  }
+  editor._inlineWidgets = []
+
+  editor._inlineWidgetDecorations = editor.deltaDecorations(
+    editor._inlineWidgetDecorations || [],
+    []
+  )
+
+  if (editor._inlineViewZoneIds) {
+    editor.changeViewZones(accessor => {
+      editor._inlineViewZoneIds.forEach(id => accessor.removeZone(id))
+    })
+  }
+  editor._inlineViewZoneIds = []
+}
+
+export function renderInlineWidgets(editor, monaco) {
+  if (!editor || !monaco) return
+
+  // Re-entrancy guard. Applying the injected-text decorations below makes
+  // Monaco synchronously emit an onDidChangeCursorPosition event (the injected
+  // token shifts the cursor's visual column). That handler calls
+  // renderInlineWidgets again, and invoking deltaDecorations while the outer
+  // call is still committing throws:
+  //   "Invoking deltaDecorations recursively could lead to leaking decorations."
+  // Bail out of the nested call — same pattern as _isRenderingLaTeX.
+  if (editor._isRenderingWidgets) return
+
+  const model = editor.getModel()
+  if (!model) return
+
+  editor._isRenderingWidgets = true
+  try {
+    renderInlineWidgetsInner(editor, monaco, model)
+  } finally {
+    editor._isRenderingWidgets = false
+  }
+}
+
+function renderInlineWidgetsInner(editor, monaco, model) {
+  const text = model.getValue()
+
+  // ── 1. Find SocialLink tags ───────────────────────────────────────────
+  const socialLinkRegex = /<SocialLink([\s\S]*?)\/>/g
+  const socialLinks = []
+  let match
+
+  while ((match = socialLinkRegex.exec(text)) !== null) {
+    const props = parseInlineProps(match[1])
+    socialLinks.push({
+      raw: match[0],
+      startOffset: match.index,
+      endOffset: match.index + match[0].length,
+      props,
+    })
+  }
+
+  // ── 2. Find MoleculeStructure tags ────────────────────────────────────
+  const moleculeRegex = /<MoleculeStructure([\s\S]*?)\/>/g
+  const molecules = []
+
+  while ((match = moleculeRegex.exec(text)) !== null) {
+    const props = parseInlineProps(match[1])
+    molecules.push({
+      raw: match[0],
+      startOffset: match.index,
+      endOffset: match.index + match[0].length,
+      props,
+    })
+  }
+
+  // ── 3. Clear previously rendered widgets up front. Doing this before the
+  //        early return also clears decorations when the last tag is deleted.
+  clearInlineWidgets(editor)
+
+  if (socialLinks.length === 0 && molecules.length === 0) return
+
+  // ── 4. Track cursor position (don't hide if user is editing) ──────────
+  const cursorOffset = model.getOffsetAt(editor.getPosition())
+
+  // ── 5. Render SocialLink chips ────────────────────────────────────────
+  const decorations = []
+
+  editor.changeViewZones(accessor => {
+    socialLinks.forEach(item => {
+      const startPos = model.getPositionAt(item.startOffset)
+      const endPos = model.getPositionAt(item.endOffset)
+
+      // Skip if cursor is inside the tag (user is editing the raw markup)
+      if (cursorOffset >= item.startOffset && cursorOffset <= item.endOffset) return
+
+      const platform = (item.props.platform ?? 'youtube').toLowerCase()
+      const title = item.props.title ?? ''
+      const tokenClass = SOCIAL_TOKEN_CLASS[platform] ?? SOCIAL_TOKEN_CLASS.youtube
+
+      // Hide the raw <SocialLink .../> markup and inject a compact inline
+      // token in its place, e.g. "[youtube] My title". Clicking it places the
+      // cursor inside the tag, which reveals the raw markup again for editing.
+      const options = {
+        inlineClassName: 'monaco-inline-widget-hidden',
+        before: {
+          content: `[${platform}]`,
+          inlineClassName: `monaco-social-token ${tokenClass}`,
+        },
+        stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+      }
+      if (title) {
+        options.after = {
+          content: ` ${title}`,
+          inlineClassName: 'monaco-social-token-title',
+        }
+      }
+
+      decorations.push({
+        range: new monaco.Range(
+          startPos.lineNumber, startPos.column,
+          endPos.lineNumber, endPos.column
+        ),
+        options,
+      })
+    })
+
+    // ── 6. Render MoleculeStructure images ──────────────────────────────
+    molecules.forEach(item => {
+      const startPos = model.getPositionAt(item.startOffset)
+      const endPos = model.getPositionAt(item.endOffset)
+
+      if (cursorOffset >= item.startOffset && cursorOffset <= item.endOffset) return
+
+      const alt = item.props.alt ?? 'molecule'
+      const data = item.props.data ?? ''
+      const dataUrl = `data:image/svg+xml;base64,${data}`
+
+      const domNode = document.createElement('div')
+      domNode.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 8px 0;
+        cursor: pointer;
+      `
+
+      const img = document.createElement('img')
+      img.src = dataUrl
+      img.alt = alt
+      img.style.cssText = `
+        max-width: 280px;
+        max-height: 200px;
+        background: #ffffff;
+        border-radius: 6px;
+        padding: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+        object-fit: contain;
+      `
+      img.onerror = () => {
+        img.style.display = 'none'
+        const fallback = document.createElement('span')
+        fallback.textContent = `[molecule: ${alt}]`
+        fallback.style.cssText = 'color: #ef4444; font-size: 12px;'
+        domNode.appendChild(fallback)
+      }
+
+      const label = document.createElement('span')
+      label.textContent = alt
+      label.style.cssText = `
+        font-size: 11px;
+        color: rgba(255,255,255,0.5);
+        font-family: inherit;
+      `
+
+      domNode.appendChild(img)
+      domNode.appendChild(label)
+
+      domNode.addEventListener('click', () => {
+        editor.setPosition({
+          lineNumber: startPos.lineNumber,
+          column: startPos.column,
+        })
+        editor.focus()
+      })
+
+      decorations.push({
+        range: new monaco.Range(
+          startPos.lineNumber, startPos.column,
+          endPos.lineNumber, endPos.column
+        ),
+        options: {
+          inlineClassName: 'monaco-inline-widget-hidden',
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+        },
+      })
+
+      const zoneId = accessor.addZone({
+        afterLineNumber: endPos.lineNumber,
+        heightInPx: 230,
+        domNode,
+        suppressMouseDown: false,
+      })
+      editor._inlineViewZoneIds.push(zoneId)
+    })
+  })
+
+  editor._inlineWidgetDecorations = editor.deltaDecorations(
+    editor._inlineWidgetDecorations || [],
+    decorations
+  )
+}
+
+// ── Prop parser ───────────────────────────────────────────────────────────
+// Parses a string of JSX-like props into a plain object
+// Handles: platform="youtube"  title="My video"  data="base64..."
+function parseInlineProps(propsString) {
+  const result = {}
+  const regex = /(\w+)="([^"]*)"/g
+  let m
+  while ((m = regex.exec(propsString)) !== null) {
+    result[m[1]] = m[2].replace(/&quot;/g, '"')
+  }
+  return result
+}
+
 // Render LaTeX inline / block preview dynamically in Monaco
 export function renderInlineLaTeX(editor, monaco) {
   if (!editor || !monaco) return
@@ -209,6 +443,25 @@ export function useEditorFormatting({ editorRef, setCurrentStyle, renderInlineIm
         'editor.lineHighlightBackground': 'transparent',
       }
     })
+
+    if (!document.querySelector('style[data-monaco-inline-widget-hidden="true"]')) {
+      // Inject CSS to hide raw widget text and style the inline SocialLink token
+      const styleEl = document.createElement('style')
+      styleEl.setAttribute('data-monaco-inline-widget-hidden', 'true')
+      styleEl.textContent = `
+        .monaco-inline-widget-hidden { display: none !important; }
+        .monaco-social-token {
+          font-weight: 700;
+          border-radius: 5px;
+          padding: 0 5px;
+        }
+        .monaco-social-token-youtube { color: #ff4d4d; background: rgba(255, 77, 77, 0.12); }
+        .monaco-social-token-instagram { color: #ff5fa2; background: rgba(225, 48, 108, 0.16); }
+        .monaco-social-token-linkedin { color: #5aa9e6; background: rgba(0, 119, 181, 0.18); }
+        .monaco-social-token-title { color: rgba(255, 255, 255, 0.55); }
+      `
+      document.head.appendChild(styleEl)
+    }
   }
 
   const handleEditorMount = (editor, monaco) => {
@@ -217,14 +470,17 @@ export function useEditorFormatting({ editorRef, setCurrentStyle, renderInlineIm
     editor.onDidChangeCursorPosition(() => {
       detectCurrentStyle()
       renderInlineLaTeX(editor, monaco)
+      renderInlineWidgets(editor, monaco)
     })
 
     renderInlineImages(editor, monaco)
     renderInlineLaTeX(editor, monaco)
+    renderInlineWidgets(editor, monaco)
 
     editor.onDidChangeModelContent(() => {
       renderInlineImages(editor, monaco)
       renderInlineLaTeX(editor, monaco)
+      renderInlineWidgets(editor, monaco)
       hideImageWidget(editor)
     })
 

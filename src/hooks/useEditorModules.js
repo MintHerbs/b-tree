@@ -12,8 +12,6 @@ function titleToFilename(title) {
     .replace(/(^-|-$)/g, '')
 }
 
-const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
-
 function moduleToSource(module) {
   const lines = [
     '  {',
@@ -47,16 +45,20 @@ function ensureIconImport(modulesJs, iconName) {
     return modulesJs
   }
 
-  const importStart = modulesJs.indexOf('import {\n')
-  const importEnd = modulesJs.indexOf("} from '@phosphor-icons/react'", importStart)
-
-  if (importStart === -1 || importEnd === -1) {
-    throw new Error('Could not update icon imports in modules.js')
-  }
-
   const importLine = iconName === 'FunctionIcon'
     ? '  Function as FunctionIcon,'
     : `  ${iconName},`
+
+  const importStart = modulesJs.indexOf('import {\n')
+  const importEnd = importStart === -1
+    ? -1
+    : modulesJs.indexOf("} from '@phosphor-icons/react'", importStart)
+
+  // Freshly-scaffolded course modules.js files have no phosphor-icons import
+  // block yet. Prepend one so the icon can be referenced instead of failing.
+  if (importStart === -1 || importEnd === -1) {
+    return `import {\n${importLine}\n} from '@phosphor-icons/react'\n\n${modulesJs}`
+  }
 
   return `${modulesJs.slice(0, importEnd)}${importLine}\n${modulesJs.slice(importEnd)}`
 }
@@ -79,39 +81,138 @@ function insertModuleSource(modulesJs, module) {
 }
 
 function removeModuleSource(modulesJs, moduleId) {
-  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}',`, 'm')
-  const startMatch = modulesJs.match(startPattern)
+  const escapedModuleId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // Match the module object's own `id` — anchored at the start of the object so
+  // a nested tool/note `id:` can't trigger a false match. `\s*` tolerates both
+  // single-line (`{ id: 'web' }`) and multi-line (`{\n  id: 'web',`) formats.
+  const idAtStart = new RegExp(`^\\{\\s*id:\\s*['"\`]${escapedModuleId}['"\`]`)
 
-  if (!startMatch || startMatch.index == null) {
-    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
+  let modulesExportIndex = modulesJs.indexOf('export const MODULES')
+  if (modulesExportIndex === -1) modulesExportIndex = modulesJs.indexOf('export const modules')
+  if (modulesExportIndex === -1) {
+    throw new Error('Could not find modules array in modules.js')
   }
 
-  const start = startMatch.index
-  let index = start + 1
-  let depth = 0
+  const arrayStart = modulesJs.indexOf('[', modulesExportIndex)
+  if (arrayStart === -1) {
+    throw new Error('Could not find modules array start in modules.js')
+  }
 
-  for (; index < modulesJs.length; index++) {
-    const char = modulesJs[index]
-    if (char === '{') depth += 1
-    if (char === '}') {
-      depth -= 1
-      if (depth === 0) {
-        let end = index + 1
-        if (modulesJs[end] === ',') end += 1
-        if (modulesJs[end] === '\r') end += 1
-        if (modulesJs[end] === '\n') end += 1
-        return `${modulesJs.slice(0, start)}\n${modulesJs.slice(end)}`
+  let bracketDepth = 1
+  let braceDepth = 0
+  let objStart = -1
+
+  for (let i = arrayStart + 1; i < modulesJs.length; i++) {
+    const char = modulesJs[i]
+
+    if (char === '[') bracketDepth += 1
+    else if (char === ']') {
+      bracketDepth -= 1
+      if (bracketDepth === 0) break
+    }
+
+    if (char === '{') {
+      if (braceDepth === 0) objStart = i
+      braceDepth += 1
+    } else if (char === '}') {
+      braceDepth -= 1
+      if (braceDepth === 0 && objStart !== -1) {
+        const objEnd = i + 1
+        const objSource = modulesJs.slice(objStart, objEnd)
+
+        if (idAtStart.test(objSource)) {
+          // Strip the object's leading indentation + newline and a trailing
+          // comma so no blank line or dangling comma is left behind.
+          let start = objStart
+          while (start > 0 && (modulesJs[start - 1] === ' ' || modulesJs[start - 1] === '\t')) {
+            start -= 1
+          }
+          if (modulesJs[start - 1] === '\n') start -= 1
+          if (modulesJs[start - 1] === '\r') start -= 1
+
+          let end = objEnd
+          if (modulesJs[end] === ',') end += 1
+
+          return `${modulesJs.slice(0, start)}${modulesJs.slice(end)}`
+        }
+
+        objStart = -1
       }
     }
   }
 
-  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
+  throw new Error(`Could not find subject "${moduleId}" in modules.js`)
+}
+
+function removeSubfolderFromModulesSource(modulesJs, moduleId, subfolderName) {
+  const escapedModuleId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const idPattern = new RegExp(`\\bid:\\s*['"\`]${escapedModuleId}['"\`]`)
+
+  let modulesExportIndex = modulesJs.indexOf('export const MODULES')
+  if (modulesExportIndex === -1) modulesExportIndex = modulesJs.indexOf('export const modules')
+  if (modulesExportIndex === -1) return modulesJs
+  const arrayStart = modulesJs.indexOf('[', modulesExportIndex)
+  if (arrayStart === -1) return modulesJs
+
+  let bracketDepth = 1
+  let braceDepth = 0
+  let objStart = -1
+
+  for (let i = arrayStart + 1; i < modulesJs.length; i++) {
+    const char = modulesJs[i]
+
+    if (char === '[') bracketDepth += 1
+    else if (char === ']') {
+      bracketDepth -= 1
+      if (bracketDepth === 0) break
+    }
+
+    if (char === '{') {
+      if (braceDepth === 0) objStart = i
+      braceDepth += 1
+    } else if (char === '}') {
+      braceDepth -= 1
+      if (braceDepth === 0 && objStart !== -1) {
+        const objEnd = i + 1
+        const objSource = modulesJs.slice(objStart, objEnd)
+
+        if (idPattern.test(objSource)) {
+          const subfoldersRegex = /(\n\s*subfolders\s*:\s*)\[((?:.|\n)*?)\]/m
+          const match = objSource.match(subfoldersRegex)
+          // Only the explicit `subfolders` array is rewritten here. A subfolder
+          // that exists solely via note path-prefixes is handled in local state;
+          // its note entries live in `notes` and are out of scope for removal.
+          if (!match) return modulesJs
+
+          const values = match[2]
+            .split(',')
+            .map(v => v.trim())
+            .filter(Boolean)
+            .map(v => v.replace(/^['"`]/, '').replace(/['"`]$/, ''))
+            .filter(v => v !== subfolderName)
+
+          const rendered = values.map(v => `'${v}'`).join(', ')
+          const updatedObjSource = objSource.replace(subfoldersRegex, `$1[${rendered}]`)
+          return `${modulesJs.slice(0, objStart)}${updatedObjSource}${modulesJs.slice(objEnd)}`
+        }
+
+        objStart = -1
+      }
+    }
+  }
+
+  return modulesJs
 }
 
 function addSubfolderToModulesSource(modulesJs, moduleId, subfolderName) {
   const escapedModuleId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const idPattern = new RegExp(`\\bid:\\s*'${escapedModuleId}'`)
-  const modulesExportIndex = modulesJs.indexOf('export const modules')
+  // Canonical export is `MODULES` (uppercase); also accept a legacy lowercase
+  // `modules` export so subfolders can still be added to older course files.
+  // Canonical export is `MODULES` (uppercase); also accept a legacy lowercase
+  // `modules` export so subfolders can still be added to older course files.
+  let modulesExportIndex = modulesJs.indexOf('export const MODULES')
+  if (modulesExportIndex === -1) modulesExportIndex = modulesJs.indexOf('export const modules')
   if (modulesExportIndex === -1) throw new Error('Could not find modules array in modules.js')
   const arrayStart = modulesJs.indexOf('[', modulesExportIndex)
   if (arrayStart === -1) throw new Error('Could not find modules array start in modules.js')
@@ -188,6 +289,9 @@ function getUnusedIconOptions(modules, selectedIconName = null) {
 }
 
 export function useEditorModules({ showToast, setModules, setSelectedPath, modules, profile, selectedCourse, selectedPath }) {
+  // modules.js always lives at the course root — never include moduleId or subfolder segments
+  const courseModulesPath = `src/content/notes/${selectedCourse}/modules.js`
+
   const unusedIconOptions = getUnusedIconOptions(modules)
 
   const isOwner = profile?.role === 'owner'
@@ -211,7 +315,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, modul
     showToast(`Creating subject ${moduleId}...`, 'success')
 
     try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const currentModulesJs = await getFileContent(courseModulesPath)
       const label = name.trim()
       const iconOption = getIconOptionByName(iconName)
       const newModule = {
@@ -238,7 +342,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, modul
         `feat: add tools folder to ${moduleId}`
       )
       await commitFileWithRetry(
-        MODULES_JS_PATH,
+        courseModulesPath,
         updatedModulesJs,
         `feat: add ${moduleId} subject`
       )
@@ -250,30 +354,59 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, modul
     }
   }
 
+  const deleteFileQuietly = async (path, message) => {
+    try {
+      await deleteFile(path, message)
+    } catch (error) {
+      // A missing placeholder (404) is fine — the folder may already be gone.
+      console.warn(`[deleteModule] could not delete ${path}: ${error.message}`)
+    }
+  }
+
   const handleDeleteModule = async (moduleId) => {
+    // Update the sidebar immediately so the deletion is reflected in real time,
+    // independent of the GitHub round-trip below.
+    refreshModuleState(setModules, prev => prev.filter(module => module.id !== moduleId))
+    setSelectedPath(prev => prev?.moduleId === moduleId ? null : prev)
     showToast(`Removing subject ${moduleId}...`, 'success')
 
     try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      const updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
+      // getFileContent throws on any non-OK response; a 404 just means there is
+      // no registry file to rewrite — fall through to folder cleanup.
+      let currentModulesJs = null
+      try {
+        currentModulesJs = await getFileContent(courseModulesPath)
+      } catch (error) {
+        if (!/\(404\)/.test(error.message)) throw error
+      }
 
-      await commitFileWithRetry(
-        MODULES_JS_PATH,
-        updatedModulesJs,
-        `feat: remove ${moduleId} subject`
-      )
-      await deleteFile(
+      if (typeof currentModulesJs === 'string') {
+        let updatedModulesJs = currentModulesJs
+        try {
+          updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
+        } catch {
+          // Subject isn't in the registry (already removed) — skip the rewrite
+          // rather than failing the whole delete.
+        }
+        if (updatedModulesJs !== currentModulesJs) {
+          await commitFileWithRetry(
+            courseModulesPath,
+            updatedModulesJs,
+            `feat: remove ${moduleId} subject`
+          )
+        }
+      }
+
+      await deleteFileQuietly(
         `src/content/notes/${selectedCourse}/${moduleId}/notes/.gitkeep`,
         `chore: remove ${moduleId} notes placeholder`
       )
-      await deleteFile(
+      await deleteFileQuietly(
         `src/content/notes/${selectedCourse}/${moduleId}/tools/.gitkeep`,
         `chore: remove ${moduleId} tools placeholder`
       )
 
-      refreshModuleState(setModules, prev => prev.filter(module => module.id !== moduleId))
-      setSelectedPath(prev => prev?.moduleId === moduleId ? null : prev)
-      showToast(`Subject ${moduleId} removed from the filesystem`, 'success')
+      showToast(`Subject ${moduleId} removed`, 'success')
     } catch (error) {
       showToast(`Failed to remove subject: ${error.message}`, 'error')
     }
@@ -283,14 +416,14 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, modul
     showToast(`Renaming subject to ${newLabel}...`, 'success')
 
     try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const currentModulesJs = await getFileContent(courseModulesPath)
       const moduleRegex = new RegExp(
         `(\\{[^}]*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'[^}]*label:\\s*')([^']+)(')`
       )
       const updatedModulesJs = currentModulesJs.replace(moduleRegex, `$1${newLabel}$3`)
 
       await commitFileWithRetry(
-        MODULES_JS_PATH,
+        courseModulesPath,
         updatedModulesJs,
         `feat: rename ${moduleId} to ${newLabel}`
       )
@@ -312,11 +445,20 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, modul
         `feat: add ${subfolderName} to ${moduleId}`
       )
 
-      const courseModulesPath = `src/content/notes/${selectedCourse}/modules.js`
-      const currentModulesJs = await getFileContent(courseModulesPath)
+      // getFileContent throws on any non-OK response (githubApi.js). A 404 just
+      // means this course has no modules.js yet — fall through and create one.
+      // Re-throw anything else (auth, rate limit, server errors) so it surfaces.
+      let currentModulesJs = null
+      try {
+        currentModulesJs = await getFileContent(courseModulesPath)
+      } catch (error) {
+        if (!/\(404\)/.test(error.message)) throw error
+        currentModulesJs = null
+      }
+
       const updatedModulesJs = typeof currentModulesJs === 'string'
         ? addSubfolderToModulesSource(currentModulesJs, moduleId, subfolderName)
-        : `export const modules = [
+        : `export const MODULES = [
   {
     id: '${moduleId}',
     label: '${moduleId}',
@@ -352,9 +494,52 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, modul
   }
 
   const handleDeleteSubfolder = async (moduleId, subfolderName) => {
+    // Update the sidebar immediately: drop the explicit subfolder entry and any
+    // notes filed under it so the folder disappears in real time.
+    refreshModuleState(setModules, prev =>
+      prev.map(m => {
+        if (m.id !== moduleId) return m
+        const subfolders = Array.isArray(m.subfolders)
+          ? m.subfolders.filter(s => s !== subfolderName)
+          : m.subfolders
+        const notes = Array.isArray(m.notes)
+          ? m.notes.filter(note => {
+              const parts = String(note.filename).split('/')
+              const noteSubfolder = parts.length > 1 ? parts[0] : 'notes'
+              return noteSubfolder !== subfolderName
+            })
+          : m.notes
+        return { ...m, subfolders, notes }
+      })
+    )
+    setSelectedPath(prev =>
+      prev?.moduleId === moduleId && prev?.subfolder === subfolderName ? null : prev
+    )
     showToast(`Deleting subfolder ${subfolderName}...`, 'success')
-    // Implementation would update modules.js
-    showToast(`Subfolder deleted`, 'success')
+
+    try {
+      let currentModulesJs = null
+      try {
+        currentModulesJs = await getFileContent(courseModulesPath)
+      } catch (error) {
+        if (!/\(404\)/.test(error.message)) throw error
+      }
+
+      if (typeof currentModulesJs === 'string') {
+        const updatedModulesJs = removeSubfolderFromModulesSource(currentModulesJs, moduleId, subfolderName)
+        if (updatedModulesJs !== currentModulesJs) {
+          await commitFileWithRetry(
+            courseModulesPath,
+            updatedModulesJs,
+            `feat: remove ${subfolderName} folder from ${moduleId}`
+          )
+        }
+      }
+
+      showToast(`Subfolder ${subfolderName} deleted`, 'success')
+    } catch (error) {
+      showToast(`Failed to delete subfolder: ${error.message}`, 'error')
+    }
   }
 
   const handleMoveFile = async ({ fromModule, fromSubfolder, filename, toModule, toSubfolder }) => {

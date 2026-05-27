@@ -18,6 +18,7 @@ import {
   FolderContent,
   FileItem
 } from '../animate-ui/components/radix/files'
+import { deriveModuleSubfolders } from './directorySubfolders'
 import styles from './DirectoryDrawer.module.css'
 
 export default function DirectoryDrawer({
@@ -53,6 +54,7 @@ export default function DirectoryDrawer({
   const [newModuleIcon, setNewModuleIcon] = useState(iconOptions[0]?.name || '')
   const [dragOverPath, setDragOverPath] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [expandedFolders, setExpandedFolders] = useState({}) // Track which subfolders are expanded
   const [folderFiles, setFolderFiles] = useState({}) // Cache files for each folder
   const [loadingFiles, setLoadingFiles] = useState({}) // Track loading state per folder
@@ -260,6 +262,21 @@ export default function DirectoryDrawer({
     return selectedPath?.moduleId === moduleId && selectedPath?.subfolder === subfolder
   }
 
+  const closeDeleteConfirm = () => {
+    setDeleteConfirm(null)
+    setDeleteConfirmText('')
+  }
+
+  const confirmDelete = () => {
+    if (!deleteConfirm || deleteConfirmText !== 'DELETE') return
+    if (deleteConfirm.type === 'module') {
+      onDeleteModule(deleteConfirm.moduleId)
+    } else {
+      onDeleteSubfolder(deleteConfirm.moduleId, deleteConfirm.subfolder)
+    }
+    closeDeleteConfirm()
+  }
+
   return (
     <>
       {/* Backdrop */}
@@ -316,12 +333,7 @@ export default function DirectoryDrawer({
           ) : (
             <Files>
             {visibleModules.map(module => {
-              const subfolders = module.notes
-                ? [...new Set(module.notes.map(n => {
-                    const parts = n.filename.split('/')
-                    return parts.length > 1 ? parts[0] : 'notes'
-                  }))]
-                : ['notes', 'tools']
+              const subfolders = deriveModuleSubfolders(module)
 
               return (
                 <FolderItem key={module.id} value={module.id}>
@@ -633,38 +645,49 @@ export default function DirectoryDrawer({
 
       {/* Delete Confirmation Popover */}
       {deleteConfirm && (
-        <Popover.Root open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <Popover.Root open={!!deleteConfirm} onOpenChange={(open) => !open && closeDeleteConfirm()}>
           <Popover.Anchor className={styles.popoverAnchor} />
           <Popover.Portal>
             <Popover.Content className={styles.confirmPopover} sideOffset={5}>
               <div className={styles.confirmHeader}>
-                <Warning size={18} weight="bold" style={{ color: colors.warning }} />
+                <Warning size={18} weight="bold" style={{ color: colors.error }} />
                 <span className={styles.confirmTitle}>
                   {deleteConfirm.type === 'module' ? 'Delete subject?' : 'Delete folder?'}
                 </span>
               </div>
               <p className={styles.confirmMessage}>
                 {deleteConfirm.type === 'module'
-                  ? `Delete ${deleteConfirm.moduleId}? It will be removed from the app filesystem.`
-                  : `Delete this folder? Notes inside will be orphaned.`}
+                  ? `This permanently deletes the subject "${deleteConfirm.moduleId}" and everything inside it — all of its subfolders, notes, and images. This cannot be undone.`
+                  : `This permanently deletes the folder "${deleteConfirm.subfolder}" and every note and image inside it. This cannot be undone.`}
               </p>
+              <p className={styles.confirmInstruction}>
+                Type <strong>DELETE</strong> to confirm.
+              </p>
+              <input
+                type="text"
+                className={styles.confirmInput}
+                value={deleteConfirmText}
+                placeholder="DELETE"
+                autoFocus
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmDelete()
+                  if (e.key === 'Escape') closeDeleteConfirm()
+                }}
+              />
               <div className={styles.confirmActions}>
                 <button
                   className={styles.confirmCancel}
-                  onClick={() => setDeleteConfirm(null)}
+                  onClick={closeDeleteConfirm}
                 >
                   Cancel
                 </button>
                 <button
                   className={styles.confirmDelete}
-                  onClick={() => {
-                    if (deleteConfirm.type === 'module') {
-                      onDeleteModule(deleteConfirm.moduleId)
-                    } else {
-                      onDeleteSubfolder(deleteConfirm.moduleId, deleteConfirm.subfolder)
-                    }
-                    setDeleteConfirm(null)
-                  }}
+                  disabled={deleteConfirmText !== 'DELETE'}
+                  onClick={confirmDelete}
                 >
                   Delete
                 </button>

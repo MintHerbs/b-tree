@@ -89,7 +89,9 @@ export default function ChemModal({ open, onClose, onInsert }) {
     if (!previewDataUrl) return
     const input = structureInput.trim()
     if (!input) return
-    onInsert(`![${input}](${previewDataUrl})`)
+    const dataUrl = previewDataUrl
+    const base64 = dataUrl.replace('data:image/svg+xml;base64,', '')
+    onInsert(`<MoleculeStructure alt="${input.trim()}" data="${base64}" />`)
     handleClose()
   }
 

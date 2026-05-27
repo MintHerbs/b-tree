@@ -34,6 +34,7 @@ export default function EditorNavbar({
   onTitleChange,
   unsaved,
   justPublished,
+  saveStatus = 'saved',
   onToggleDirectory,
   directoryOpen,
   onPreview,
@@ -130,7 +131,7 @@ export default function EditorNavbar({
               onChange={(e) => onTitleChange(e.target.value)}
               style={{ width: titleWidth }}
             />
-            <DraftStatusIndicator unsaved={unsaved} saving={saving} justPublished={justPublished} />
+            <DraftStatusIndicator saveStatus={saveStatus} justPublished={justPublished} />
           </div>
         </div>
 

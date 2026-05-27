@@ -1,7 +1,6 @@
 import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent } from '../lib/githubApi'
 import { clearAllImageBlobs } from '../lib/draftDB'
 import { supabase } from '../lib/supabaseClient'
-import { useDraft } from './useDraft'
 
 // Title to filename conversion
 function titleToFilename(title) {
@@ -130,10 +129,10 @@ export function useEditorSave({
   setContent,
   setSelectedPath,
   imageQueueRef,
-  imageCountRef
+  imageCountRef,
+  flushSave,
+  clearActiveDraft
 }) {
-  const { clearDraft } = useDraft({ userId, title, content, selectedPath, setTitle, setContent, setSelectedPath })
-
   // Save handler
   const handleSave = async () => {
     if (!title.trim()) {
@@ -149,6 +148,9 @@ export function useEditorSave({
     setSaving(true)
 
     try {
+      // Flush the active draft to Supabase before publishing so nothing is lost.
+      if (typeof flushSave === 'function') await flushSave()
+
       const filename = titleToFilename(title)
       if (!filename) {
         throw new Error('Invalid title - could not generate filename')
@@ -237,7 +239,7 @@ export function useEditorSave({
       }
 
       showToast('Published! Vercel is deploying...', 'success')
-      await clearDraft()
+      if (typeof clearActiveDraft === 'function') await clearActiveDraft()
       await clearAllImageBlobs()
       setUnsaved(false)
       setJustPublished(true)
@@ -257,5 +259,6 @@ export function useEditorSave({
     }
   }
 
-  return { handleSave }
+  // saveDraftNow (e.g. Cmd+S) now flushes the active draft via useDrafts.
+  return { handleSave, saveDraftNow: flushSave }
 }

@@ -19,16 +19,10 @@ vi.mock('../lib/supabaseClient', () => ({
   },
 }))
 
-vi.mock('./useDraft', () => {
-  const clearDraft = vi.fn()
-  return { useDraft: () => ({ clearDraft }), __clearDraft: clearDraft }
-})
-
 import { useEditorSave } from './useEditorSave.js'
 import { commitFile, commitFileWithRetry, getFileContent, listDirectory, uploadImage } from '../lib/githubApi'
 import { clearAllImageBlobs } from '../lib/draftDB'
 import { supabase } from '../lib/supabaseClient'
-import { __clearDraft as clearDraft } from './useDraft'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -227,7 +221,7 @@ describe('handleSave', () => {
     expect(commitFileWithRetry.mock.calls[0][0]).toBe('src/components/layout/Sidebar/modules.js')
   })
 
-  it('calls clearDraft after successful publish', async () => {
+  it('flushes then clears the active draft after a successful publish', async () => {
     const showToast = vi.fn()
     const setSaving = vi.fn()
     const setUnsaved = vi.fn()
@@ -235,6 +229,8 @@ describe('handleSave', () => {
     const setTitle = vi.fn()
     const setContent = vi.fn()
     const setSelectedPath = vi.fn()
+    const flushSave = vi.fn(async () => {})
+    const clearActiveDraft = vi.fn(async () => {})
 
     listDirectory.mockResolvedValueOnce([])
     uploadImage.mockResolvedValue({})
@@ -275,6 +271,8 @@ describe('handleSave', () => {
         setSelectedPath,
         imageQueueRef,
         imageCountRef,
+        flushSave,
+        clearActiveDraft,
       })
     )
 
@@ -282,7 +280,8 @@ describe('handleSave', () => {
       await result.current.handleSave()
     })
 
-    expect(clearDraft).toHaveBeenCalledTimes(1)
+    expect(flushSave).toHaveBeenCalledTimes(1)
+    expect(clearActiveDraft).toHaveBeenCalledTimes(1)
   })
 
   it('shows error toast and does not commit when title is missing', async () => {

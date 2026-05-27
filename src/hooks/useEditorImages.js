@@ -1,10 +1,24 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { colors } from '../constants/colors'
+import { saveImageBlob, restoreDraftBlobs, nextImageKey } from '../lib/draftDB'
 
-export function useEditorImages({ selectedPath, showToast, editorRef, fileInputRef, setContent }) {
+export function useEditorImages({ selectedPath, showToast, editorRef, fileInputRef, setContent, activeDraftId }) {
   const imageCountRef = useRef({})
   const imageQueueRef = useRef({})
+
+  useEffect(() => {
+    if (!activeDraftId) return
+    const restore = async () => {
+      try {
+        const restored = await restoreDraftBlobs(activeDraftId)
+        imageQueueRef.current = { ...imageQueueRef.current, ...restored }
+      } catch {
+        // IndexedDB unavailable — continue without restoring
+      }
+    }
+    restore()
+  }, [activeDraftId])
 
   function resolveAdminImageSrc(src = '') {
     if (!src.startsWith('/notes/img/')) return src
@@ -311,9 +325,10 @@ export function useEditorImages({ selectedPath, showToast, editorRef, fileInputR
 
     try {
       const ext = file.name.split('.').pop()
-      const draftKey = `draft-img-${Date.now()}.${ext}`
+      const draftKey = nextImageKey(activeDraftId, ext)
 
       imageQueueRef.current[draftKey] = { file, ext }
+      await saveImageBlob(draftKey, file)
 
       const imageMarkdown = `![image](draft://${draftKey})`
 

@@ -447,7 +447,37 @@
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+.confirmInstruction {
+  font-size: 13px;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.confirmInstruction strong {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.confirmInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
   margin: 0 0 16px 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.confirmInput:focus {
+  border-color: var(--error);
 }
 
 .confirmActions {
@@ -489,6 +519,12 @@
 
 .confirmDelete:active {
   transform: scale(0.98);
+}
+
+.confirmDelete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* File List */

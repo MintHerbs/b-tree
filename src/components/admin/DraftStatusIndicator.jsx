@@ -1,29 +1,30 @@
 import { colors } from '../../constants/colors'
 import styles from './DraftStatusIndicator.module.css'
 
-export default function DraftStatusIndicator({
-  unsaved = false,
-  saving = false,
-  justPublished = false
-}) {
-  let text = '✓ Draft saved'
-  let color = colors.textMuted
-  let extraClassName = ''
+const STATUS_MAP = {
+  unsaved: { text: '● Unsaved', color: colors.orange },
+  saving: { text: '↑ Saving...', color: colors.textMuted },
+  saved: { text: '✓ Draft saved', color: colors.success },
+  failed: { text: '⚠ Save failed', color: colors.error },
+}
 
+export default function DraftStatusIndicator({
+  saveStatus = 'saved',
+  justPublished = false,
+}) {
+  // Publishing to GitHub still overrides the draft status (existing behaviour).
   if (justPublished) {
-    text = '☁ Published'
-    color = colors.success
-    extraClassName = styles.published
-  } else if (saving) {
-    text = '↑ Publishing…'
-    color = colors.textMuted
-  } else if (unsaved) {
-    text = '● Unsaved'
-    color = colors.orange
+    return (
+      <span className={`${styles.label} ${styles.published}`} style={{ color: colors.success }}>
+        ☁ Published
+      </span>
+    )
   }
 
+  const { text, color } = STATUS_MAP[saveStatus] ?? STATUS_MAP.saved
+
   return (
-    <span className={`${styles.label} ${extraClassName}`} style={{ color }}>
+    <span className={styles.label} style={{ color }}>
       {text}
     </span>
   )

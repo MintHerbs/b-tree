@@ -1,6 +1,6 @@
 import PageShell from '../../components/layout/PageShell';
 import Card from '../../components/ui/Card';
-import RichTooltip, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../../components/ui/smoothui/rich-popover/index.tsx';
+import RichPopover, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../../components/ui/RichPopover';
 import styles from './home.module.css';
 
 const FACULTIES = [
@@ -100,7 +100,7 @@ export default function HomePage() {
         </p>
         <div className={styles.socialRow}>
           {SOCIAL_DEMOS.map(item => (
-            <RichTooltip
+            <RichPopover
               key={item.platform}
               platform={item.platform}
               title={item.title}
