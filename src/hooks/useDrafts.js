@@ -210,6 +210,27 @@ export function useDrafts({
   async function switchDraft(draftId) {
     if (draftId === activeDraftId) return
     await flushSave()
+    // Keep the local `drafts` cache in sync with the live editor before leaving
+    // the current draft. The cached rows are only ever set at mount, so without
+    // this the row for the draft we're switching away from still holds its
+    // mount-time content; switching back would reload that stale content and the
+    // next flush would persist it over the real edits. A functional update is
+    // used so a concurrent removal (delete/clear → switch) is not undone, and
+    // only the current row is touched (the target is never the active draft).
+    const currentId = activeIdRef.current
+    setDrafts((prev) =>
+      prev.map((d) =>
+        d.id === currentId
+          ? {
+              ...d,
+              title,
+              content,
+              module_id: selectedPath?.moduleId ?? null,
+              subfolder: selectedPath?.subfolder ?? null,
+            }
+          : d
+      )
+    )
     const draft = drafts.find((d) => d.id === draftId)
     if (!draft) return
     setActiveDraftId(draftId)
@@ -228,10 +249,15 @@ export function useDrafts({
     const remaining = drafts.filter((d) => d.id !== draftId)
     setDrafts(remaining)
     if (draftId === activeDraftId) {
+      // Drop the active pointer BEFORE switching. switchDraft → flushSave would
+      // otherwise upsert activeIdRef.current — which still holds the just-deleted
+      // id — with the not-yet-cleared editor content, resurrecting the row we
+      // just removed. Clearing the ref makes flushSave a no-op for it.
+      activeIdRef.current = null
+      setActiveDraftId(null)
       if (remaining.length > 0) {
         await switchDraft(remaining[0].id)
       } else {
-        setActiveDraftId(null)
         skipDirtyRef.current = true
         setTitle('')
         setContent('')
@@ -284,10 +310,13 @@ export function useDrafts({
     await supabase.from('drafts').delete().eq('id', activeDraftId)
     const remaining = drafts.filter((d) => d.id !== activeDraftId)
     setDrafts(remaining)
+    // Drop the active pointer BEFORE switching so the switchDraft → flushSave
+    // path can't re-upsert (resurrect) the draft we just deleted/published.
+    activeIdRef.current = null
+    setActiveDraftId(null)
     if (remaining.length > 0) {
       await switchDraft(remaining[0].id)
     } else {
-      setActiveDraftId(null)
       skipDirtyRef.current = true
       setTitle('')
       setContent('')

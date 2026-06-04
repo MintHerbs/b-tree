@@ -14,7 +14,7 @@ function toGithubPath(filePath) {
   return `src/content/notes/${filePath}.md`
 }
 
-export function useImageCleanup({ modules, isOwner }) {
+export function useImageCleanup({ modules, isOwner, course }) {
 
   // ── SCAN ──────────────────────────────────────────────────────────────────
   // Scans .md files for a given moduleId (or all modules if moduleId is null).
@@ -38,7 +38,10 @@ export function useImageCleanup({ modules, isOwner }) {
     const allFiles = []
     for (const mod of modulesToScan) {
       for (const subfolder of (mod.subfolders ?? [])) {
-        const dirPath = `src/content/notes/${mod.id}/${subfolder}`
+        // Published notes live under src/content/notes/{course}/{module}/{subfolder}
+        // (see useEditorSave.js line 186) — the {course} segment must be included
+        // or the directory listing comes back empty and no .md files are scanned.
+        const dirPath = `src/content/notes/${course}/${mod.id}/${subfolder}`
         try {
           const files = await listDirectory(dirPath)
           files.forEach(f => {
@@ -119,13 +122,17 @@ export function useImageCleanup({ modules, isOwner }) {
     const allStoredImages = []
     for (const mod of modulesToScan) {
       try {
-        const files = await listDirectory(`public/notes/img/${mod.id}`)
+        // Published images live under public/notes/img/{course}/{module} and are
+        // referenced in markdown as /notes/img/{course}/{module}/x (see
+        // useEditorSave.js lines 167 & 179). Both the listing path and the stored
+        // `path` must carry {course} so they match the referenced paths.
+        const files = await listDirectory(`public/notes/img/${course}/${mod.id}`)
         files.forEach(f => {
           allStoredImages.push({
-            path: `/notes/img/${mod.id}/${f.name}`,
+            path: `/notes/img/${course}/${mod.id}/${f.name}`,
             githubPath: f.path,
             // Raw URL for thumbnail preview — direct from GitHub CDN
-            rawUrl: `https://raw.githubusercontent.com/${import.meta.env.VITE_GITHUB_OWNER}/${import.meta.env.VITE_GITHUB_REPO}/${import.meta.env.VITE_GITHUB_BRANCH}/public/notes/img/${mod.id}/${f.name}`,
+            rawUrl: `https://raw.githubusercontent.com/${import.meta.env.VITE_GITHUB_OWNER}/${import.meta.env.VITE_GITHUB_REPO}/${import.meta.env.VITE_GITHUB_BRANCH}/public/notes/img/${course}/${mod.id}/${f.name}`,
           })
         })
       } catch {

@@ -19,6 +19,10 @@ export async function getFileSha(path) {
     { headers }
   )
   if (res.status === 404) return null
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(`Failed to read file SHA (${res.status}): ${errorData.message || res.statusText}`)
+  }
   const data = await res.json()
   return data.sha ?? null
 }
@@ -44,19 +48,22 @@ export async function commitFile(path, content, message) {
 }
 
 // ─── COMMIT WITH RETRY ──────────────────────────────────────────────────────
-// Wraps commitFile with automatic retry for 409 SHA conflicts.
-// A 409 means another user committed to the same file between our SHA fetch
-// and our write. We retry up to 3 times with exponential backoff (500ms,
-// 1000ms, 1500ms). Each retry calls commitFile fresh which re-fetches the
-// latest SHA internally — no manual SHA management needed here.
-// All non-409 errors are rethrown immediately without retrying.
+// Wraps commitFile with automatic retry for stale-SHA conflicts.
+// A stale-SHA conflict means another user committed to the same file between
+// our SHA fetch and our write. GitHub's Contents API reports this as either
+// 409 Conflict or — more commonly — 422 Unprocessable Entity ("…does not
+// match…"), so we retry on both. We retry up to 3 times with exponential
+// backoff (500ms, 1000ms, 1500ms). Each retry calls commitFile fresh which
+// re-fetches the latest SHA internally — no manual SHA management needed here.
+// All other errors are rethrown immediately without retrying.
 export async function commitFileWithRetry(path, content, message) {
   let lastError
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
       return await commitFile(path, content, message)
     } catch (err) {
-      if (!err.message?.includes('409')) throw err
+      const isConflict = err.message?.includes('409') || err.message?.includes('422')
+      if (!isConflict) throw err
       lastError = err
       if (attempt === 4) break
       // Wait before retrying — gives the conflicting commit time to settle

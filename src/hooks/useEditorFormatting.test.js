@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { renderInlineWidgets } from './useEditorFormatting'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { renderInlineWidgets, renderInlineLaTeX } from './useEditorFormatting'
 
 // A fake Monaco editor/model that reproduces the real re-entrancy hazard:
 //
@@ -115,5 +115,120 @@ describe('renderInlineWidgets — deltaDecorations re-entrancy', () => {
 
     expect(() => renderInlineWidgets(editor, monaco)).not.toThrow()
     expect(stats.maxDepth).toBeLessThanOrEqual(1)
+  })
+})
+
+// A second fake editor that supports BOTH renderInlineLaTeX and
+// renderInlineWidgets, wired the way handleEditorMount wires the real cursor
+// handler: a cursor-position change runs renderInlineLaTeX *and*
+// renderInlineWidgets.
+//
+// This reproduces the cross-function recursion the per-function guard misses:
+// renderInlineLaTeX's (debounced) deltaDecorations commit fires a synchronous
+// cursor event; the handler then calls renderInlineWidgets while LaTeX's
+// deltaDecorations is still on the stack. Without a shared guard,
+// renderInlineWidgets calls deltaDecorations re-entrantly and Monaco throws
+// "Invoking deltaDecorations recursively could lead to leaking decorations."
+function createLatexAndWidgetEditor(text) {
+  const cursorHandlers = []
+  // reentrantAttempts counts every time deltaDecorations is invoked while
+  // another deltaDecorations is still on the stack — i.e. exactly the leak
+  // Monaco guards against. The real renderInlineLaTeX swallows the resulting
+  // throw in its own try/catch, so a thrown error never surfaces to the caller;
+  // this counter is what actually proves the recursion did (or didn't) happen.
+  const stats = { deltaCalls: 0, maxDepth: 0, reentrantAttempts: 0 }
+  let depth = 0
+  let cursorFireGuard = 0
+
+  const model = {
+    getValue: () => text,
+    // Cursor parked far past every tag/formula so all of them render
+    // (both routines skip ranges the cursor is inside).
+    getOffsetAt: () => 9999,
+    getPositionAt: (offset) => ({ lineNumber: 1, column: (offset ?? 0) + 1 }),
+  }
+
+  const editor = {
+    getModel: () => model,
+    getPosition: () => ({ lineNumber: 1, column: 1 }),
+    getSelection: () => ({
+      getStartPosition: () => ({ lineNumber: 1, column: 1 }),
+      getEndPosition: () => ({ lineNumber: 1, column: 1 }),
+    }),
+    removeContentWidget: () => {},
+    setPosition: () => {},
+    focus: () => {},
+    onDidChangeCursorPosition: (handler) => cursorHandlers.push(handler),
+    changeViewZones: (cb) => cb({ addZone: () => 'zone-id', removeZone: () => {} }),
+    deltaDecorations: (oldIds, newDecorations) => {
+      if (depth > 0) {
+        stats.reentrantAttempts += 1
+        throw new Error(
+          'Invoking deltaDecorations recursively could lead to leaking decorations.'
+        )
+      }
+      depth += 1
+      stats.deltaCalls += 1
+      stats.maxDepth = Math.max(stats.maxDepth, depth)
+      try {
+        // Applying decorations fires a synchronous cursor event (capped so a
+        // regression can't hang the test).
+        if (cursorFireGuard < 50) {
+          cursorFireGuard += 1
+          cursorHandlers.forEach((h) => h())
+        }
+        return newDecorations.map((_, i) => `dec-${i}`)
+      } finally {
+        depth -= 1
+      }
+    },
+  }
+
+  const monaco = {
+    Range: class {
+      constructor(sl, sc, el, ec) {
+        this.startLineNumber = sl
+        this.startColumn = sc
+        this.endLineNumber = el
+        this.endColumn = ec
+      }
+    },
+    editor: {
+      TrackedRangeStickiness: { NeverGrowsWhenTypingAtEdges: 1 },
+    },
+  }
+
+  // Wire the cursor handler exactly as handleEditorMount does: both routines.
+  editor.onDidChangeCursorPosition(() => {
+    renderInlineLaTeX(editor, monaco)
+    renderInlineWidgets(editor, monaco)
+  })
+
+  return { editor, monaco, stats }
+}
+
+describe('renderInlineLaTeX × renderInlineWidgets — cross-function re-entrancy', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('does not recurse into deltaDecorations when a LaTeX commit fires a cursor event that re-enters renderInlineWidgets', () => {
+    vi.useFakeTimers()
+    const { editor, monaco, stats } = createLatexAndWidgetEditor(
+      'intro $$x$$ and <SocialLink platform="youtube" href="https://y.t/x" title="Hi" /> outro'
+    )
+
+    // renderInlineLaTeX is debounced; flushing its timer triggers the commit
+    // whose synchronous cursor event re-enters renderInlineWidgets.
+    renderInlineLaTeX(editor, monaco)
+    vi.runAllTimers()
+
+    // The LaTeX commit actually happened (the recursion path was exercised)…
+    expect(stats.deltaCalls).toBeGreaterThan(0)
+    // …and deltaDecorations was never invoked re-entrantly. (renderInlineLaTeX
+    // swallows the would-be throw, so this counter — not a thrown error — is
+    // what catches the regression.)
+    expect(stats.reentrantAttempts).toBe(0)
+    expect(stats.maxDepth).toBe(1)
   })
 })

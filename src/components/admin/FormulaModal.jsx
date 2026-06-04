@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { X } from '@phosphor-icons/react'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
@@ -7,18 +7,18 @@ import styles from './FormulaModal.module.css'
 export default function FormulaModal({ open, onClose, onInsert }) {
   const [latex, setLatex] = useState('')
   const [displayMode, setDisplayMode] = useState(false)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!open) {
       setLatex('')
       setDisplayMode(false)
-      setError('')
     }
   }, [open])
 
-  const renderPreview = () => {
-    if (!latex.trim()) return null
+  // Derive the rendered preview and any validation error from the current
+  // inputs instead of setting state as a side effect during render (Issue #7).
+  const { previewHtml, error } = useMemo(() => {
+    if (!latex.trim()) return { previewHtml: null, error: '' }
 
     try {
       const html = katex.renderToString(latex, {
@@ -26,29 +26,19 @@ export default function FormulaModal({ open, onClose, onInsert }) {
         throwOnError: true,
         output: 'html'
       })
-      setError('')
-      return <div dangerouslySetInnerHTML={{ __html: html }} />
+      return { previewHtml: html, error: '' }
     } catch (err) {
-      setError(err.message)
-      return null
+      return { previewHtml: null, error: err.message }
     }
-  }
+  }, [latex, displayMode])
 
   const handleInsert = () => {
-    if (!latex.trim()) return
+    if (!latex.trim() || error) return
 
-    try {
-      // Validate LaTeX before inserting
-      katex.renderToString(latex, { throwOnError: true })
-      
-      // Insert with proper markdown syntax
-      const formula = displayMode ? `$$${latex}$$` : `$${latex}$`
-      onInsert(formula)
-    } catch (err) {
-      setError(err.message)
-      return
-    }
-    
+    // Insert with proper markdown syntax
+    const formula = displayMode ? `$$${latex}$$` : `$${latex}$`
+    onInsert(formula)
+
     // Close modal after successful insertion
     onClose()
   }
@@ -102,7 +92,9 @@ export default function FormulaModal({ open, onClose, onInsert }) {
           <div className={styles.preview}>
             <div className={styles.previewLabel}>Preview:</div>
             <div className={styles.previewContent}>
-              {latex.trim() ? renderPreview() : (
+              {latex.trim() ? (
+                previewHtml ? <div dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null
+              ) : (
                 <span className={styles.emptyPreview}>Type LaTeX to see preview</span>
               )}
             </div>

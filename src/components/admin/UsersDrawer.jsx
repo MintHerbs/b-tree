@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, CaretDown, CaretRight, ArrowUp } from '@phosphor-icons/react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAdminUsers } from '../../hooks/useAdminUsers'
-import { MODULES } from '../layout/Sidebar/modules'
+import { loadCourseModules } from '../../lib/loadCourseModules'
 import styles from './UsersDrawer.module.css'
 
 // Generate random 12-character password
@@ -33,6 +33,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
   const [role, setRole] = useState('contributor')
   const [selectedCourseId, setSelectedCourseId] = useState(filterCourseId || '')
   const [selectedDirectories, setSelectedDirectories] = useState([])
+  const [modules, setModules] = useState([])
   const [generatedPassword, setGeneratedPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [creatingUser, setCreatingUser] = useState(false)
@@ -53,6 +54,24 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
       loadCourses()
     }
   }, [open, isOwner, showAddForm])
+
+  // Load the selected course's module registry so the "Allowed Directories"
+  // checkboxes reflect that course's modules rather than the legacy global set.
+  useEffect(() => {
+    if (!selectedCourseId) {
+      setModules([])
+      return
+    }
+
+    let cancelled = false
+    loadCourseModules(selectedCourseId).then(loaded => {
+      if (!cancelled) setModules(loaded)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedCourseId])
 
   const loadUsers = async () => {
     try {
@@ -387,7 +406,7 @@ export default function UsersDrawer({ open, onClose, currentUserId, isOwner = fa
                   <div className={styles.formGroup}>
                     <label className={styles.label}>Allowed Directories</label>
                     <div className={styles.directoryGrid}>
-                      {MODULES.map(module => (
+                      {modules.map(module => (
                         <label key={module.id} className={styles.checkbox}>
                           <input
                             type="checkbox"

@@ -3,6 +3,11 @@ import { supabase } from '../lib/supabaseClient'
 
 export function useDraft({ userId, title, content, selectedPath, setTitle, setContent, setSelectedPath }) {
   const initialized = useRef(false)
+  // Id of the active draft row. The `drafts` table is keyed by `id` (multiple
+  // drafts per user), so persistence must target a specific row via
+  // `onConflict: 'id'` rather than assuming one row per `user_id`. Populated on
+  // restore and after the first insert.
+  const draftIdRef = useRef(null)
 
   useEffect(() => {
     if (!userId) return
@@ -28,20 +33,27 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
           }
         }
 
+        // A user may have several drafts; take the most recently updated one.
+        // `maybeSingle()` would throw ("multiple rows returned") against the
+        // multi-draft schema, so select the latest row explicitly instead.
         const { data } = await supabase
           .from('drafts')
-          .select('title, content, module_id, subfolder')
+          .select('id, title, content, module_id, subfolder')
           .eq('user_id', userId)
-          .maybeSingle()
+          .order('updated_at', { ascending: false })
+          .limit(1)
 
-        if (!data) return
+        const row = Array.isArray(data) ? data[0] : data
+        if (!row) return
         console.log('[DRAFT]', 'restored from', 'supabase')
 
-        if (typeof data.title === 'string') setTitle(data.title)
-        if (typeof data.content === 'string') setContent(data.content)
+        draftIdRef.current = row.id ?? null
 
-        if (data.module_id && data.subfolder) {
-          setSelectedPath({ moduleId: data.module_id, subfolder: data.subfolder })
+        if (typeof row.title === 'string') setTitle(row.title)
+        if (typeof row.content === 'string') setContent(row.content)
+
+        if (row.module_id && row.subfolder) {
+          setSelectedPath({ moduleId: row.module_id, subfolder: row.subfolder })
         } else {
           setSelectedPath(null)
         }
@@ -72,17 +84,26 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
       const moduleId = selectedPath?.moduleId ?? null
       const subfolder = selectedPath?.subfolder ?? null
 
-      supabase.from('drafts').upsert(
-        {
-          user_id: userId,
-          title,
-          content,
-          module_id: moduleId,
-          subfolder,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      )
+      const row = {
+        user_id: userId,
+        title,
+        content,
+        module_id: moduleId,
+        subfolder,
+        updated_at: new Date().toISOString(),
+      }
+      // Update the active row by id when known; otherwise insert and capture the
+      // generated id so later saves reuse the same row instead of multiplying.
+      if (draftIdRef.current) row.id = draftIdRef.current
+
+      supabase
+        .from('drafts')
+        .upsert(row, { onConflict: 'id' })
+        .select('id')
+        .single()
+        .then(({ data }) => {
+          if (data?.id) draftIdRef.current = data.id
+        })
     }, 30_000)
 
     return () => clearTimeout(id)
@@ -100,14 +121,21 @@ export function useDraft({ userId, title, content, selectedPath, setTitle, setCo
       JSON.stringify({ title, content, selectedPath })
     )
     if (!userId) return
-    await supabase.from('drafts').upsert({
+    const row = {
       user_id:    userId,
       title,
       content,
       module_id:  selectedPath?.moduleId ?? null,
       subfolder:  selectedPath?.subfolder ?? null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' })
+    }
+    if (draftIdRef.current) row.id = draftIdRef.current
+    const { data } = await supabase
+      .from('drafts')
+      .upsert(row, { onConflict: 'id' })
+      .select('id')
+      .single()
+    if (data?.id) draftIdRef.current = data.id
   }, [userId, title, content, selectedPath])
 
   return { clearDraft, saveDraftNow }

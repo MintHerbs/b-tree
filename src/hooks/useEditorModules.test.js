@@ -6,6 +6,7 @@ vi.mock('../lib/githubApi', () => ({
   commitFileWithRetry: vi.fn(async () => ({})),
   getFileContent: vi.fn(async () => undefined),
   deleteFile: vi.fn(async () => ({})),
+  listDirectory: vi.fn(async () => []),
 }))
 
 vi.mock('../lib/supabaseClient', () => ({
@@ -27,7 +28,7 @@ vi.mock('../components/admin/adminIconOptions', () => ({
 }))
 
 import { useEditorModules } from './useEditorModules.js'
-import { commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../lib/githubApi'
+import { commitFile, commitFileWithRetry, getFileContent, deleteFile, listDirectory } from '../lib/githubApi'
 
 const VALID_MODULES_JS = [
   'import {',
@@ -65,6 +66,7 @@ beforeEach(() => {
   commitFile.mockResolvedValue({})
   commitFileWithRetry.mockResolvedValue({})
   deleteFile.mockResolvedValue({})
+  listDirectory.mockResolvedValue([])
 })
 
 describe('handleNewSubfolder', () => {
@@ -533,5 +535,297 @@ describe('handleDeleteSubfolder', () => {
     })
 
     expect(commitFileWithRetry).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleMoveFile', () => {
+  const WEB_AND_ALGO_MODULES = [
+    "import { FileCode, Globe } from '@phosphor-icons/react'",
+    '',
+    'export const MODULES = [',
+    '  {',
+    "    id: 'web',",
+    "    label: 'Web',",
+    '    Icon: FileCode,',
+    '    notes: [',
+    "      { filename: 'notes/intro.md', label: 'intro.md' },",
+    '    ],',
+    '  },',
+    '  {',
+    "    id: 'algo',",
+    "    label: 'Algorithms',",
+    '    Icon: Globe,',
+    '    notes: [',
+    '    ],',
+    '  },',
+    ']',
+  ].join('\n')
+
+  // getFileContent is called twice: first for the source .md, then for modules.js.
+  function mockReads(modulesJs, noteContent = '# Intro\n') {
+    getFileContent.mockImplementation(async (path) =>
+      path.endsWith('modules.js') ? modulesJs : noteContent
+    )
+  }
+
+  // Regression for Issue #5: the old handler copied the file but never deleted
+  // the source and never touched modules.js, leaving a duplicate file with a
+  // stale registry entry — yet still reported success.
+  it('deletes the source file after copying it to the destination', async () => {
+    mockReads(WEB_AND_ALGO_MODULES)
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleMoveFile({
+        fromModule: 'web',
+        fromSubfolder: 'notes',
+        filename: 'intro.md',
+        toModule: 'web',
+        toSubfolder: 'unit-1',
+      })
+    })
+
+    // Copy went to the new path...
+    expect(commitFile).toHaveBeenCalledWith(
+      'src/content/notes/course1/web/unit-1/intro.md',
+      '# Intro\n',
+      'feat: move intro.md to web/unit-1'
+    )
+    // ...and the original was deleted (the step the old stub skipped).
+    expect(deleteFile).toHaveBeenCalledWith(
+      'src/content/notes/course1/web/notes/intro.md',
+      expect.any(String)
+    )
+  })
+
+  it('rewrites the registry filename entry for a same-module move', async () => {
+    mockReads(WEB_AND_ALGO_MODULES)
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleMoveFile({
+        fromModule: 'web',
+        fromSubfolder: 'notes',
+        filename: 'intro.md',
+        toModule: 'web',
+        toSubfolder: 'unit-1',
+      })
+    })
+
+    expect(commitFileWithRetry).toHaveBeenCalledWith(
+      'src/content/notes/course1/modules.js',
+      expect.any(String),
+      expect.any(String)
+    )
+    const written = commitFileWithRetry.mock.calls[0][1]
+    expect(written).toContain("filename: 'unit-1/intro.md'")
+    expect(written).not.toContain("filename: 'notes/intro.md'")
+  })
+
+  it('moves the registry entry between modules on a cross-module move', async () => {
+    mockReads(WEB_AND_ALGO_MODULES)
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleMoveFile({
+        fromModule: 'web',
+        fromSubfolder: 'notes',
+        filename: 'intro.md',
+        toModule: 'algo',
+        toSubfolder: 'unit-1',
+      })
+    })
+
+    const written = commitFileWithRetry.mock.calls[0][1]
+    // The stale entry is gone entirely...
+    expect(written).not.toContain("filename: 'notes/intro.md'")
+    // ...and the note now lives under algo with its new path + preserved label.
+    const algoBlock = written.slice(written.indexOf("id: 'algo'"))
+    expect(algoBlock).toContain("filename: 'unit-1/intro.md'")
+    expect(algoBlock).toContain("label: 'intro.md'")
+    // The web block no longer references the note.
+    const webBlock = written.slice(written.indexOf("id: 'web'"), written.indexOf("id: 'algo'"))
+    expect(webBlock).not.toContain('intro.md')
+  })
+
+  it('reports success only when every step succeeds', async () => {
+    mockReads(WEB_AND_ALGO_MODULES)
+    const { result, showToast } = setup()
+
+    await act(async () => {
+      await result.current.handleMoveFile({
+        fromModule: 'web',
+        fromSubfolder: 'notes',
+        filename: 'intro.md',
+        toModule: 'web',
+        toSubfolder: 'unit-1',
+      })
+    })
+
+    expect(showToast).toHaveBeenCalledWith('File moved successfully', 'success')
+  })
+
+  // The old handler reported success unconditionally. If the delete fails, the
+  // move is incomplete and must surface as an error, not "moved successfully".
+  it('does not report success if deleting the source fails', async () => {
+    mockReads(WEB_AND_ALGO_MODULES)
+    deleteFile.mockRejectedValueOnce(new Error('GitHub delete failed: 422'))
+    const { result, showToast } = setup()
+
+    await act(async () => {
+      await result.current.handleMoveFile({
+        fromModule: 'web',
+        fromSubfolder: 'notes',
+        filename: 'intro.md',
+        toModule: 'web',
+        toSubfolder: 'unit-1',
+      })
+    })
+
+    expect(showToast).not.toHaveBeenCalledWith('File moved successfully', 'success')
+    expect(showToast).toHaveBeenCalledWith(
+      'Failed to move file: GitHub delete failed: 422',
+      'error'
+    )
+  })
+})
+
+describe('handleRenameSubfolder', () => {
+  const MODULE_WITH_SUBFOLDER = [
+    "import { FileCode } from '@phosphor-icons/react'",
+    '',
+    'export const MODULES = [',
+    '  {',
+    "    id: 'web',",
+    "    label: 'Web',",
+    '    Icon: FileCode,',
+    "    subfolders: ['notes', 'old-unit'],",
+    '    notes: [',
+    "      { filename: 'old-unit/intro.md', label: 'Intro' },",
+    "      { filename: 'notes/misc.md', label: 'Misc' },",
+    '    ],',
+    '  },',
+    ']',
+  ].join('\n')
+
+  // getFileContent is called for each note file in the folder, then for
+  // modules.js. Route by path so the registry read returns the module source.
+  function mockReads(modulesJs, noteContent = '# Intro\n') {
+    getFileContent.mockImplementation(async (path) =>
+      path.endsWith('modules.js') ? modulesJs : noteContent
+    )
+  }
+
+  // Regression for Issue #6: the old stub emitted "Subfolder renamed" without
+  // performing ANY GitHub/registry/state change. These assertions all fail
+  // against that stub (no listDirectory/commit/delete/setModules ran, and the
+  // success message had the wrong text).
+  it('moves each file in the folder to the renamed path then deletes the original', async () => {
+    listDirectory.mockResolvedValue([{ name: 'intro.md' }])
+    mockReads(MODULE_WITH_SUBFOLDER)
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleRenameSubfolder('web', 'old-unit', 'unit-1')
+    })
+
+    // Listed the source folder at the course-scoped path.
+    expect(listDirectory).toHaveBeenCalledWith(
+      'src/content/notes/course1/web/old-unit'
+    )
+    // Copied the file to the new subfolder...
+    expect(commitFile).toHaveBeenCalledWith(
+      'src/content/notes/course1/web/unit-1/intro.md',
+      '# Intro\n',
+      expect.any(String)
+    )
+    // ...and removed the original (the step the old stub skipped).
+    expect(deleteFile).toHaveBeenCalledWith(
+      'src/content/notes/course1/web/old-unit/intro.md',
+      expect.any(String)
+    )
+  })
+
+  it('rewrites note path prefixes and the subfolders entry in modules.js', async () => {
+    listDirectory.mockResolvedValue([{ name: 'intro.md' }])
+    mockReads(MODULE_WITH_SUBFOLDER)
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleRenameSubfolder('web', 'old-unit', 'unit-1')
+    })
+
+    expect(commitFileWithRetry).toHaveBeenCalledWith(
+      'src/content/notes/course1/modules.js',
+      expect.any(String),
+      'feat: rename old-unit folder to unit-1 in web'
+    )
+    const written = commitFileWithRetry.mock.calls[0][1]
+    // The note under the renamed folder now points at the new prefix...
+    expect(written).toContain("filename: 'unit-1/intro.md'")
+    expect(written).not.toContain("filename: 'old-unit/intro.md'")
+    // ...the explicit subfolders entry is renamed...
+    expect(written).toContain("subfolders: ['notes', 'unit-1']")
+    expect(written).not.toContain('old-unit')
+    // ...and unrelated notes are left alone.
+    expect(written).toContain("filename: 'notes/misc.md'")
+  })
+
+  it('updates local state: renames the subfolder and rewrites note filename prefixes', async () => {
+    listDirectory.mockResolvedValue([])
+    mockReads(MODULE_WITH_SUBFOLDER)
+    const { result, setModules } = setup()
+
+    await act(async () => {
+      await result.current.handleRenameSubfolder('web', 'old-unit', 'unit-1')
+    })
+
+    const updater = setModules.mock.calls[0][0]
+    const next = updater([
+      {
+        id: 'web',
+        subfolders: ['notes', 'old-unit'],
+        notes: [
+          { filename: 'old-unit/intro.md', label: 'Intro' },
+          { filename: 'notes/misc.md', label: 'Misc' },
+        ],
+      },
+    ])
+    expect(next[0].subfolders).toEqual(['notes', 'unit-1'])
+    expect(next[0].notes).toEqual([
+      { filename: 'unit-1/intro.md', label: 'Intro' },
+      { filename: 'notes/misc.md', label: 'Misc' },
+    ])
+  })
+
+  it('reports success only after the work completes (not the old stub message)', async () => {
+    listDirectory.mockResolvedValue([{ name: 'intro.md' }])
+    mockReads(MODULE_WITH_SUBFOLDER)
+    const { result, showToast } = setup()
+
+    await act(async () => {
+      await result.current.handleRenameSubfolder('web', 'old-unit', 'unit-1')
+    })
+
+    expect(showToast).toHaveBeenCalledWith('Subfolder renamed to unit-1', 'success')
+  })
+
+  // The old stub reported success unconditionally. If moving a file fails, the
+  // rename is incomplete and must surface as an error.
+  it('does not report success if a file move fails', async () => {
+    listDirectory.mockResolvedValue([{ name: 'intro.md' }])
+    mockReads(MODULE_WITH_SUBFOLDER)
+    commitFile.mockRejectedValueOnce(new Error('GitHub commit failed: 422'))
+    const { result, showToast } = setup()
+
+    await act(async () => {
+      await result.current.handleRenameSubfolder('web', 'old-unit', 'unit-1')
+    })
+
+    expect(showToast).not.toHaveBeenCalledWith('Subfolder renamed to unit-1', 'success')
+    expect(showToast).toHaveBeenCalledWith(
+      'Failed to rename subfolder: GitHub commit failed: 422',
+      'error'
+    )
   })
 })

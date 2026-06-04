@@ -13,8 +13,6 @@ function titleToFilename(title) {
     .replace(/(^-|-$)/g, '')
 }
 
-const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
-
 function findModuleBlock(modulesJs, moduleId) {
   const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
@@ -158,16 +156,30 @@ export function useEditorSave({
 
       const { moduleId, subfolder } = selectedPath
 
+      // The note registry lives in the per-course modules.js — the same file the
+      // Sidebar, loadCourseModules, and useEditorModules read/write — not the
+      // legacy global src/components/layout/Sidebar/modules.js.
+      const courseModulesPath = `src/content/notes/${selectedCourse}/modules.js`
+
       // Resolve image queue before committing
       let finalContent = content
+      // Key the counter per course+module — the same module id can exist in
+      // different courses, and sharing one counter across them collides.
+      const imageCountKey = `${selectedCourse}/${moduleId}`
       for (const [draftKey, { file, ext }] of Object.entries(imageQueueRef.current)) {
         const imgDir = `public/notes/img/${selectedCourse}/${moduleId}`
-        if (imageCountRef.current[moduleId] === undefined) {
+        if (imageCountRef.current[imageCountKey] === undefined) {
           const files = await listDirectory(imgDir)
-          imageCountRef.current[moduleId] = files.length
+          // Seed from the highest existing index, not the file count. After a
+          // deletion the count no longer matches the max number, so count+1
+          // can reuse a live filename and overwrite a referenced image.
+          imageCountRef.current[imageCountKey] = files.reduce((max, f) => {
+            const n = parseInt(f.name, 10)
+            return Number.isNaN(n) ? max : Math.max(max, n)
+          }, 0)
         }
-        const newNumber = imageCountRef.current[moduleId] + 1
-        imageCountRef.current[moduleId] = newNumber
+        const newNumber = imageCountRef.current[imageCountKey] + 1
+        imageCountRef.current[imageCountKey] = newNumber
         const filename = `${newNumber}.${ext}`
         const arrayBuffer = await file.arrayBuffer()
         await uploadImage(`${imgDir}/${filename}`, arrayBuffer)
@@ -189,7 +201,7 @@ export function useEditorSave({
       let currentModulesJs
 
       try {
-        currentModulesJs = await getFileContent(MODULES_JS_PATH)
+        currentModulesJs = await getFileContent(courseModulesPath)
       } catch (error) {
         throw new Error(`Could not read modules.js: ${error.message}`)
       }
@@ -209,7 +221,7 @@ export function useEditorSave({
       )
 
       await commitFileWithRetry(
-        MODULES_JS_PATH,
+        courseModulesPath,
         updatedModulesJs,
         `feat: add ${filename} to ${moduleId} notes`
       )

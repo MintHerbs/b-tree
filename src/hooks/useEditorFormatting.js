@@ -49,7 +49,15 @@ export function renderInlineWidgets(editor, monaco) {
   // call is still committing throws:
   //   "Invoking deltaDecorations recursively could lead to leaking decorations."
   // Bail out of the nested call — same pattern as _isRenderingLaTeX.
-  if (editor._isRenderingWidgets) return
+  //
+  // We must also bail while renderInlineLaTeX is committing. The mount handler
+  // wires the cursor handler to call *both* routines, so when renderInlineLaTeX
+  // applies its own decorations/view zones (which likewise shift layout and emit
+  // a synchronous cursor event), that event re-enters renderInlineWidgets with
+  // _isRenderingWidgets still false — and our deltaDecorations below would then
+  // recurse into LaTeX's in-flight deltaDecorations and throw. The two
+  // decoration-committing routines must be mutually exclusive.
+  if (editor._isRenderingWidgets || editor._isRenderingLaTeX) return
 
   const model = editor.getModel()
   if (!model) return
@@ -80,30 +88,16 @@ function renderInlineWidgetsInner(editor, monaco, model) {
     })
   }
 
-  // ── 2. Find MoleculeStructure tags ────────────────────────────────────
-  const moleculeRegex = /<MoleculeStructure([\s\S]*?)\/>/g
-  const molecules = []
-
-  while ((match = moleculeRegex.exec(text)) !== null) {
-    const props = parseInlineProps(match[1])
-    molecules.push({
-      raw: match[0],
-      startOffset: match.index,
-      endOffset: match.index + match[0].length,
-      props,
-    })
-  }
-
-  // ── 3. Clear previously rendered widgets up front. Doing this before the
+  // ── 2. Clear previously rendered widgets up front. Doing this before the
   //        early return also clears decorations when the last tag is deleted.
   clearInlineWidgets(editor)
 
-  if (socialLinks.length === 0 && molecules.length === 0) return
+  if (socialLinks.length === 0) return
 
-  // ── 4. Track cursor position (don't hide if user is editing) ──────────
+  // ── 3. Track cursor (don't hide a tag the user is editing) ────────────
   const cursorOffset = model.getOffsetAt(editor.getPosition())
 
-  // ── 5. Render SocialLink chips ────────────────────────────────────────
+  // ── 4. Render SocialLink chips ────────────────────────────────────────
   const decorations = []
 
   editor.changeViewZones(accessor => {
@@ -144,86 +138,6 @@ function renderInlineWidgetsInner(editor, monaco, model) {
         options,
       })
     })
-
-    // ── 6. Render MoleculeStructure images ──────────────────────────────
-    molecules.forEach(item => {
-      const startPos = model.getPositionAt(item.startOffset)
-      const endPos = model.getPositionAt(item.endOffset)
-
-      if (cursorOffset >= item.startOffset && cursorOffset <= item.endOffset) return
-
-      const alt = item.props.alt ?? 'molecule'
-      const data = item.props.data ?? ''
-      const dataUrl = `data:image/svg+xml;base64,${data}`
-
-      const domNode = document.createElement('div')
-      domNode.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-        padding: 8px 0;
-        cursor: pointer;
-      `
-
-      const img = document.createElement('img')
-      img.src = dataUrl
-      img.alt = alt
-      img.style.cssText = `
-        max-width: 280px;
-        max-height: 200px;
-        background: #ffffff;
-        border-radius: 6px;
-        padding: 6px;
-        border: 1px solid rgba(255,255,255,0.1);
-        object-fit: contain;
-      `
-      img.onerror = () => {
-        img.style.display = 'none'
-        const fallback = document.createElement('span')
-        fallback.textContent = `[molecule: ${alt}]`
-        fallback.style.cssText = 'color: #ef4444; font-size: 12px;'
-        domNode.appendChild(fallback)
-      }
-
-      const label = document.createElement('span')
-      label.textContent = alt
-      label.style.cssText = `
-        font-size: 11px;
-        color: rgba(255,255,255,0.5);
-        font-family: inherit;
-      `
-
-      domNode.appendChild(img)
-      domNode.appendChild(label)
-
-      domNode.addEventListener('click', () => {
-        editor.setPosition({
-          lineNumber: startPos.lineNumber,
-          column: startPos.column,
-        })
-        editor.focus()
-      })
-
-      decorations.push({
-        range: new monaco.Range(
-          startPos.lineNumber, startPos.column,
-          endPos.lineNumber, endPos.column
-        ),
-        options: {
-          inlineClassName: 'monaco-inline-widget-hidden',
-          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-        },
-      })
-
-      const zoneId = accessor.addZone({
-        afterLineNumber: endPos.lineNumber,
-        heightInPx: 230,
-        domNode,
-        suppressMouseDown: false,
-      })
-      editor._inlineViewZoneIds.push(zoneId)
-    })
   })
 
   editor._inlineWidgetDecorations = editor.deltaDecorations(
@@ -261,7 +175,10 @@ export function renderInlineLaTeX(editor, monaco) {
   }
 
   editor._latexRenderTimeout = setTimeout(() => {
-    if (editor._isRenderingLaTeX) return
+    // Mutually exclusive with renderInlineWidgets: never commit LaTeX
+    // decorations while a widget commit is in flight (see the matching guard in
+    // renderInlineWidgets) — doing so would re-enter Monaco's deltaDecorations.
+    if (editor._isRenderingLaTeX || editor._isRenderingWidgets) return
     editor._isRenderingLaTeX = true
 
     try {

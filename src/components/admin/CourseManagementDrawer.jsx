@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover'
 import { X, Plus, Trash, DotsThreeVertical, PencilSimple, Users, CaretDown, CaretRight } from '@phosphor-icons/react'
 import { useCourses } from '../../hooks/useCourses'
 import { supabase } from '../../lib/supabaseClient'
+import UsersDrawer from './UsersDrawer'
 import styles from './CourseManagementDrawer.module.css'
 
 export default function CourseManagementDrawer({ open, onClose, isOwner, userId }) {
@@ -22,6 +23,15 @@ export default function CourseManagementDrawer({ open, onClose, isOwner, userId 
   // Rename state
   const [renamingCourseId, setRenamingCourseId] = useState(null)
   const [renameValue, setRenameValue] = useState('')
+  // Display-name overrides applied after an in-place rename. useCourses keeps the
+  // canonical list and exposes no rename/setter, so we record the new name here
+  // and read through it when rendering — no full-page reload required.
+  const [nameOverrides, setNameOverrides] = useState({})
+
+  // Course currently opened in the per-course users view (null = closed).
+  const [manageCourseId, setManageCourseId] = useState(null)
+
+  const displayNameFor = (course) => nameOverrides[course.id] ?? course.display_name
   
   // Status messages
   const [status, setStatus] = useState({ message: '', type: '' })
@@ -137,12 +147,12 @@ export default function CourseManagementDrawer({ open, onClose, isOwner, userId 
       
       if (error) throw error
       
+      // Update the courses list in place via state instead of a hard reload,
+      // which would blow away any unsaved editor/draft state on the page.
+      setNameOverrides(prev => ({ ...prev, [courseId]: renameValue.trim() }))
       setStatus({ message: 'Course renamed', type: 'success' })
       setRenamingCourseId(null)
       setTimeout(() => setStatus({ message: '', type: '' }), 3000)
-      
-      // Refresh courses list (trigger re-fetch)
-      window.location.reload()
     } catch (error) {
       console.error('Failed to rename course:', error)
       setStatus({ message: `Failed to rename course: ${error.message}`, type: 'error' })
@@ -151,8 +161,8 @@ export default function CourseManagementDrawer({ open, onClose, isOwner, userId 
   }
   
   const handleManageCourse = (courseId) => {
-    // This will be wired up in the next prompt to open UsersDrawer filtered to this course
-    console.log('Manage course:', courseId)
+    // Open the per-course users view, scoped to this course.
+    setManageCourseId(courseId)
   }
   
   return (
@@ -209,7 +219,7 @@ export default function CourseManagementDrawer({ open, onClose, isOwner, userId 
                             autoFocus
                           />
                         ) : (
-                          <span className={styles.courseName}>{course.display_name}</span>
+                          <span className={styles.courseName}>{displayNameFor(course)}</span>
                         )}
                         
                         <div className={styles.courseActions}>
@@ -236,7 +246,7 @@ export default function CourseManagementDrawer({ open, onClose, isOwner, userId 
                                   className={styles.menuItem}
                                   onClick={() => {
                                     setRenamingCourseId(course.id)
-                                    setRenameValue(course.display_name)
+                                    setRenameValue(displayNameFor(course))
                                     setContextMenuOpen(null)
                                   }}
                                 >
@@ -376,6 +386,15 @@ export default function CourseManagementDrawer({ open, onClose, isOwner, userId 
           )}
         </div>
       </div>
+
+      {/* Per-course users view opened from the "Manage" button */}
+      <UsersDrawer
+        open={manageCourseId !== null}
+        onClose={() => setManageCourseId(null)}
+        currentUserId={userId}
+        isOwner={isOwner}
+        filterCourseId={manageCourseId}
+      />
     </>
   )
 }

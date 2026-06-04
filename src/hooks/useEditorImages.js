@@ -6,6 +6,16 @@ import { saveImageBlob, restoreDraftBlobs, nextImageKey } from '../lib/draftDB'
 export function useEditorImages({ selectedPath, showToast, editorRef, fileInputRef, setContent, activeDraftId }) {
   const imageCountRef = useRef({})
   const imageQueueRef = useRef({})
+  // Object URLs minted for draft:// blobs, keyed by draft key so repeated hovers
+  // reuse one URL per image instead of leaking a new one each time.
+  const draftUrlCacheRef = useRef({})
+
+  useEffect(() => {
+    const cache = draftUrlCacheRef.current
+    return () => {
+      Object.values(cache).forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [])
 
   useEffect(() => {
     if (!activeDraftId) return
@@ -21,6 +31,21 @@ export function useEditorImages({ selectedPath, showToast, editorRef, fileInputR
   }, [activeDraftId])
 
   function resolveAdminImageSrc(src = '') {
+    // Pending (unsaved) images use the draft:// scheme and live as blobs in the
+    // in-memory queue (and IndexedDB) until the note is saved. Resolve them to a
+    // blob object URL so the inline preview widget can render them right away —
+    // resolveAdminImageSrc otherwise only knows about published /notes/img paths.
+    if (src.startsWith('draft://')) {
+      const key = src.slice('draft://'.length)
+      const cache = draftUrlCacheRef.current
+      if (cache[key]) return cache[key]
+      const blob = imageQueueRef.current[key]?.file
+      if (!blob) return src
+      const url = URL.createObjectURL(blob)
+      cache[key] = url
+      return url
+    }
+
     if (!src.startsWith('/notes/img/')) return src
 
     const owner = import.meta.env.VITE_GITHUB_OWNER

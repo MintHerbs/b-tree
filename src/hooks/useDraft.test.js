@@ -26,15 +26,26 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function setupSupabaseDraftSelect({ data }) {
+// Chainable supabase query mock aligned with the multi-draft, `id`-keyed schema:
+//   restore: .select(...).eq(...).order(...).limit(1)   → resolves { data: rows }
+//   upsert:  .upsert(row, opts).select('id').single()    → resolves { data: upsertData }
+//   delete:  .delete().eq(...)
+function makeDraftQuery({ rows = [], upsertData = null } = {}) {
   const query = {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
-    maybeSingle: vi.fn(async () => ({ data })),
-    upsert: vi.fn(async () => ({ data: null, error: null })),
+    order: vi.fn(() => query),
+    limit: vi.fn(async () => ({ data: rows, error: null })),
+    maybeSingle: vi.fn(async () => ({ data: rows[0] ?? null })),
+    upsert: vi.fn(() => query),
+    single: vi.fn(async () => ({ data: upsertData, error: null })),
     delete: vi.fn(() => query),
   }
+  return query
+}
 
+function setupSupabaseDraftSelect({ rows = [], upsertData = null } = {}) {
+  const query = makeDraftQuery({ rows, upsertData })
   supabase.from.mockImplementation(() => query)
   return query
 }
@@ -54,7 +65,9 @@ describe('useDraft — restore', () => {
       })
     })
 
-    setupSupabaseDraftSelect({ data: { title: 'S', content: 'SC', module_id: 'm2', subfolder: 'sf' } })
+    setupSupabaseDraftSelect({
+      rows: [{ id: 'd9', title: 'S', content: 'SC', module_id: 'm2', subfolder: 'sf' }],
+    })
 
     renderHook(() =>
       useDraft({
@@ -83,7 +96,7 @@ describe('useDraft — restore', () => {
 
     Storage.prototype.getItem.mockReturnValue(null)
     const query = setupSupabaseDraftSelect({
-      data: { title: 'ST', content: 'SC', module_id: 'm2', subfolder: 'sf' },
+      rows: [{ id: 'd1', title: 'ST', content: 'SC', module_id: 'm2', subfolder: 'sf' }],
     })
 
     renderHook(() =>
@@ -103,10 +116,49 @@ describe('useDraft — restore', () => {
     })
 
     expect(supabase.from).toHaveBeenCalledWith('drafts')
-    expect(query.maybeSingle).toHaveBeenCalledTimes(1)
+    expect(query.limit).toHaveBeenCalledTimes(1)
     expect(setTitle).toHaveBeenCalledWith('ST')
     expect(setContent).toHaveBeenCalledWith('SC')
     expect(setSelectedPath).toHaveBeenCalledWith({ moduleId: 'm2', subfolder: 'sf' })
+  })
+
+  // ── REGRESSION (Issue #14) ──────────────────────────────────────────
+  // The legacy hook used `.maybeSingle()`, which throws "multiple rows
+  // returned" against the multi-draft schema. The restore query must instead
+  // select the most-recent row via order+limit and never call maybeSingle.
+  it('Restores the most-recent draft via order/limit and never calls maybeSingle (multi-draft schema)', async () => {
+    const setTitle = vi.fn()
+    const setContent = vi.fn()
+    const setSelectedPath = vi.fn()
+
+    Storage.prototype.getItem.mockReturnValue(null)
+    const query = setupSupabaseDraftSelect({
+      rows: [{ id: 'd2', title: 'newer', content: 'NC', module_id: null, subfolder: null }],
+    })
+
+    renderHook(() =>
+      useDraft({
+        userId: 'u1',
+        title: '',
+        content: '',
+        selectedPath: null,
+        setTitle,
+        setContent,
+        setSelectedPath,
+      })
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(query.maybeSingle).not.toHaveBeenCalled()
+    expect(query.select).toHaveBeenCalledWith('id, title, content, module_id, subfolder')
+    expect(query.order).toHaveBeenCalledWith('updated_at', { ascending: false })
+    expect(query.limit).toHaveBeenCalledWith(1)
+    expect(setTitle).toHaveBeenCalledWith('newer')
+    expect(setContent).toHaveBeenCalledWith('NC')
+    expect(setSelectedPath).toHaveBeenCalledWith(null)
   })
 
   it('Does not restore if localStorage JSON is malformed — clears the key and continues to Supabase fallback', async () => {
@@ -116,7 +168,7 @@ describe('useDraft — restore', () => {
 
     Storage.prototype.getItem.mockReturnValue('{bad json')
     const query = setupSupabaseDraftSelect({
-      data: { title: 'ST', content: 'SC', module_id: null, subfolder: null },
+      rows: [{ id: 'd1', title: 'ST', content: 'SC', module_id: null, subfolder: null }],
     })
 
     renderHook(() =>
@@ -137,7 +189,7 @@ describe('useDraft — restore', () => {
 
     expect(Storage.prototype.removeItem).toHaveBeenCalledWith('admin-draft')
     expect(supabase.from).toHaveBeenCalledWith('drafts')
-    expect(query.maybeSingle).toHaveBeenCalledTimes(1)
+    expect(query.limit).toHaveBeenCalledTimes(1)
   })
 
   it('Does not run restore more than once even if dependencies change', async () => {
@@ -146,7 +198,7 @@ describe('useDraft — restore', () => {
     const setSelectedPath1 = vi.fn()
 
     Storage.prototype.getItem.mockReturnValue(null)
-    const query = setupSupabaseDraftSelect({ data: null })
+    const query = setupSupabaseDraftSelect({ rows: [] })
 
     const { rerender } = renderHook((props) => useDraft(props), {
       initialProps: {
@@ -180,7 +232,7 @@ describe('useDraft — restore', () => {
 
     expect(Storage.prototype.getItem).toHaveBeenCalledTimes(1)
     expect(supabase.from).toHaveBeenCalledTimes(1)
-    expect(query.maybeSingle).toHaveBeenCalledTimes(1)
+    expect(query.limit).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -238,16 +290,19 @@ describe('useDraft — save to localStorage', () => {
 
     Storage.prototype.getItem.mockReturnValue(null)
 
-    let resolveMaybeSingle
-    const maybeSinglePromise = new Promise((resolve) => {
-      resolveMaybeSingle = resolve
+    let resolveLimit
+    const limitPromise = new Promise((resolve) => {
+      resolveLimit = resolve
     })
 
     const query = {
       select: vi.fn(() => query),
       eq: vi.fn(() => query),
-      maybeSingle: vi.fn(() => maybeSinglePromise),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
+      order: vi.fn(() => query),
+      limit: vi.fn(() => limitPromise),
+      maybeSingle: vi.fn(async () => ({ data: null })),
+      upsert: vi.fn(() => query),
+      single: vi.fn(async () => ({ data: null, error: null })),
       delete: vi.fn(() => query),
     }
     supabase.from.mockImplementation(() => query)
@@ -280,7 +335,7 @@ describe('useDraft — save to localStorage', () => {
 
     expect(Storage.prototype.setItem).not.toHaveBeenCalled()
 
-    resolveMaybeSingle({ data: null })
+    resolveLimit({ data: [] })
     await act(async () => {
       await Promise.resolve()
     })
@@ -357,14 +412,7 @@ describe('useDraft — save to Supabase', () => {
       return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
     })
 
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn(() => query),
-      maybeSingle: vi.fn(async () => ({ data: null })),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
-      delete: vi.fn(() => query),
-    }
-    supabase.from.mockImplementation(() => query)
+    const query = setupSupabaseDraftSelect({ rows: [], upsertData: { id: 'gen-1' } })
 
     renderHook(() =>
       useDraft({
@@ -386,7 +434,10 @@ describe('useDraft — save to Supabase', () => {
     expect(query.upsert).toHaveBeenCalledTimes(1)
   })
 
-  it('Includes correct fields: user_id, title, content, module_id, subfolder, updated_at', async () => {
+  // ── REGRESSION (Issue #14) ──────────────────────────────────────────
+  // The legacy hook upserted with `onConflict: 'user_id'`, clashing with the
+  // multi-draft schema keyed by `id`. The conflict target must be `id`.
+  it('Upserts with onConflict: "id" (not user_id) and the expected fields', async () => {
     const setTitle = vi.fn()
     const setContent = vi.fn()
     const setSelectedPath = vi.fn()
@@ -396,14 +447,7 @@ describe('useDraft — save to Supabase', () => {
       return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
     })
 
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn(() => query),
-      maybeSingle: vi.fn(async () => ({ data: null })),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
-      delete: vi.fn(() => query),
-    }
-    supabase.from.mockImplementation(() => query)
+    const query = setupSupabaseDraftSelect({ rows: [], upsertData: { id: 'gen-1' } })
 
     renderHook(() =>
       useDraft({
@@ -430,8 +474,10 @@ describe('useDraft — save to Supabase', () => {
         subfolder: 's1',
         updated_at: expect.any(String),
       }),
-      { onConflict: 'user_id' }
+      { onConflict: 'id' }
     )
+    // The autosave path resolves through .select('id').single() to capture the id.
+    expect(query.single).toHaveBeenCalled()
   })
 
   it('Does not call supabase if userId is null', async () => {
@@ -472,14 +518,7 @@ describe('useDraft — clearDraft', () => {
       return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
     })
 
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn(() => query),
-      maybeSingle: vi.fn(async () => ({ data: null })),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
-      delete: vi.fn(() => query),
-    }
-    supabase.from.mockImplementation(() => query)
+    setupSupabaseDraftSelect({ rows: [], upsertData: { id: 'gen-1' } })
 
     const { result } = renderHook(() =>
       useDraft({
@@ -510,14 +549,7 @@ describe('useDraft — clearDraft', () => {
       return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
     })
 
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn(() => query),
-      maybeSingle: vi.fn(async () => ({ data: null })),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
-      delete: vi.fn(() => query),
-    }
-    supabase.from.mockImplementation(() => query)
+    const query = setupSupabaseDraftSelect({ rows: [], upsertData: { id: 'gen-1' } })
 
     const { result } = renderHook(() =>
       useDraft({
@@ -552,14 +584,7 @@ describe('useDraft — saveDraftNow', () => {
       return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
     })
 
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn(() => query),
-      maybeSingle: vi.fn(async () => ({ data: null })),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
-      delete: vi.fn(() => query),
-    }
-    supabase.from.mockImplementation(() => query)
+    setupSupabaseDraftSelect({ rows: [], upsertData: { id: 'gen-1' } })
 
     const { result } = renderHook(() =>
       useDraft({
@@ -589,7 +614,7 @@ describe('useDraft — saveDraftNow', () => {
     })
   })
 
-  it('Calls supabase upsert with correct fields immediately', async () => {
+  it('Calls supabase upsert with correct fields immediately (onConflict: "id")', async () => {
     const setTitle = vi.fn()
     const setContent = vi.fn()
     const setSelectedPath = vi.fn()
@@ -599,14 +624,7 @@ describe('useDraft — saveDraftNow', () => {
       return JSON.stringify({ title: 'restored', content: 'x', selectedPath: null })
     })
 
-    const query = {
-      select: vi.fn(() => query),
-      eq: vi.fn(() => query),
-      maybeSingle: vi.fn(async () => ({ data: null })),
-      upsert: vi.fn(async () => ({ data: null, error: null })),
-      delete: vi.fn(() => query),
-    }
-    supabase.from.mockImplementation(() => query)
+    const query = setupSupabaseDraftSelect({ rows: [], upsertData: { id: 'gen-1' } })
 
     const { result } = renderHook(() =>
       useDraft({
@@ -634,7 +652,48 @@ describe('useDraft — saveDraftNow', () => {
         subfolder: 's1',
         updated_at: expect.any(String),
       }),
-      { onConflict: 'user_id' }
+      { onConflict: 'id' }
+    )
+  })
+
+  // ── REGRESSION (Issue #14) ──────────────────────────────────────────
+  // Once a draft has been restored (so its id is known), persistence must
+  // target that exact row by id — the legacy hook never sent an id at all.
+  it('Includes the restored draft id in the upsert row so it targets the same row', async () => {
+    const setTitle = vi.fn()
+    const setContent = vi.fn()
+    const setSelectedPath = vi.fn()
+
+    Storage.prototype.getItem.mockReturnValue(null)
+    const query = setupSupabaseDraftSelect({
+      rows: [{ id: 'existing-77', title: 'old', content: 'oc', module_id: null, subfolder: null }],
+      upsertData: { id: 'existing-77' },
+    })
+
+    const { result } = renderHook(() =>
+      useDraft({
+        userId: 'u1',
+        title: 'T',
+        content: 'C',
+        selectedPath: null,
+        setTitle,
+        setContent,
+        setSelectedPath,
+      })
+    )
+
+    // Let restore resolve and capture the existing draft id.
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      await result.current.saveDraftNow()
+    })
+
+    expect(query.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'existing-77', user_id: 'u1' }),
+      { onConflict: 'id' }
     )
   })
 
@@ -693,4 +752,3 @@ describe('draftDB — image queue', () => {
     expect(extractDraftKeys('![a](/notes/img/1.png)')).toEqual([])
   })
 })
-

@@ -19,6 +19,59 @@ beforeEach(() => {
   globalThis.fetch = vi.fn()
 })
 
+describe('getFileSha', () => {
+  it('returns null on 404 (file does not exist)', async () => {
+    const { getFileSha } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(mockResponse({ status: 404, ok: false }))
+
+    await expect(getFileSha('some/path.md')).resolves.toBeNull()
+  })
+
+  it('returns the sha on a successful response', async () => {
+    const { getFileSha } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({ json: async () => ({ sha: 'abc123' }) })
+    )
+
+    await expect(getFileSha('some/path.md')).resolves.toBe('abc123')
+  })
+
+  it('throws on a 403 rate-limit response instead of reporting "no sha"', async () => {
+    const { getFileSha } = await loadGithubApi()
+
+    // A 403 (rate limit) must NOT be collapsed into null — an existing file
+    // would then be treated as new, causing commitFile to PUT without a sha
+    // (GitHub 422) and deleteFile to silently no-op.
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({ status: 403, ok: false, json: async () => ({ message: 'API rate limit exceeded' }) })
+    )
+
+    await expect(getFileSha('some/path.md')).rejects.toThrow('403')
+  })
+
+  it('throws on a 401 auth response', async () => {
+    const { getFileSha } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({ status: 401, ok: false, json: async () => ({ message: 'Bad credentials' }) })
+    )
+
+    await expect(getFileSha('some/path.md')).rejects.toThrow('401')
+  })
+
+  it('throws on a 5xx server error', async () => {
+    const { getFileSha } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({ status: 500, ok: false, json: async () => ({ message: 'Server Error' }) })
+    )
+
+    await expect(getFileSha('some/path.md')).rejects.toThrow('500')
+  })
+})
+
 describe('listDirectory', () => {
   it('returns empty array on 404', async () => {
     const { listDirectory } = await loadGithubApi()
@@ -120,6 +173,55 @@ describe('listDirectory — gitkeep filtering', () => {
   })
 })
 
+describe('Issue #20 — .gitkeep data: URL CORS regression', () => {
+  // Reproduces the exact console error: "Cross-Origin Request Blocked:
+  // data:text/plain;base64,Cg==". GitHub inlines the content of tiny files
+  // like .gitkeep directly into the `download_url` field as a data: URL.
+  // The fix centralises filtering at the listDirectory boundary so that NO
+  // consumer (DirectoryDrawer, useImageCleanup, useEditorSave, …) can ever
+  // iterate a directory entry whose download_url is a data: URL and feed it
+  // to fetch(). This asserts the consumer-facing safety property directly:
+  // every entry listDirectory hands back must be safe to fetch().
+  it('strips the .gitkeep entry carrying data:text/plain;base64,Cg== so no consumer can fetch it', async () => {
+    const { listDirectory } = await loadGithubApi()
+
+    globalThis.fetch.mockResolvedValueOnce(
+      mockResponse({
+        json: async () => ([
+          {
+            name: '.gitkeep',
+            type: 'file',
+            path: 'src/content/notes/course1/web/notes/.gitkeep',
+            download_url: 'data:text/plain;base64,Cg==',
+          },
+          {
+            name: 'intro.md',
+            type: 'file',
+            path: 'src/content/notes/course1/web/notes/intro.md',
+            download_url: 'https://raw.githubusercontent.com/acme/repo/main/src/content/notes/course1/web/notes/intro.md',
+          },
+        ])
+      })
+    )
+
+    const result = await listDirectory('src/content/notes/course1/web/notes')
+
+    // The placeholder must be gone entirely…
+    expect(result.some(f => f.name === '.gitkeep')).toBe(false)
+    // …and every surviving entry must be safe to hand to fetch() — i.e. no
+    // data: URL survives anywhere a consumer could reach it.
+    expect(result.every(f => !String(f.download_url ?? '').startsWith('data:'))).toBe(true)
+    expect(result).toEqual([
+      {
+        name: 'intro.md',
+        type: 'file',
+        path: 'src/content/notes/course1/web/notes/intro.md',
+        download_url: 'https://raw.githubusercontent.com/acme/repo/main/src/content/notes/course1/web/notes/intro.md',
+      },
+    ])
+  })
+})
+
 describe('commitFileWithRetry', () => {
   it('retries on 409 and succeeds on second attempt', async () => {
     vi.useFakeTimers()
@@ -128,6 +230,27 @@ describe('commitFileWithRetry', () => {
     globalThis.fetch
       .mockResolvedValueOnce(mockResponse({ json: async () => ({ sha: 'sha-1' }) }))
       .mockResolvedValueOnce(mockResponse({ ok: false, status: 409 }))
+      .mockResolvedValueOnce(mockResponse({ json: async () => ({ sha: 'sha-2' }) }))
+      .mockResolvedValueOnce(mockResponse({ ok: true, status: 200, json: async () => ({ ok: true }) }))
+
+    const promise = commitFileWithRetry('a/b.md', 'hello', 'msg')
+    await vi.runAllTimersAsync()
+
+    await expect(promise).resolves.toEqual({ ok: true })
+    expect(globalThis.fetch).toHaveBeenCalledTimes(4)
+
+    vi.useRealTimers()
+  })
+
+  it('retries on 422 stale-sha conflict and succeeds on second attempt', async () => {
+    vi.useFakeTimers()
+    const { commitFileWithRetry } = await loadGithubApi()
+
+    // GitHub's Contents API reports a stale-sha conflict as 422 Unprocessable
+    // Entity far more often than 409. This must be retried, not rethrown.
+    globalThis.fetch
+      .mockResolvedValueOnce(mockResponse({ json: async () => ({ sha: 'sha-1' }) }))
+      .mockResolvedValueOnce(mockResponse({ ok: false, status: 422 }))
       .mockResolvedValueOnce(mockResponse({ json: async () => ({ sha: 'sha-2' }) }))
       .mockResolvedValueOnce(mockResponse({ ok: true, status: 200, json: async () => ({ ok: true }) }))
 

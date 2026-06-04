@@ -1,5 +1,4 @@
 import 'katex/contrib/mhchem'
-import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import remarkGfm from 'remark-gfm'
@@ -65,31 +64,9 @@ function SocialLinkPopover({ platform, title, href, description, meta, actionLab
   )
 }
 
-function MoleculeChip({ alt, data }) {
-  const [hasError, setHasError] = useState(false)
-  const src = `data:image/svg+xml;base64,${data}`
-
-  return (
-    <div className={styles.moleculeWrapper}>
-      {hasError ? (
-        <div className={styles.moleculeError}>[molecule: {alt}]</div>
-      ) : (
-        <img
-          className={styles.moleculeImage}
-          src={src}
-          alt={alt || ''}
-          loading="lazy"
-          onError={() => setHasError(true)}
-        />
-      )}
-      <div className={styles.moleculeLabel}>{alt}</div>
-    </div>
-  )
-}
-
 function splitContentByCustomTags(content) {
   const parts = []
-  const regex = /<(SocialLink|MoleculeStructure)([\s\S]*?)\/>/g
+  const regex = /<(SocialLink)([\s\S]*?)\/>/g
   let lastIndex = 0
   let match
 
@@ -206,6 +183,26 @@ const markdownComponents = {
   },
 }
 
+// Same component overrides as above, but paragraphs render inline (no block
+// <p>) so text that sits directly against an inline SocialLink chip flows
+// within the sentence instead of being pushed onto its own line.
+const inlineMarkdownComponents = {
+  ...markdownComponents,
+  p({ children }) {
+    return <>{children}</>
+  },
+}
+
+const remarkPlugins = [remarkGfm, remarkMath]
+const rehypePlugins = [rehypeKatex]
+
+// Split a markdown segment into block-paragraph chunks at blank lines, so the
+// single chunk that touches an inline chip can be rendered inline while the
+// other paragraphs stay block-level.
+function splitIntoBlockChunks(content) {
+  return content.split(/\n[ \t]*\n/)
+}
+
 function MarkdownRenderer({ content }) {
   const parts = splitContentByCustomTags(content)
 
@@ -219,19 +216,42 @@ function MarkdownRenderer({ content }) {
             </span>
           )
         }
-        if (part.type === 'moleculestructure') {
-          return <MoleculeChip key={i} {...part.props} />
+
+        // A markdown segment that is not adjacent to an inline SocialLink chip
+        // renders exactly as before — a single block-level markdown render.
+        const inlineHead = parts[i - 1]?.type === 'sociallink'
+        const inlineTail = parts[i + 1]?.type === 'sociallink'
+        if (!inlineHead && !inlineTail) {
+          return (
+            <ReactMarkdown
+              key={i}
+              remarkPlugins={remarkPlugins}
+              rehypePlugins={rehypePlugins}
+              components={markdownComponents}
+            >
+              {part.content}
+            </ReactMarkdown>
+          )
         }
-        return (
-          <ReactMarkdown
-            key={i}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={markdownComponents}
-          >
-            {part.content}
-          </ReactMarkdown>
-        )
+
+        // Adjacent to a chip: render the boundary chunk(s) inline so the chip
+        // flows within the sentence, while any other paragraphs stay block.
+        const chunks = splitIntoBlockChunks(part.content)
+        return chunks.map((chunk, j) => {
+          const isHead = j === 0
+          const isTail = j === chunks.length - 1
+          const renderInline = (isHead && inlineHead) || (isTail && inlineTail)
+          return (
+            <ReactMarkdown
+              key={`${i}-${j}`}
+              remarkPlugins={remarkPlugins}
+              rehypePlugins={rehypePlugins}
+              components={renderInline ? inlineMarkdownComponents : markdownComponents}
+            >
+              {chunk}
+            </ReactMarkdown>
+          )
+        })
       })}
     </div>
   )

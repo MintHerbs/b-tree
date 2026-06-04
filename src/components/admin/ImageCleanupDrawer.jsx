@@ -4,7 +4,7 @@ import { X, MagnifyingGlass, Trash, Check, CaretDown } from '@phosphor-icons/rea
 import { useImageCleanup } from '../../hooks/useImageCleanup'
 import styles from './ImageCleanupDrawer.module.css'
 
-export default function ImageCleanupDrawer({ open, onClose, modules, isOwner }) {
+export default function ImageCleanupDrawer({ open, onClose, modules, isOwner, course }) {
   // State machine: idle → scanning → results → deleting → done
   const [state, setState] = useState('idle')
   
@@ -30,7 +30,7 @@ export default function ImageCleanupDrawer({ open, onClose, modules, isOwner }) 
   const [deletedCount, setDeletedCount] = useState(0)
   const [failedCount, setFailedCount] = useState(0)
   
-  const { runScan, deleteOrphans } = useImageCleanup({ modules, isOwner })
+  const { runScan, deleteOrphans } = useImageCleanup({ modules, isOwner, course })
   
   // Reset state when drawer closes
   useEffect(() => {

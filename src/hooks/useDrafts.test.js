@@ -327,6 +327,41 @@ describe('useDrafts — switchDraft', () => {
     expect(restoreDraftBlobs).toHaveBeenCalledWith('d2')
   })
 
+  it('reloads the latest edits — not stale mount-time content — when switching away and back (Issue #3)', async () => {
+    const rows = [
+      { id: 'd1', title: 'T1', content: 'C1', module_id: null, subfolder: null },
+      { id: 'd2', title: 'T2', content: 'C2', module_id: null, subfolder: null },
+    ]
+    setupSupabase({ list: { data: rows, error: null }, upsert: { data: null, error: null } })
+    const { result, rerender, base } = setup()
+    await flushLoad()
+
+    // User edits the active draft (d1) in the editor. The mock setters don't
+    // feed back into props, so we drive the live editor content via rerender.
+    await act(async () => {
+      rerender({ ...base, content: 'C1-edited' })
+    })
+
+    // Switch to d2; the editor now shows d2's content.
+    await act(async () => {
+      await result.current.switchDraft('d2')
+    })
+    await act(async () => {
+      rerender({ ...base, content: 'C2' })
+    })
+
+    STABLE.setContent.mockClear()
+
+    // Switch back to d1 — it must reload the EDITED content, not the original C1.
+    await act(async () => {
+      await result.current.switchDraft('d1')
+    })
+
+    expect(STABLE.setContent).toHaveBeenCalledWith('C1-edited')
+    expect(STABLE.setContent).not.toHaveBeenCalledWith('C1')
+    expect(result.current.activeDraftId).toBe('d1')
+  })
+
   it('does nothing when switching to the already-active draft', async () => {
     const rows = [{ id: 'd1', title: 'T1', content: 'C1', module_id: null, subfolder: null }]
     const builder = setupSupabase({ list: { data: rows, error: null } })
@@ -376,6 +411,28 @@ describe('useDrafts — deleteDraft', () => {
     expect(result.current.drafts).toEqual([])
     expect(result.current.activeDraftId).toBeNull()
     expect(STABLE.setContent).toHaveBeenLastCalledWith('')
+  })
+
+  it('does not resurrect the deleted active draft via the switchDraft → flushSave path (Issue #4)', async () => {
+    const rows = [
+      { id: 'd1', title: 'T1', content: 'C1', module_id: null, subfolder: null },
+      { id: 'd2', title: 'T2', content: 'C2', module_id: null, subfolder: null },
+    ]
+    const builder = setupSupabase({ list: { data: rows, error: null }, upsert: { data: null, error: null } })
+    const { result } = setup()
+    await flushLoad()
+    builder.upsert.mockClear()
+
+    // Delete the active draft (d1). Internally this switches to d2, which runs
+    // flushSave first — that flush must NOT upsert the just-deleted d1.
+    await act(async () => {
+      await result.current.deleteDraft('d1')
+    })
+
+    const resurrected = builder.upsert.mock.calls.some(([payload]) => payload?.id === 'd1')
+    expect(resurrected).toBe(false)
+    expect(result.current.activeDraftId).toBe('d2')
+    expect(result.current.drafts.map((d) => d.id)).toEqual(['d2'])
   })
 })
 
@@ -427,6 +484,26 @@ describe('useDrafts — clearActiveDraft', () => {
 
     expect(result.current.drafts).toEqual([])
     expect(result.current.activeDraftId).toBeNull()
+  })
+
+  it('does not resurrect the just-published draft via the switchDraft → flushSave path (Issue #4)', async () => {
+    const rows = [
+      { id: 'd1', title: 'T1', content: 'C1', module_id: null, subfolder: null },
+      { id: 'd2', title: 'T2', content: 'C2', module_id: null, subfolder: null },
+    ]
+    const builder = setupSupabase({ list: { data: rows, error: null }, upsert: { data: null, error: null } })
+    const { result } = setup()
+    await flushLoad()
+    builder.upsert.mockClear()
+
+    await act(async () => {
+      await result.current.clearActiveDraft()
+    })
+
+    const resurrected = builder.upsert.mock.calls.some(([payload]) => payload?.id === 'd1')
+    expect(resurrected).toBe(false)
+    expect(result.current.activeDraftId).toBe('d2')
+    expect(result.current.drafts.map((d) => d.id)).toEqual(['d2'])
   })
 })
 
