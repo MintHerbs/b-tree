@@ -34,28 +34,23 @@ export function useImageCleanup({ modules, isOwner }) {
       ? modules.filter(m => m.id === moduleId)
       : modules
 
-    // 2. Build list of all .md files to check across selected modules
+    // 2. Build list of all .md files to check across selected modules.
+    // Notes live at arbitrary depths (module.id/getting-started.md,
+    // module.id/notes/foo.md, etc.) with no fixed subfolder convention, so
+    // the only reliable source of "which .md files exist for this module"
+    // is the module's own notes[] registry in modules.js — same convention
+    // useEditorSave.js uses when it writes image_map.file_path.
     const allFiles = []
     for (const mod of modulesToScan) {
-      for (const subfolder of (mod.subfolders ?? [])) {
-        const dirPath = `src/content/notes/${mod.id}/${subfolder}`
+      for (const note of (mod.notes ?? [])) {
+        const relativePath = `${mod.id}/${note.filename}`
+        const githubPath = toGithubPath(relativePath)
         try {
-          const files = await listDirectory(dirPath)
-          files.forEach(f => {
-            if (f.name.endsWith('.md')) {
-              allFiles.push({
-                githubPath: f.path,
-                // Strip src/content/notes/ prefix and .md suffix for storage
-                relativePath: f.path
-                  .replace('src/content/notes/', '')
-                  .replace('.md', ''),
-                moduleId: mod.id,
-                sha: f.sha,   // GitHub includes SHA in directory listings
-              })
-            }
-          })
+          const sha = await getFileSha(githubPath)
+          if (!sha) continue // file registered but missing on GitHub
+          allFiles.push({ githubPath, relativePath, moduleId: mod.id, sha })
         } catch {
-          // subfolder doesn't exist yet — skip silently
+          // unreadable — skip silently
         }
       }
     }
