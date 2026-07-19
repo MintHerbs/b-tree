@@ -1,5 +1,6 @@
 import { commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../lib/githubApi'
 import { getIconOptionByName } from '../components/admin/adminIconOptions'
+import { upsertNoteEntry } from './useEditorSave'
 
 // Title to filename conversion
 function titleToFilename(title) {
@@ -176,6 +177,54 @@ function removeSubfolderNotes(modulesJs, moduleId, subfolderName) {
   return { modulesJs: updatedModulesJs, removedCount }
 }
 
+// The subfolder a note is *displayed* under in DirectoryDrawer: root-level
+// notes (no "/" in the filename) are grouped into "notes" there even though
+// deriveSubfolder calls them null. Match that when resolving a dragged file.
+function displaySubfolder(filename) {
+  return deriveSubfolder(filename) ?? 'notes'
+}
+
+// Resolves a dragged file back to its modules.js entry. File rows come from
+// two sources — GitHub's directory listing (always "<base>.md") and modules.js
+// itself (usually extensionless) — so compare on the stripped basename.
+function findNoteEntry(moduleSource, subfolder, filename) {
+  const target = filename.replace(/\.md$/, '')
+
+  for (const [, entryFilename, label] of moduleSource.matchAll(NOTE_ENTRY_PATTERN)) {
+    const base = entryFilename.split('/').pop().replace(/\.md$/, '')
+    if (displaySubfolder(entryFilename) === subfolder && base === target) {
+      return { filename: entryFilename, label }
+    }
+  }
+
+  return null
+}
+
+// Drops a single note entry from a module's block. Only needed when a note
+// moves to a *different* subject, where its entry has to leave one block and
+// be added to another; a same-subject move is just a filename rewrite.
+function removeNoteEntry(modulesJs, moduleId, filename) {
+  const block = findModuleBlock(modulesJs, moduleId)
+  const source = modulesJs.slice(block.start, block.end)
+  let removed = false
+
+  const updatedSource = source
+    .replace(NOTE_ENTRY_PATTERN, (fullMatch, entryFilename) => {
+      if (!removed && entryFilename === filename) {
+        removed = true
+        return ''
+      }
+      return fullMatch
+    })
+    .replace(/\n[ \t]*\n/g, '\n')
+
+  if (!removed) {
+    throw new Error(`Could not find note "${filename}" in modules.js`)
+  }
+
+  return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
+}
+
 // Rewrites the filename field of specific note entries within a module
 // (used after their content has already moved on GitHub).
 function renameNoteFilenames(modulesJs, moduleId, renames) {
@@ -194,7 +243,7 @@ function renameNoteFilenames(modulesJs, moduleId, renames) {
   return `${modulesJs.slice(0, block.start)}${source}${modulesJs.slice(block.end)}`
 }
 
-export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions }) {
+export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions, isOwner }) {
   // Module management handlers
   const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
     const moduleId = titleToFilename(name)
@@ -466,21 +515,108 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleMoveFile = async ({ fromModule, fromSubfolder, filename, toModule, toSubfolder }) => {
+    if (fromModule === toModule && fromSubfolder === toSubfolder) return
+
+    const isCrossSubject = fromModule !== toModule
+
+    // A cross-subject move rewrites two module blocks in modules.js, which the
+    // admin-github-write Edge Function rejects for anyone but an owner (it
+    // proves each edit stays inside a single module). Say so plainly rather
+    // than letting it surface as a raw 403 after the content has been copied.
+    if (isCrossSubject && !isOwner) {
+      showToast('Moving notes between subjects is owner-only', 'error')
+      return
+    }
+
     showToast(`Moving ${filename}...`, 'success')
 
     try {
-      // Read file content
-      const oldPath = `src/content/notes/${fromModule}/${fromSubfolder}/${filename}`
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const fromBlock = findModuleBlock(currentModulesJs, fromModule)
+      const entry = findNoteEntry(
+        currentModulesJs.slice(fromBlock.start, fromBlock.end),
+        fromSubfolder,
+        filename
+      )
+
+      if (!entry) {
+        showToast(`${filename} isn't registered in modules.js — nothing to move`, 'error')
+        return
+      }
+
+      const base = entry.filename.split('/').pop()
+      const newFilename = `${toSubfolder}/${base}`
+      const toBlock = findModuleBlock(currentModulesJs, toModule)
+      const toSource = currentModulesJs.slice(toBlock.start, toBlock.end)
+
+      if ([...toSource.matchAll(NOTE_ENTRY_PATTERN)].some(match => match[1] === newFilename)) {
+        showToast(`A note already exists at ${toModule}/${newFilename}`, 'error')
+        return
+      }
+
+      const oldPath = notePathOnDisk(fromModule, entry.filename)
+      const newPath = notePathOnDisk(toModule, newFilename)
+
       const fileContent = await getFileContent(oldPath)
+      await commitFile(newPath, fileContent, `feat: move ${base} to ${toModule}/${toSubfolder}`)
 
-      // Commit to new location
-      const newPath = `src/content/notes/${toModule}/${toSubfolder}/${filename}`
-      await commitFile(newPath, fileContent, `feat: move ${filename} to ${toModule}/${toSubfolder}`)
+      // Content is safe at the new path from here on. The registry is updated
+      // *before* the old file is deleted so the worst case is a lingering
+      // duplicate the registry ignores — deleting first would leave the entry
+      // pointing at a path that no longer exists.
+      const updatedModulesJs = isCrossSubject
+        ? upsertNoteEntry(
+            removeNoteEntry(currentModulesJs, fromModule, entry.filename),
+            toModule,
+            `{ filename: '${newFilename}', label: '${entry.label}' },`,
+            newFilename
+          )
+        : renameNoteFilenames(currentModulesJs, fromModule, [
+            { oldFilename: entry.filename, newFilename },
+          ])
 
-      // Delete from old location (would need delete API)
-      // Update modules.js
+      await commitFileWithRetry(
+        MODULES_JS_PATH,
+        updatedModulesJs,
+        `feat: move ${base} from ${fromModule}/${fromSubfolder} to ${toModule}/${toSubfolder}`,
+        isCrossSubject ? undefined : fromModule
+      )
 
-      showToast(`File moved successfully`, 'success')
+      refreshModuleState(setModules, prev =>
+        prev.map(module => {
+          const notes = module.notes ?? []
+
+          if (!isCrossSubject) {
+            if (module.id !== fromModule) return module
+            return {
+              ...module,
+              notes: notes.map(note =>
+                note.filename === entry.filename ? { ...note, filename: newFilename } : note
+              ),
+            }
+          }
+
+          if (module.id === fromModule) {
+            return { ...module, notes: notes.filter(note => note.filename !== entry.filename) }
+          }
+          if (module.id === toModule) {
+            return { ...module, notes: [...notes, { filename: newFilename, label: entry.label }] }
+          }
+          return module
+        })
+      )
+
+      try {
+        await deleteFile(oldPath, `chore: remove ${base} after move to ${toModule}/${toSubfolder}`)
+      } catch (deleteError) {
+        showToast(
+          `Moved ${filename} to ${toModule}/${toSubfolder}, but the original couldn't be removed (${deleteError.message}) — delete ${oldPath} manually`,
+          'error'
+        )
+        return
+      }
+
+      showToast(`Moved ${filename} to ${toModule}/${toSubfolder}`, 'success')
     } catch (error) {
       showToast(`Failed to move file: ${error.message}`, 'error')
     }

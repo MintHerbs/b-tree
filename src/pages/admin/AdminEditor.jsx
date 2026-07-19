@@ -250,7 +250,10 @@ function AdminEditorContent() {
   const {
     handleNewModule, handleDeleteModule, handleRenameModule,
     handleNewSubfolder, handleRenameSubfolder, handleDeleteSubfolder, handleMoveFile,
-  } = useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions })
+  } = useEditorModules({
+    showToast, setModules, setSelectedPath, unusedIconOptions,
+    isOwner: profile?.role === 'owner',
+  })
 
   const { handleFormatAction, handleStyleChange, detectCurrentStyle } = useEditorFormatting({
     editorRef, setCurrentStyle,

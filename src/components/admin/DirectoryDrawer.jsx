@@ -215,12 +215,16 @@ export default function DirectoryDrawer({
     }
   }
 
-  const handleDragStart = (e, moduleId, subfolder) => {
+  // Notes are dragged, not subfolders — the drag source is a file row in edit
+  // mode, which is the only mode that lists files. onMoveFile resolves the
+  // basename back to its modules.js entry.
+  const handleDragStart = (e, moduleId, subfolder, filename) => {
+    e.stopPropagation()
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('application/json', JSON.stringify({
       fromModule: moduleId,
       fromSubfolder: subfolder,
-      filename: 'placeholder.md' // This will be determined by the parent component
+      filename
     }))
   }
 
@@ -234,22 +238,28 @@ export default function DirectoryDrawer({
     setDragOverPath(null)
   }
 
-  const handleDrop = (e, toModule, toSubfolder) => {
+  const handleDrop = async (e, toModule, toSubfolder) => {
     e.preventDefault()
     setDragOverPath(null)
-    
+
+    let data
     try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'))
-      if (data.fromModule !== toModule || data.fromSubfolder !== toSubfolder) {
-        onMoveFile({
-          ...data,
-          toModule,
-          toSubfolder
-        })
-      }
+      data = JSON.parse(e.dataTransfer.getData('application/json'))
     } catch (err) {
       console.error('Failed to parse drag data:', err)
+      return
     }
+
+    if (data.fromModule === toModule && data.fromSubfolder === toSubfolder) return
+
+    await onMoveFile({ ...data, toModule, toSubfolder })
+
+    // File lists are cached per folder on first expand, so both ends of the
+    // move would keep rendering their pre-move contents without a reload.
+    await Promise.all([
+      loadFolderFiles(data.fromModule, data.fromSubfolder),
+      loadFolderFiles(toModule, toSubfolder),
+    ])
   }
 
   const isDragOver = (moduleId, subfolder) => {
@@ -423,11 +433,9 @@ export default function DirectoryDrawer({
                                 toggleFolder(module.id, subfolder)
                               }
                             }}
-                            draggable={!isRenaming && mode === 'create'}
-                            onDragStart={(e) => mode === 'create' && handleDragStart(e, module.id, subfolder)}
-                            onDragOver={(e) => mode === 'create' && handleDragOver(e, module.id, subfolder)}
+                            onDragOver={(e) => mode === 'edit' && handleDragOver(e, module.id, subfolder)}
                             onDragLeave={handleDragLeave}
-                            onDrop={(e) => mode === 'create' && handleDrop(e, module.id, subfolder)}
+                            onDrop={(e) => mode === 'edit' && handleDrop(e, module.id, subfolder)}
                           >
                             <div className={styles.subfolderContent}>
                               {mode === 'edit' ? (
@@ -515,6 +523,8 @@ export default function DirectoryDrawer({
                                     key={file.path}
                                     className={styles.fileItem}
                                     onClick={() => handleFileClick(file.path)}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, module.id, subfolder, file.name)}
                                   >
                                     <FileMd size={14} className={styles.fileIcon} />
                                     <span className={styles.fileName}>{file.name}</span>

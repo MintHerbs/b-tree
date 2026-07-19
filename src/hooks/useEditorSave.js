@@ -53,7 +53,7 @@ function findModuleBlock(modulesJs, moduleId) {
   throw new Error(`Could not parse module: ${moduleId}`)
 }
 
-function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
+export function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
   const block = findModuleBlock(modulesJs, moduleId)
   const source = block.source
 
