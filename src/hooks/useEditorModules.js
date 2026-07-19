@@ -112,6 +112,88 @@ function refreshModuleState(setModules, updater) {
   setModules(prev => updater(prev))
 }
 
+// Subfolders aren't tracked directly — they're derived by grouping a
+// module's notes[] by the prefix of their filename (mirrors DirectoryDrawer.jsx).
+// A filename with no "/" has no subfolder (it lives at the module root), so
+// it's excluded here even when the target subfolder is literally 'notes'.
+function deriveSubfolder(filename) {
+  const slashIndex = filename.indexOf('/')
+  return slashIndex === -1 ? null : filename.slice(0, slashIndex)
+}
+
+// The GitHub path a note's filename field actually resolves to. Some legacy
+// entries already carry a trailing .md, most don't — normalize both.
+function notePathOnDisk(moduleId, filename) {
+  const withExt = filename.endsWith('.md') ? filename : `${filename}.md`
+  return `src/content/notes/${moduleId}/${withExt}`
+}
+
+function findModuleBlock(modulesJs, moduleId) {
+  const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  let startMatch = modulesJs.match(new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm'))
+  if (!startMatch) {
+    startMatch = modulesJs.match(new RegExp(`\\{\\s*id:\\s*'${escapedId}'\\s*,`, 'm'))
+  }
+  if (!startMatch || startMatch.index == null) {
+    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
+  }
+
+  const start = startMatch.index
+  let depth = 0
+  for (let index = start + 1; index < modulesJs.length; index++) {
+    const char = modulesJs[index]
+    if (char === '{') depth += 1
+    if (char === '}') {
+      depth -= 1
+      if (depth === 0) return { start, end: index + 1 }
+    }
+  }
+  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
+}
+
+const NOTE_ENTRY_PATTERN = /\{\s*filename:\s*'([^']+)'\s*,\s*label:\s*'([^']*)'\s*\},?/g
+
+// Removes every note entry in `moduleId` whose derived subfolder matches
+// `subfolderName`. Leaves the underlying GitHub files in place — the
+// DirectoryDrawer delete-confirmation copy already promises "notes inside
+// will be orphaned", matching the existing image-cleanup workflow.
+function removeSubfolderNotes(modulesJs, moduleId, subfolderName) {
+  const block = findModuleBlock(modulesJs, moduleId)
+  const source = modulesJs.slice(block.start, block.end)
+
+  let removedCount = 0
+  const updatedSource = source
+    .replace(NOTE_ENTRY_PATTERN, (fullMatch, filename) => {
+      if (deriveSubfolder(filename) === subfolderName) {
+        removedCount += 1
+        return ''
+      }
+      return fullMatch
+    })
+    .replace(/\n[ \t]*\n/g, '\n')
+
+  const updatedModulesJs = `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
+  return { modulesJs: updatedModulesJs, removedCount }
+}
+
+// Rewrites the filename field of specific note entries within a module
+// (used after their content has already moved on GitHub).
+function renameNoteFilenames(modulesJs, moduleId, renames) {
+  const block = findModuleBlock(modulesJs, moduleId)
+  let source = modulesJs.slice(block.start, block.end)
+
+  for (const { oldFilename, newFilename } of renames) {
+    const escapedOld = oldFilename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const pattern = new RegExp(`filename:\\s*'${escapedOld}'`)
+    if (!pattern.test(source)) {
+      throw new Error(`Could not find note "${oldFilename}" in modules.js`)
+    }
+    source = source.replace(pattern, `filename: '${newFilename}'`)
+  }
+
+  return `${modulesJs.slice(0, block.start)}${source}${modulesJs.slice(block.end)}`
+}
+
 export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions }) {
   // Module management handlers
   const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
@@ -242,14 +324,145 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
 
   const handleRenameSubfolder = async (moduleId, oldName, newName) => {
     showToast(`Renaming ${oldName} to ${newName}...`, 'success')
-    // Implementation would update modules.js references
-    showToast(`Subfolder renamed`, 'success')
+
+    try {
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const block = findModuleBlock(currentModulesJs, moduleId)
+      const moduleSource = currentModulesJs.slice(block.start, block.end)
+      const allFilenames = new Set(
+        [...moduleSource.matchAll(NOTE_ENTRY_PATTERN)].map(match => match[1])
+      )
+      const targetFilenames = [...allFilenames].filter(
+        filename => deriveSubfolder(filename) === oldName
+      )
+
+      if (targetFilenames.length === 0) {
+        showToast(`No registered notes found in ${oldName} to rename`, 'error')
+        return
+      }
+
+      const moved = []
+      const failed = []
+      const leftoverCopies = []
+
+      for (const oldFilename of targetFilenames) {
+        const rest = oldFilename.slice(oldFilename.indexOf('/') + 1)
+        const newFilename = `${newName}/${rest}`
+
+        if (allFilenames.has(newFilename)) {
+          failed.push({ oldFilename, error: `A note already exists at ${newFilename}` })
+          continue
+        }
+
+        const oldPath = notePathOnDisk(moduleId, oldFilename)
+        const newPath = notePathOnDisk(moduleId, newFilename)
+
+        try {
+          const content = await getFileContent(oldPath)
+          await commitFile(newPath, content, `feat: move ${oldFilename} to ${newFilename} in ${moduleId}`)
+          // Content is safely at newPath now — a delete failure here just
+          // leaves a stale duplicate at oldPath, not a broken link, so it
+          // still counts as moved rather than being discarded as failed.
+          try {
+            await deleteFile(oldPath, `chore: remove ${oldFilename} after move to ${newFilename}`)
+          } catch {
+            leftoverCopies.push(oldPath)
+          }
+          moved.push({ oldFilename, newFilename })
+        } catch (error) {
+          failed.push({ oldFilename, error: error.message })
+        }
+      }
+
+      if (moved.length > 0) {
+        const updatedModulesJs = renameNoteFilenames(currentModulesJs, moduleId, moved)
+        await commitFileWithRetry(
+          MODULES_JS_PATH,
+          updatedModulesJs,
+          `feat: rename ${oldName} to ${newName} in ${moduleId}`,
+          moduleId
+        )
+
+        refreshModuleState(setModules, prev =>
+          prev.map(module => {
+            if (module.id !== moduleId) return module
+            return {
+              ...module,
+              notes: (module.notes ?? []).map(note => {
+                const match = moved.find(m => m.oldFilename === note.filename)
+                return match ? { ...note, filename: match.newFilename } : note
+              }),
+            }
+          })
+        )
+      }
+
+      const leftoverSuffix = leftoverCopies.length > 0
+        ? ` (${leftoverCopies.length} old ${leftoverCopies.length === 1 ? 'copy' : 'copies'} could not be removed — safe to delete manually)`
+        : ''
+
+      if (failed.length === 0) {
+        setSelectedPath(prev =>
+          prev?.moduleId === moduleId && prev?.subfolder === oldName
+            ? { ...prev, subfolder: newName }
+            : prev
+        )
+        showToast(`Subfolder renamed to ${newName}${leftoverSuffix}`, leftoverCopies.length > 0 ? 'error' : 'success')
+      } else if (moved.length === 0) {
+        showToast(`Failed to rename subfolder: ${failed[0].error}`, 'error')
+      } else {
+        showToast(
+          `Renamed ${moved.length} of ${targetFilenames.length} notes; ${failed.length} failed — fix and retry${leftoverSuffix}`,
+          'error'
+        )
+      }
+    } catch (error) {
+      showToast(`Failed to rename subfolder: ${error.message}`, 'error')
+    }
   }
 
   const handleDeleteSubfolder = async (moduleId, subfolderName) => {
     showToast(`Deleting subfolder ${subfolderName}...`, 'success')
-    // Implementation would update modules.js
-    showToast(`Subfolder deleted`, 'success')
+
+    try {
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const { modulesJs: updatedModulesJs, removedCount } = removeSubfolderNotes(
+        currentModulesJs,
+        moduleId,
+        subfolderName
+      )
+
+      if (removedCount === 0) {
+        showToast(`No registered notes found in ${subfolderName} to remove`, 'error')
+        return
+      }
+
+      await commitFileWithRetry(
+        MODULES_JS_PATH,
+        updatedModulesJs,
+        `feat: remove ${subfolderName} subfolder from ${moduleId}`,
+        moduleId
+      )
+
+      refreshModuleState(setModules, prev =>
+        prev.map(module =>
+          module.id === moduleId
+            ? {
+                ...module,
+                notes: (module.notes ?? []).filter(
+                  note => deriveSubfolder(note.filename) !== subfolderName
+                ),
+              }
+            : module
+        )
+      )
+      setSelectedPath(prev =>
+        prev?.moduleId === moduleId && prev?.subfolder === subfolderName ? null : prev
+      )
+      showToast(`Subfolder ${subfolderName} removed from the registry (files left in place)`, 'success')
+    } catch (error) {
+      showToast(`Failed to delete subfolder: ${error.message}`, 'error')
+    }
   }
 
   const handleMoveFile = async ({ fromModule, fromSubfolder, filename, toModule, toSubfolder }) => {
