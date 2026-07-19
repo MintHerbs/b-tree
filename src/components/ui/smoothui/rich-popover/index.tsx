@@ -12,6 +12,8 @@ import { motion, useReducedMotion } from "motion/react";
 
 import type * as React from "react";
 
+import { isSafeUrl } from "../../../../lib/url";
+
 export interface RichTooltipProps {
   actionHref?: string;
   actionLabel?: string;
@@ -132,14 +134,16 @@ export default function RichTooltip({
 }: RichTooltipProps) {
   const shouldReduceMotion = useReducedMotion();
   const resolvedIcon = getPlatformIcon(platform, icon);
+  const safeHref = href && isSafeUrl(href) ? href : undefined;
+  const safeActionHref = actionHref && isSafeUrl(actionHref) ? actionHref : undefined;
 
   const Title = (
     <div className="flex items-center gap-2 font-medium text-sm">
       {resolvedIcon}
-      {href ? (
+      {safeHref ? (
         <a
           className="inline-flex items-center gap-1 hover:underline"
-          href={href}
+          href={safeHref}
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -160,11 +164,11 @@ export default function RichTooltip({
     const actionClassName =
       "inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 font-medium text-black text-xs transition-colors hover:bg-white/90";
 
-    if (actionHref) {
+    if (safeActionHref) {
       return (
         <a
           className={actionClassName}
-          href={actionHref}
+          href={safeActionHref}
           rel="noopener noreferrer"
           target="_blank"
         >

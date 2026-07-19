@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { X, Link as LinkIcon } from '@phosphor-icons/react'
+import { isSafeUrl } from '../../lib/url'
 import styles from './SocialLinkModal.module.css'
+
+function escapeAttr(value) {
+  return value.replace(/"/g, '\\"')
+}
 
 const PLATFORMS = [
   { id: 'youtube', label: 'YouTube', icon: '▶️', color: '#FF0000' },
@@ -15,6 +20,7 @@ export default function SocialLinkModal({ open, onClose, onInsert }) {
   const [description, setDescription] = useState('')
   const [meta, setMeta] = useState('')
   const [actionLabel, setActionLabel] = useState('')
+  const [urlError, setUrlError] = useState('')
 
   useEffect(() => {
     if (!open) {
@@ -24,6 +30,7 @@ export default function SocialLinkModal({ open, onClose, onInsert }) {
       setDescription('')
       setMeta('')
       setActionLabel('')
+      setUrlError('')
     } else {
       // Set default action labels based on platform
       if (platform === 'youtube') {
@@ -39,15 +46,19 @@ export default function SocialLinkModal({ open, onClose, onInsert }) {
   const handleInsert = () => {
     if (!url.trim() || !title.trim()) return
 
+    if (!isSafeUrl(url.trim())) {
+      setUrlError('Enter a valid http(s):// or mailto: link')
+      return
+    }
+
     // Generate the rich popover markdown syntax
-    const escapedDescription = description.replace(/"/g, '\\"')
     const richPopover = `<RichPopover
   platform="${platform}"
-  href="${url}"
-  title="${title}"
-  ${description ? `description="${escapedDescription}"` : ''}
-  ${meta ? `meta="${meta}"` : ''}
-  ${actionLabel ? `actionLabel="${actionLabel}"` : ''}
+  href="${escapeAttr(url)}"
+  title="${escapeAttr(title)}"
+  ${description ? `description="${escapeAttr(description)}"` : ''}
+  ${meta ? `meta="${escapeAttr(meta)}"` : ''}
+  ${actionLabel ? `actionLabel="${escapeAttr(actionLabel)}"` : ''}
 />`
 
     onInsert(richPopover)
@@ -97,9 +108,13 @@ export default function SocialLinkModal({ open, onClose, onInsert }) {
               className={styles.input}
               placeholder={`https://${platform}.com/...`}
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value)
+                if (urlError) setUrlError('')
+              }}
               required
             />
+            {urlError && <div className={styles.errorText}>{urlError}</div>}
           </div>
 
           <div className={styles.formGroup}>

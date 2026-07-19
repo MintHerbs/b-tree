@@ -89,6 +89,11 @@
   color: var(--text);
 }
 
+.errorText {
+  font-size: 12px;
+  color: var(--color-error);
+}
+
 .input,
 .textarea {
   background: var(--color-input);
