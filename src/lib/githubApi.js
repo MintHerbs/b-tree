@@ -1,46 +1,36 @@
-const OWNER  = import.meta.env.VITE_GITHUB_OWNER
-const REPO   = import.meta.env.VITE_GITHUB_REPO
-const BRANCH = import.meta.env.VITE_GITHUB_BRANCH
-const TOKEN  = import.meta.env.VITE_GITHUB_TOKEN
+import { supabase } from './supabaseClient'
 
-// Standard headers for all GitHub API requests
-const headers = {
-  Authorization: `Bearer ${TOKEN}`,
-  Accept: 'application/vnd.github+json',
-  'Content-Type': 'application/json',
+// All GitHub reads/writes are proxied through the admin-github-write Edge
+// Function, which verifies the caller's Supabase session and
+// allowed_directories server-side before touching GitHub. No GitHub token
+// or write access exists in the browser.
+async function invokeGithub(payload) {
+  const { data, error } = await supabase.functions.invoke('admin-github-write', { body: payload })
+  if (error) {
+    // FunctionsHttpError carries the original Response on `context` — read it
+    // so error messages like "GitHub commit failed: 409" survive the relay
+    // (commitFileWithRetry matches on the "409" substring).
+    const body = error.context?.json ? await error.context.json().catch(() => null) : null
+    throw new Error(body?.error || error.message || 'GitHub proxy call failed')
+  }
+  if (data?.error) throw new Error(data.error)
+  return data
 }
 
 // ─── SHA ────────────────────────────────────────────────────────────────────
 // Every GitHub write (PUT/DELETE) requires the current SHA of the file.
 // Returns null if the file doesn't exist yet (new file — no SHA needed).
 export async function getFileSha(path) {
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
-    { headers }
-  )
-  if (res.status === 404) return null
-  const data = await res.json()
-  return data.sha ?? null
+  const { sha } = await invokeGithub({ op: 'getFileSha', path })
+  return sha
 }
 
 // ─── COMMIT TEXT FILE ───────────────────────────────────────────────────────
 // Creates or updates a text file on the branch.
-// Fetches the latest SHA first so it never writes on a stale base.
-// content is a plain string — btoa/encodeURIComponent handles unicode safely.
-export async function commitFile(path, content, message) {
-  const sha = await getFileSha(path)
-  const body = {
-    message,
-    content: btoa(unescape(encodeURIComponent(content))),
-    branch: BRANCH,
-    ...(sha ? { sha } : {}),
-  }
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
-    { method: 'PUT', headers, body: JSON.stringify(body) }
-  )
-  if (!res.ok) throw new Error(`GitHub commit failed: ${res.status}`)
-  return res.json()
+// moduleId is only required when writing modules.js as a non-owner — the
+// server uses it to prove the edit stays inside that module's own block.
+export async function commitFile(path, content, message, moduleId) {
+  return invokeGithub({ op: 'commitFile', path, content, message, moduleId })
 }
 
 // ─── COMMIT WITH RETRY ──────────────────────────────────────────────────────
@@ -50,11 +40,11 @@ export async function commitFile(path, content, message) {
 // 1000ms, 1500ms). Each retry calls commitFile fresh which re-fetches the
 // latest SHA internally — no manual SHA management needed here.
 // All non-409 errors are rethrown immediately without retrying.
-export async function commitFileWithRetry(path, content, message) {
+export async function commitFileWithRetry(path, content, message, moduleId) {
   let lastError
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
-      return await commitFile(path, content, message)
+      return await commitFile(path, content, message, moduleId)
     } catch (err) {
       if (!err.message?.includes('409')) throw err
       lastError = err
@@ -70,50 +60,27 @@ export async function commitFileWithRetry(path, content, message) {
 // Uploads a binary file (png, jpg, svg) to the repo.
 // fileArrayBuffer must be an ArrayBuffer — never pass a data: URL or File object.
 // GitHub requires base64-encoded content for binary files.
-// If the file already exists at that path, fetches its SHA and overwrites it.
 export async function uploadImage(path, fileArrayBuffer) {
-  const sha = await getFileSha(path)
-  const base64 = btoa(
+  const contentBase64 = btoa(
     new Uint8Array(fileArrayBuffer)
       .reduce((data, byte) => data + String.fromCharCode(byte), '')
   )
-  const body = {
+  return invokeGithub({
+    op: 'uploadImage',
+    path,
+    contentBase64,
     message: `assets: upload ${path.split('/').pop()}`,
-    content: base64,
-    branch: BRANCH,
-    ...(sha ? { sha } : {}),
-  }
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
-    { method: 'PUT', headers, body: JSON.stringify(body) }
-  )
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}))
-    console.log('[UPLOAD 404 DETAIL]', { status: res.status, message: errBody.message, url: `${OWNER}/${REPO}/contents/${path}`, branch: BRANCH })
-    throw new Error(`Image upload failed: ${res.status} — ${errBody.message}`)
-  }
-  return res.json()
+  })
 }
 
 // ─── LIST DIRECTORY ─────────────────────────────────────────────────────────
 // Returns the files in a GitHub directory as an array of file metadata objects.
 // Returns an empty array if the directory doesn't exist (404) — callers should
 // treat an empty result as "no files yet" rather than an error.
-//
-// FIX: Two filters are applied to the raw GitHub response before returning:
-//   1. f.type === 'file'   — excludes subdirectory entries from the count
-//   2. f.name !== '.gitkeep' — excludes placeholder files used to keep empty
-//      folders alive in git. GitHub inlines .gitkeep content as a data: URL
-//      in the download_url field. If callers iterate download_url values,
-//      fetch() on a data: URL throws a CORS error because it is not HTTP.
+// The Edge Function already filters out subdirectories and .gitkeep entries.
 export async function listDirectory(path) {
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
-    { headers }
-  )
-  if (res.status === 404) return []
-  const files = await res.json()
-  return files.filter(f => f.type === 'file' && f.name !== '.gitkeep')
+  const { files } = await invokeGithub({ op: 'listDirectory', path })
+  return files
 }
 
 // ─── GET FILE CONTENT ────────────────────────────────────────────────────────
@@ -121,33 +88,13 @@ export async function listDirectory(path) {
 // GitHub stores file content as base64 — this decodes it back to plain text.
 // Throws a descriptive error on any non-OK response (including 404).
 export async function getFileContent(path) {
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
-    { headers }
-  )
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}))
-    throw new Error(`Failed to read file (${res.status}): ${errorData.message || res.statusText}`)
-  }
-  const data = await res.json()
-  return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))))
+  const { content } = await invokeGithub({ op: 'getFileContent', path })
+  return decodeURIComponent(escape(atob(content.replace(/\n/g, ''))))
 }
 
 // ─── DELETE FILE ─────────────────────────────────────────────────────────────
 // Deletes a file from the repo. Requires the current SHA.
 // Returns null silently if the file doesn't exist (already deleted).
 export async function deleteFile(path, message) {
-  const sha = await getFileSha(path)
-  if (!sha) return null
-  const body = {
-    message,
-    sha,
-    branch: BRANCH,
-  }
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
-    { method: 'DELETE', headers, body: JSON.stringify(body) }
-  )
-  if (!res.ok) throw new Error(`GitHub delete failed: ${res.status}`)
-  return res.json()
+  return invokeGithub({ op: 'deleteFile', path, message })
 }

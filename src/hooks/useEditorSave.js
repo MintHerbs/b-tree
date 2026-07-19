@@ -190,7 +190,8 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       await commitFileWithRetry(
         MODULES_JS_PATH,
         updatedModulesJs,
-        `feat: add ${filename} to ${moduleId} notes`
+        `feat: add ${filename} to ${moduleId} notes`,
+        moduleId
       )
 
       // Update image_map with published note's image references
