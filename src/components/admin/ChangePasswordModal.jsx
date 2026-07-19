@@ -3,7 +3,7 @@ import { X, Eye, EyeSlash } from '@phosphor-icons/react'
 import { supabase } from '../../lib/supabaseClient'
 import styles from './ChangePasswordModal.module.css'
 
-export default function ChangePasswordModal({ open, onClose }) {
+export default function ChangePasswordModal({ open, onClose, userEmail }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -15,6 +15,12 @@ export default function ChangePasswordModal({ open, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!currentPassword) {
+      setStatus({ message: 'Current password is required', type: 'error' })
+      setTimeout(() => setStatus({ message: '', type: '' }), 3000)
+      return
+    }
 
     if (newPassword.length < 8) {
       setStatus({ message: 'Password must be at least 8 characters', type: 'error' })
@@ -30,6 +36,19 @@ export default function ChangePasswordModal({ open, onClose }) {
 
     try {
       setLoading(true)
+      setStatus({ message: 'Verifying current password...', type: 'info' })
+
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: currentPassword
+      })
+
+      if (reauthError) {
+        setStatus({ message: 'Current password is incorrect', type: 'error' })
+        setTimeout(() => setStatus({ message: '', type: '' }), 5000)
+        return
+      }
+
       setStatus({ message: 'Updating password...', type: 'info' })
 
       const { error } = await supabase.auth.updateUser({
@@ -38,13 +57,21 @@ export default function ChangePasswordModal({ open, onClose }) {
 
       if (error) throw error
 
+      // Best-effort: sign out every other session for this account.
+      // A failure here doesn't undo the password change, which is the
+      // primary security requirement, so it shouldn't block success.
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' })
+      if (signOutError) {
+        console.error('Failed to invalidate other sessions:', signOutError)
+      }
+
       setStatus({ message: 'Password updated successfully!', type: 'success' })
-      
+
       // Reset form
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      
+
       setTimeout(() => {
         setStatus({ message: '', type: '' })
         onClose()
@@ -81,6 +108,28 @@ export default function ChangePasswordModal({ open, onClose }) {
               {status.message}
             </div>
           )}
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Current Password</label>
+            <div className={styles.passwordGroup}>
+              <input
+                type={showCurrent ? 'text' : 'password'}
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className={styles.input}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                className={styles.toggleButton}
+                title={showCurrent ? 'Hide password' : 'Show password'}
+              >
+                {showCurrent ? <EyeSlash size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
 
           <div className={styles.formGroup}>
             <label className={styles.label}>New Password</label>

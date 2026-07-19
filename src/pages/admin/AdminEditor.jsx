@@ -670,6 +670,7 @@ function AdminEditorContent() {
       <ChangePasswordModal
         open={changePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}
+        userEmail={user?.email}
       />
 
       <FormulaModal
