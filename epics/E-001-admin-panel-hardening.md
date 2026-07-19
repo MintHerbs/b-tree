@@ -33,11 +33,14 @@ summarized from a report) before being filed.
 - [ ] T-011 — Ctrl+S bypasses the in-flight save guard the Save button enforces (low)
 - [ ] T-012 — Deleting a module orphans its note/image files despite confirmation text claiming removal (low)
 - [ ] T-013 — FormattingToolbar.jsx is dead code (informational cleanup)
+- [x] T-014 — Hosted admin_users RLS/grants drifted from repo migrations; contributors can self-promote to owner live (high)
 
 T-009 and T-010 are `wontfix` as standalone tickets — folded into T-006 and
 T-008 respectively (same file/table/component as the ticket they're
 folded into; see each folded ticket for why). Files kept for history per
-the tickets convention. Net: 13 issues found, 11 tracked as active work.
+the tickets convention. Net: 13 issues found from the original audit, 11
+tracked as active work, plus T-014 discovered afterward while verifying
+T-006's fix against the hosted project (schema drift, not a code bug).
 
 ## Non-goals
 

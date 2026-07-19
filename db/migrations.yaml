@@ -19,7 +19,7 @@
 # See db/README.md for how to apply migrations against a Supabase project.
 
 project: b-tree
-schema_version: 17
+schema_version: 18
 
 migrations:
   - id: "0001"
@@ -153,6 +153,14 @@ migrations:
   - id: "0017"
     file: sql/0017_fix_admin_users_rls.sql
     description: "Fix recursive owner-check RLS policy on admin_users via security definer helper; narrow SELECT grant to authenticated only"
+    author: agent
+    created: 2026-07-19
+    applied_envs: []
+    related_issues: []
+
+  - id: "0018"
+    file: sql/0018_sync_admin_users_grants.sql
+    description: "Restate admin_users RLS/grants from scratch; hosted project had drifted to full anon/authenticated grants and no-owner-check write policies, letting contributors self-promote to owner"
     author: agent
     created: 2026-07-19
     applied_envs: []
