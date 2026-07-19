@@ -22,19 +22,22 @@ summarized from a report) before being filed.
 
 ## Tickets
 
-- [ ] T-001 — GitHub write token shipped to the browser; contributor directory restrictions unenforced server-side (critical)
+- [ ] T-001 — GitHub write token shipped to the browser; contributor directory restrictions unenforced server-side (critical) — code landed on main, pending Edge Function deploy + live verification
 - [ ] T-002 — Image Cleanup flags every live image as orphaned and pre-selects it for deletion (high)
 - [ ] T-003 — Password change has no re-authentication and doesn't invalidate other sessions (high)
 - [x] T-004 — Rename/Delete subfolder are no-op stubs that report false success (high)
 - [ ] T-005 — Move file duplicates content instead of moving it, and never updates the module registry (high)
-- [ ] T-006 — Self-referential RLS policy on admin_users risks recursion error / full admin lockout (medium — needs live verification)
+- [x] T-006 — Self-referential RLS policy on admin_users risks recursion error / full admin lockout, **plus folded T-009** (anon SELECT grant, same table/migration) (medium)
 - [ ] T-007 — Admin "Sign Out" throws a ReferenceError and never signs the user out (medium)
-- [ ] T-008 — Unsanitized href in Social Link modal allows stored XSS via javascript: URLs (medium)
-- [ ] T-009 — admin_users SELECT granted to the anon Postgres role (low, defense-in-depth)
-- [ ] T-010 — Inconsistent attribute-escaping in Social Link modal corrupts saved content (low)
+- [ ] T-008 — Unsanitized href in Social Link modal allows stored XSS via javascript: URLs, **plus folded T-010** (inconsistent attribute escaping, same component) (medium)
 - [ ] T-011 — Ctrl+S bypasses the in-flight save guard the Save button enforces (low)
 - [ ] T-012 — Deleting a module orphans its note/image files despite confirmation text claiming removal (low)
 - [ ] T-013 — FormattingToolbar.jsx is dead code (informational cleanup)
+
+T-009 and T-010 are `wontfix` as standalone tickets — folded into T-006 and
+T-008 respectively (same file/table/component as the ticket they're
+folded into; see each folded ticket for why). Files kept for history per
+the tickets convention. Net: 13 issues found, 11 tracked as active work.
 
 ## Non-goals
 

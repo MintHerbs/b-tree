@@ -19,7 +19,7 @@
 # See db/README.md for how to apply migrations against a Supabase project.
 
 project: b-tree
-schema_version: 16
+schema_version: 17
 
 migrations:
   - id: "0001"
@@ -147,5 +147,13 @@ migrations:
     description: "Create admin_users table for content editor management with roles and directory permissions"
     author: agent
     created: 2026-05-23
+    applied_envs: []
+    related_issues: []
+
+  - id: "0017"
+    file: sql/0017_fix_admin_users_rls.sql
+    description: "Fix recursive owner-check RLS policy on admin_users via security definer helper; narrow SELECT grant to authenticated only"
+    author: agent
+    created: 2026-07-19
     applied_envs: []
     related_issues: []
