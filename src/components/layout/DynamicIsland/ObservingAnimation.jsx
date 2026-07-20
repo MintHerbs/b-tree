@@ -2,17 +2,17 @@ import GridLoader from '../../effects/smoothui/grid-loader/index.tsx'
 
 export default function ObservingAnimation({ label }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <GridLoader 
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+      <GridLoader
         blur={1.2}
-        color="blue" 
+        color="blue"
         gap={1}
-        mode="pulse" 
+        mode="pulse"
         pattern="plus-full"
         rounded
         size="sm"
       />
-      <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+      <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
         {label}
       </span>
     </div>

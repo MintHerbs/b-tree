@@ -233,3 +233,30 @@
   white-space: nowrap;
   letter-spacing: -0.01em;
 }
+
+/* Mobile optimization */
+/* --breakpoint-sm */
+@media (max-width: 480px) {
+  .pill[data-state="music"] .content {
+    width: min(280px, calc(100vw - 64px));
+  }
+
+  .pill[data-state="thinking"] .content,
+  .pill[data-state="generating"] .content,
+  .pill[data-state="observing"] .content,
+  .pill[data-state="waiting"] .content,
+  .pill[data-state="processing"] .content,
+  .pill[data-state="error"] .content {
+    max-width: calc(100vw - 64px);
+  }
+
+  .controlButton {
+    padding: 10px;
+  }
+
+  .errorText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
