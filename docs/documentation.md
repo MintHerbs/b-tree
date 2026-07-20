@@ -7,6 +7,12 @@ It is the single source of truth for what exists in the codebase.
 
 - [Adding a new page](architecture/adding-a-page.md) — use the `PageShell` wrapper (landing / result / content variants) instead of hand-rolling per-page layouts.
 
+## Other reference folders
+
+- [docs/design/](design/) — full design-language reference (colors, typography, motion, components, iconography), expanding on [docs/design.md](design.md).
+- [tickets/](../tickets/) — individual bug/feature tickets tracked outside GitHub Issues.
+- [epics/](../epics/) — groups of related tickets toward a larger outcome.
+
 ---
 
 ## Project Overview
@@ -1761,4 +1767,76 @@ def example(n):
 3. **File size limit** — No file exceeds 200 lines (split complexityEngine into two files)
 4. **Consistent patterns** — Follows existing component structure (Navbar, Starfield, Sidebar)
 5. **Accurate analysis** — Handles geometric series, nested loops, conditionals, while loops with multiplicative updates
+
+---
+
+## Admin Panel
+
+### Overview
+
+Internal content-management system for editing the site's markdown notes
+content (see [markdown-notes-setup.md](../markdown-notes-setup.md)). Not
+one of the public-facing teaching tools — gated behind Supabase Auth and
+not linked from the public nav.
+
+**Routes:** `/admin` (login), `/admin/editor` (main editor), `/admin/users`
+(owner-only user management).
+
+### Architecture
+
+```
+src/
+├── pages/admin/
+│   ├── AdminLogin.jsx      Email/password sign-in via supabase.auth.signInWithPassword
+│   ├── AdminEditor.jsx     Main markdown content editor (largest admin screen)
+│   ├── AdminUsers.jsx      Owner-only user management — 403s non-owners
+│   └── useAdmin.js         Auth-guard hook: redirects to /admin if unauthenticated
+│
+├── components/admin/
+│   ├── EditorNavbar/, FormattingToolbar, StyleDropdown, PreviewModal
+│   ├── DirectoryDrawer     Content directory tree/picker
+│   ├── UsersDrawer         User list + create/edit/delete UI
+│   ├── ImageCleanupDrawer  Finds and removes unused uploaded images
+│   ├── ChangePasswordModal, SocialLinkModal, FormulaModal
+│   ├── ToastNotification   Admin-scoped toast
+│   └── adminIconOptions.js Phosphor icon picker for admin-managed content
+│
+├── lib/adminSupabase.js     getAdminProfile(userId) — fetches admin_users row
+│
+└── styles/adminTokens.css   Admin's own expanded token set — see docs/design/colors.md
+```
+
+Backend: two Supabase Edge Functions using the service-role key —
+`supabase/functions/admin-create-user/` and `admin-delete-user/` — both
+verify the caller is an `owner` (via the `admin_users` table) before
+acting, validate the role enum, and (create) roll back the created auth
+user if the profile insert fails, or (delete) refuse to let an owner
+delete themselves.
+
+### Auth & roles
+
+- **Table:** `admin_users` ([db/sql/0016_init_admin_users.sql](../db/sql/0016_init_admin_users.sql)) — `id` (FK to `auth.users`), `username`, `role` (`owner` | `contributor`), `allowed_directories` (text array, contributors only).
+- **Login** is plain Supabase Auth — any authenticated Supabase user reaches `/admin/editor` if `useAdmin()`'s `getAdminProfile` call succeeds; a non-admin authenticated user has no `admin_users` row so that query throws and `useAdmin` redirects to `/admin`.
+- **Owner-only pages** (`AdminUsers`) explicitly check `profile.role === 'owner'` and render a 403 otherwise. `useAdmin()` itself does not gate on role — it only guards "is authenticated + has a profile."
+- **RLS:** self-referencing policy on `admin_users` (owners can see all rows via a subquery against the same table) — see the admin-panel epic/tickets for hardening notes on this pattern.
+
+### Deleting a subject is a soft delete
+
+`handleDeleteModule` (`src/hooks/useEditorModules.js`) only removes the
+subject's entry from `modules.js` and its two `notes/`/`tools/` `.gitkeep`
+placeholders — it does **not** delete the subject's actual note or image
+files. They remain in the repo under `src/content/notes/{subjectId}/` and
+`public/notes/img/{subjectId}/`, just no longer reachable from the admin
+UI (the Image Cleanup tool only scans subjects still present in
+`modules.js`).
+
+This is intentional to avoid an irreversible bulk-delete with no
+rollback. To actually reclaim a deleted subject's storage, an owner must
+remove those two directories manually via the GitHub repo (file browser
+or a local clone + `git rm -r` + push) — the app has no in-UI path for
+this.
+
+### Known issues
+
+Tracked as tickets rather than inline notes here — see [tickets/](../tickets/) filed under the admin-panel-hardening epic in [epics/](../epics/) for specifics found during the 2026-07-19 audit.
 6. **Visual clarity** — Color-coded brackets, step-by-step terminal output, proper mathematical notation

@@ -317,7 +317,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
 
       refreshModuleState(setModules, prev => prev.filter(module => module.id !== moduleId))
       setSelectedPath(prev => prev?.moduleId === moduleId ? null : prev)
-      showToast(`Subject ${moduleId} removed from the filesystem`, 'success')
+      showToast(`Subject ${moduleId} removed`, 'success')
     } catch (error) {
       showToast(`Failed to remove subject: ${error.message}`, 'error')
     }

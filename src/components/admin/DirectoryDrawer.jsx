@@ -655,7 +655,7 @@ export default function DirectoryDrawer({
               </div>
               <p className={styles.confirmMessage}>
                 {deleteConfirm.type === 'module'
-                  ? `Delete ${deleteConfirm.moduleId}? It will be removed from the app filesystem.`
+                  ? `Delete ${deleteConfirm.moduleId}? It will be hidden from the app, but its files remain in the repo and aren't currently reachable for cleanup.`
                   : `Delete this folder? Notes inside will be orphaned.`}
               </p>
               <div className={styles.confirmActions}>
