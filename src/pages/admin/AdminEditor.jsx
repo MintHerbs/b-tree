@@ -546,6 +546,7 @@ function AdminEditorContent() {
 
       if (key === 's') {
         event.preventDefault()
+        if (saving) return
         handleSave()
       } else if (key === 'b') {
         event.preventDefault()
