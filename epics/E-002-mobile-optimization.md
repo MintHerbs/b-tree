@@ -46,7 +46,7 @@ summarized from a report) before being filed.
       alternative (medium)
 - [ ] T-017 — DynamicIsland has zero responsive handling; music-player
       controls are undersized touch targets (medium)
-- [ ] T-018 — Navbar silently overflows horizontally instead of wrapping;
+- [x] T-018 — Navbar silently overflows horizontally instead of wrapping;
       reset button has no touch feedback state (low)
 - [ ] T-019 — PageShell layout primitives (sidebar gutter + split-panel)
       have no mobile breakpoints, duplicated across tree/algo pages,
@@ -59,6 +59,8 @@ summarized from a report) before being filed.
       fixed step-controls bar, and RulesPanel (medium)
 - [ ] T-024 — Social feed post actions (vote/comment/flag) are undersized
       touch targets, repeated on every post card (medium)
+- [ ] T-025 — Expanded mobile Sidebar blurs its own nav text via a
+      duplicate overlay pseudo-element (medium)
 
 T-020 is `wontfix` as a standalone ticket — folded into T-019 (same
 `PageShell.module.css` root cause, plus the same `ComplexityPage`/

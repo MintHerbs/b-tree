@@ -51,6 +51,10 @@
   background-color: rgba(139, 92, 246, 0.15);
 }
 
+.resetButton:active {
+  background-color: rgba(139, 92, 246, 0.25);
+}
+
 .resultBadge {
   padding: 6px 12px;
   font-size: 13px;
@@ -101,9 +105,12 @@
   text-decoration: underline;
 }
 
+/* --breakpoint-lg */
 @media (max-width: 768px) {
   .navbar {
     padding: 12px 16px;
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
 
   .title {
@@ -112,6 +119,9 @@
 
   .right {
     gap: 12px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    max-width: 100%;
   }
 
   .resetButton {

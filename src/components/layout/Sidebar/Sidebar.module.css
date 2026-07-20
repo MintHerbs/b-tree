@@ -77,19 +77,6 @@
       );
     pointer-events: none;
   }
-
-  /* Overlay when sidebar is open */
-  .sidebar.sidebarExpanded::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 59;
-    backdrop-filter: blur(2px);
-  }
 }
 
 @media (max-width: 768px) {
