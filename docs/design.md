@@ -27,6 +27,23 @@ Update this file whenever a new decision is made.
 
 ---
 
+## Breakpoints
+
+| Token              | Value  | Usage                                                                 |
+|--------------------|--------|------------------------------------------------------------------------|
+| `--breakpoint-sm`  | `480px`| Smallest phones — tightest layouts                                    |
+| `--breakpoint-md`  | `640px`| Standard mobile cutoff — most component `@media` rules use this       |
+| `--breakpoint-lg`  | `768px`| Tablet / narrow-window cutoff                                         |
+| `--breakpoint-xl`  | `968px`| Sidebar desktop-vs-mobile threshold                                   |
+
+**Rule:** No new one-off pixel breakpoints — pick the closest value above.
+**Note:** CSS custom properties cannot be read inside a plain CSS `@media`
+condition (no `postcss-custom-media` plugin is installed), so `@media`
+rules must hardcode the raw px value; write which token it corresponds to
+in a comment above the rule, e.g. `/* --breakpoint-md */`.
+
+---
+
 ## Typography
 
 - Font stack: system font (`-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`)
@@ -255,3 +272,4 @@ src/components/layout/
 | Session 8 | ResolutionCanvas with V-connectors | Knowledge base panel + V-diagram, empty clause as ⊥ in red |
 | Session 8 | Generic callGeminiWithParser() | Accepts any parser function, refactored existing callGemini() |
 | Session 8 | Logic group navigation updated | Added Languages icon for translate tool, removed toast alerts |
+| Session 9 | Shared `--breakpoint-*` tokens (480/640/768/968) | Codify the four values already in organic use across 30 components so new mobile work (E-002) stops picking new one-offs (T-015) |
