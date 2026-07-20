@@ -61,19 +61,6 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     }
   }
 
-  const handleMobileToggle = (e) => {
-    if (isMobile) {
-      // Check if click is on the hamburger area (top-left 56x56px)
-      const rect = e.currentTarget.getBoundingClientRect()
-      const clickX = e.clientX - rect.left
-      const clickY = e.clientY - rect.top
-      
-      if (clickX <= 56 && clickY <= 56) {
-        setIsExpanded(!isExpanded)
-      }
-    }
-  }
-
   const handleOverlayClick = (e) => {
     if (isMobile && isExpanded && e.target === e.currentTarget) {
       setIsExpanded(false)
@@ -84,7 +71,7 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     <>
       {/* Overlay for mobile */}
       {isMobile && isExpanded && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -98,12 +85,24 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
           onClick={handleOverlayClick}
         />
       )}
-      
+
+      {/* Mobile hamburger toggle */}
+      {isMobile && (
+        <button
+          type="button"
+          className={styles.hamburgerButton}
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-label={isExpanded ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={isExpanded}
+        >
+          <span className={styles.hamburgerBars} />
+        </button>
+      )}
+
       <aside
         className={`${styles.sidebar} ${isExpanded ? styles.sidebarExpanded : ''}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onClick={handleMobileToggle}
         style={{ width: mode === 'academia' && isExpanded ? (isMobile ? '280px' : '240px') : '56px' }}
       >
         {mode === 'academia' && isExpanded ? (
