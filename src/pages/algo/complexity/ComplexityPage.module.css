@@ -182,3 +182,15 @@
 .retryButton:active {
   transform: translateY(0);
 }
+
+/* Mobile optimization */
+/* --breakpoint-xl */
+@media (max-width: 968px) {
+  .resultPage {
+    padding-left: 0;
+  }
+
+  .splitPanel {
+    flex-direction: column;
+  }
+}
