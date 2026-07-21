@@ -57,7 +57,7 @@ summarized from a report) before being filed.
       gutter plus fixed-position step controls that can overlap (medium)
 - [ ] T-023 — Tableaux page has zero mobile breakpoints: sidebar gutter,
       fixed step-controls bar, and RulesPanel (medium)
-- [ ] T-024 — Social feed post actions (vote/comment/flag) are undersized
+- [x] T-024 — Social feed post actions (vote/comment/flag) are undersized
       touch targets, repeated on every post card (medium)
 - [ ] T-025 — Expanded mobile Sidebar blurs its own nav text via a
       duplicate overlay pseudo-element (medium)

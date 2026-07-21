@@ -136,3 +136,20 @@
   border-color: rgba(248, 113, 113, 0.4);
   color: #fb7185;
 }
+
+/* Mobile optimization */
+/* --breakpoint-sm */
+@media (max-width: 480px) {
+  .voteBtn {
+    padding: 12px;
+  }
+
+  .commentPill {
+    min-height: 44px;
+  }
+
+  .flagPill {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
