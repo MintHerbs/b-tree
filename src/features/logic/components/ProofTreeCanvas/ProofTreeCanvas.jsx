@@ -1,6 +1,7 @@
 // ProofTreeCanvas - Sequential top-to-bottom proof tree renderer with live edge updates
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { motion } from 'motion/react'
+import { getTouchDistance } from '../../../../lib/touchGestures'
 import styles from './ProofTreeCanvas.module.css'
 
 const ROW_HEIGHT = 70
@@ -160,7 +161,7 @@ function Edges({ steps, positions }) {
 /**
  * Renders formula text nodes with drag support and floating animation
  */
-function FormulaNodes({ steps, positions, floatOffsets, conclusionId, onNodeDragStart, draggingNodeId }) {
+function FormulaNodes({ steps, positions, floatOffsets, conclusionId, onNodeDragStart, onNodeTouchStart, draggingNodeId }) {
   return (
     <g>
       {steps.map((step, index) => {
@@ -195,10 +196,11 @@ function FormulaNodes({ steps, positions, floatOffsets, conclusionId, onNodeDrag
               fill="transparent"
               stroke="#8B5CF6"
               strokeWidth={1.5}
-              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
               onMouseDown={(e) => onNodeDragStart(e, step.id)}
+              onTouchStart={(e) => onNodeTouchStart(e, step.id)}
             />
-            
+
             {/* Formula text */}
             <text
               x={pos.x}
@@ -226,10 +228,25 @@ export default function ProofTreeCanvas({ steps }) {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  
+
   // Store only node positions - edges computed at render time
   const [positions, setPositions] = useState({})
   const [draggingNodeId, setDraggingNodeId] = useState(null)
+
+  // Touch tracking refs - read directly (not via draggingNodeId/isPanning/panStart/zoom React
+  // state) so a touchmove immediately following a touchstart always sees up-to-date values,
+  // even before React has committed the corresponding state update
+  const draggingNodeIdRef = useRef(null)
+  const touchStateRef = useRef(null) // { mode: 'pan' | 'pinch', ... }
+  const zoomRef = useRef(zoom)
+
+  useEffect(() => {
+    draggingNodeIdRef.current = draggingNodeId
+  }, [draggingNodeId])
+
+  useEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
   
   // Float offsets for gentle animation - stored in ref to avoid re-renders
   const floatOffsetsRef = useRef({})
@@ -318,7 +335,17 @@ export default function ProofTreeCanvas({ steps }) {
   const handleNodeDragEnd = () => {
     setDraggingNodeId(null)
   }
-  
+
+  // Start dragging a proof step node via touch (mirrors handleNodeDragStart).
+  // Ignores a second finger landing on a different node mid-drag rather than hijacking the
+  // drag onto it, since handleTouchMove only tracks a single active drag via touches[0]
+  const handleNodeTouchStart = (e, nodeId) => {
+    if (draggingNodeIdRef.current) return
+    e.stopPropagation()
+    draggingNodeIdRef.current = nodeId
+    setDraggingNodeId(nodeId)
+  }
+
   // Pan handlers - only when not dragging a node
   const handleMouseDown = (e) => {
     if (e.button !== 0 || draggingNodeId) return
@@ -370,11 +397,86 @@ export default function ProofTreeCanvas({ steps }) {
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
-    
+
     svg.addEventListener('wheel', handleWheel, { passive: false })
     return () => svg.removeEventListener('wheel', handleWheel)
   }, [handleWheel])
-  
+
+  // Touch pan/pinch-zoom start - only when not already dragging a node
+  const handleTouchStart = (e) => {
+    if (draggingNodeIdRef.current) return
+    if (e.touches.length === 1) {
+      touchStateRef.current = { mode: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else if (e.touches.length === 2) {
+      touchStateRef.current = { mode: 'pinch', distance: getTouchDistance(e.touches) }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (draggingNodeIdRef.current) {
+      draggingNodeIdRef.current = null
+      handleNodeDragEnd()
+    }
+    touchStateRef.current = null
+  }
+
+  // Touch move - registered as a non-passive listener (React makes touchmove passive
+  // by default, same as wheel above) so preventDefault actually stops native scroll/zoom
+  const handleTouchMove = useCallback((e) => {
+    // Dragging a proof step node with one finger
+    if (draggingNodeIdRef.current && e.touches.length === 1) {
+      e.preventDefault()
+      const touch = e.touches[0]
+      const svg = svgRef.current
+      if (!svg) return
+      const pt = svg.createSVGPoint()
+      pt.x = touch.clientX
+      pt.y = touch.clientY
+      const svgP = pt.matrixTransform(svg.getScreenCTM().inverse())
+      setPositions(prev => ({
+        ...prev,
+        [draggingNodeIdRef.current]: { x: svgP.x, y: svgP.y }
+      }))
+      return
+    }
+
+    const state = touchStateRef.current
+    if (!state) return
+
+    // Two-finger pinch-zoom
+    if (state.mode === 'pinch' && e.touches.length === 2) {
+      e.preventDefault()
+      const newDistance = getTouchDistance(e.touches)
+      const delta = newDistance / state.distance
+      setZoom(prev => Math.max(0.1, Math.min(3, prev * delta)))
+      touchStateRef.current = { ...state, distance: newDistance }
+      return
+    }
+
+    // Single-finger pan on the background
+    if (state.mode === 'pan' && e.touches.length === 1) {
+      e.preventDefault()
+      const touch = e.touches[0]
+      const dx = (touch.clientX - state.x) / zoomRef.current
+      const dy = (touch.clientY - state.y) / zoomRef.current
+
+      setPanOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }))
+
+      touchStateRef.current = { ...state, x: touch.clientX, y: touch.clientY }
+    }
+  }, [])
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+
+    svg.addEventListener('touchmove', handleTouchMove, { passive: false })
+    return () => svg.removeEventListener('touchmove', handleTouchMove)
+  }, [handleTouchMove])
+
   if (!steps || steps.length === 0) {
     return (
       <div ref={containerRef} className={styles.container}>
@@ -404,6 +506,9 @@ export default function ProofTreeCanvas({ steps }) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -426,6 +531,7 @@ export default function ProofTreeCanvas({ steps }) {
           floatOffsets={floatOffsetsRef.current}
           conclusionId={conclusionId}
           onNodeDragStart={handleNodeDragStart}
+          onNodeTouchStart={handleNodeTouchStart}
           draggingNodeId={draggingNodeId}
         />
       </motion.svg>

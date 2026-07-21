@@ -1,6 +1,7 @@
 // TableauxCanvas - SVG renderer for semantic tableaux tree
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { motion } from 'motion/react'
+import { getTouchDistance } from '../../../../lib/touchGestures'
 import styles from './TableauxCanvas.module.css'
 
 const NODE_HEIGHT = 40
@@ -299,7 +300,7 @@ export default function TableauxCanvas({ tree, highlightedNodeId }) {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  
+
   // Update dimensions on mount and resize
   useEffect(() => {
     const updateDimensions = () => {
@@ -355,26 +356,86 @@ export default function TableauxCanvas({ tree, highlightedNodeId }) {
   const handleMouseUp = () => {
     setIsPanning(false)
   }
-  
+
   // Zoom handler - memoized to prevent recreating on every render
   const handleWheel = useMemo(() => {
     return (e) => {
       e.preventDefault()
-      
+
       const delta = e.deltaY > 0 ? 0.9 : 1.1
       const newZoom = Math.max(0.1, Math.min(3, zoom * delta))
-      
+
       setZoom(newZoom)
     }
   }, [zoom])
-  
+
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
-    
+
     svg.addEventListener('wheel', handleWheel, { passive: false })
     return () => svg.removeEventListener('wheel', handleWheel)
   }, [handleWheel])
+
+  // Touch pan/pinch-zoom - gating and coordinates are tracked via refs, not the isPanning/
+  // panStart/zoom React state, so a touchmove immediately following a touchstart always sees
+  // up-to-date values even before React has committed the corresponding state update
+  const touchStateRef = useRef(null) // { mode: 'pan' | 'pinch', ... }
+  const zoomRef = useRef(zoom)
+
+  useEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      touchStateRef.current = { mode: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else if (e.touches.length === 2) {
+      touchStateRef.current = { mode: 'pinch', distance: getTouchDistance(e.touches) }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    touchStateRef.current = null
+  }
+
+  // Touch move - registered as a non-passive listener (React makes touchmove passive
+  // by default, same as wheel above) so preventDefault actually stops native scroll/zoom
+  const handleTouchMove = useCallback((e) => {
+    const state = touchStateRef.current
+    if (!state) return
+
+    if (state.mode === 'pinch' && e.touches.length === 2) {
+      e.preventDefault()
+      const newDistance = getTouchDistance(e.touches)
+      const delta = newDistance / state.distance
+      setZoom(prev => Math.max(0.1, Math.min(3, prev * delta)))
+      touchStateRef.current = { ...state, distance: newDistance }
+      return
+    }
+
+    if (state.mode === 'pan' && e.touches.length === 1) {
+      e.preventDefault()
+      const touch = e.touches[0]
+      const dx = (touch.clientX - state.x) / zoomRef.current
+      const dy = (touch.clientY - state.y) / zoomRef.current
+
+      setPanOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }))
+
+      touchStateRef.current = { ...state, x: touch.clientX, y: touch.clientY }
+    }
+  }, [])
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+
+    svg.addEventListener('touchmove', handleTouchMove, { passive: false })
+    return () => svg.removeEventListener('touchmove', handleTouchMove)
+  }, [handleTouchMove])
   
   if (!tree) {
     return (
@@ -402,6 +463,9 @@ export default function TableauxCanvas({ tree, highlightedNodeId }) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}

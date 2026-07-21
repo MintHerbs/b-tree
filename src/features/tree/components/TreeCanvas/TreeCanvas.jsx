@@ -4,12 +4,14 @@ import styles from './TreeCanvas.module.css'
 import TreeNode from '../TreeNode/TreeNode'
 import TreeEdge from '../TreeEdge/TreeEdge'
 import { calculateTreeLayout } from '../../../../lib/treeLayout'
+import { getTouchDistance, getTouchMidpoint } from '../../../../lib/touchGestures'
 
 function TreeCanvas({ tree }) {
   const svgRef = useRef(null)
   const [viewBox, setViewBox] = useState({ x: -500, y: -100, width: 1000, height: 800 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const touchStateRef = useRef(null) // { mode: 'pan' | 'pinch', ... }
 
   // Calculate layout from tree
   const layout = useMemo(() => {
@@ -97,6 +99,80 @@ function TreeCanvas({ tree }) {
     })
   }, [viewBox])
 
+  // Touch start - begin single-finger pan or two-finger pinch
+  const handleTouchStart = useCallback((e) => {
+    if (e.touches.length === 1) {
+      touchStateRef.current = { mode: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else if (e.touches.length === 2) {
+      touchStateRef.current = {
+        mode: 'pinch',
+        distance: getTouchDistance(e.touches)
+      }
+    }
+  }, [])
+
+  // Touch move - pan with one finger, pinch-zoom with two
+  // Note: React attaches touchmove as a passive listener, so preventDefault() here would
+  // be a no-op (and log a warning) - touch-action: none in CSS is what stops native scroll/zoom
+  const handleTouchMove = useCallback((e) => {
+    const state = touchStateRef.current
+    if (!state) return
+
+    const svg = svgRef.current
+    if (!svg) return
+    const rect = svg.getBoundingClientRect()
+
+    if (state.mode === 'pan' && e.touches.length === 1) {
+      const touch = e.touches[0]
+      const dx = touch.clientX - state.x
+      const dy = touch.clientY - state.y
+      const scaleX = viewBox.width / rect.width
+      const scaleY = viewBox.height / rect.height
+
+      setViewBox(prev => ({
+        ...prev,
+        x: prev.x - dx * scaleX,
+        y: prev.y - dy * scaleY
+      }))
+
+      touchStateRef.current = { ...state, x: touch.clientX, y: touch.clientY }
+    } else if (state.mode === 'pinch' && e.touches.length === 2) {
+      const newDistance = getTouchDistance(e.touches)
+      const zoomFactor = state.distance / newDistance
+
+      // Anchor at the current midpoint (not the one from pinch start) so the zoom tracks the
+      // fingers even when they drift while pinching, matching wheel-zoom's live cursor anchor
+      const midpoint = getTouchMidpoint(e.touches)
+      const midX = midpoint.x - rect.left
+      const midY = midpoint.y - rect.top
+      const svgX = viewBox.x + (midX / rect.width) * viewBox.width
+      const svgY = viewBox.y + (midY / rect.height) * viewBox.height
+
+      setViewBox(prev => {
+        const newWidth = prev.width * zoomFactor
+        const newHeight = prev.height * zoomFactor
+
+        return {
+          x: svgX - (midX / rect.width) * newWidth,
+          y: svgY - (midY / rect.height) * newHeight,
+          width: newWidth,
+          height: newHeight
+        }
+      })
+
+      touchStateRef.current = { ...state, distance: newDistance }
+    }
+  }, [viewBox])
+
+  // Touch end - stop panning/pinching, or fall back to single-finger pan if one finger remains
+  const handleTouchEnd = useCallback((e) => {
+    if (e.touches.length === 1) {
+      touchStateRef.current = { mode: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else {
+      touchStateRef.current = null
+    }
+  }, [])
+
   // Build node map for quick lookup
   const nodeMap = new Map()
   layout.nodes.forEach(node => {
@@ -129,6 +205,9 @@ function TreeCanvas({ tree }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Define arrow markers */}
         <defs>

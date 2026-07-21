@@ -9,6 +9,7 @@
 .svg {
   cursor: grab;
   background: transparent;
+  touch-action: none;
 }
 
 .svg:active {

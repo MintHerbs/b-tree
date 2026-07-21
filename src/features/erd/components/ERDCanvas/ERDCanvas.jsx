@@ -18,6 +18,7 @@ import {
   renderAttributeLine,
   getNodeEdgePoint
 } from './edges.jsx'
+import { getTouchDistance, getTouchMidpoint } from '../../../../lib/touchGestures'
 import styles from './ERDCanvas.module.css'
 
 function nodeShape(node) {
@@ -126,6 +127,13 @@ function ERDCanvas({ erdData }) {
   const [dragState, setDragState] = useState(null) // { nodeId, startX, startY, offsetX, offsetY, attributeOffsets }
   const [nodePositions, setNodePositions] = useState({}) // { nodeId: { x, y, manuallyPlaced } }
 
+  // Touch tracking refs - read directly (not via dragState/isPanning React state) so a
+  // touchmove immediately following a touchstart always sees up-to-date gating, even before
+  // React has committed the corresponding state update
+  const touchPinchRef = useRef(null) // { distance, midpoint }
+  const touchPanRef = useRef(null) // { x, y } - background single-finger pan
+  const dragStateRef = useRef(null) // mirrors dragState for touch reads
+
   const layout = useMemo(
     () => erdData ? calculateERDLayout(erdData, nodePositions) : { nodes: [], edges: [] },
     [erdData, nodePositions]
@@ -184,6 +192,52 @@ function ERDCanvas({ erdData }) {
       attributeOffsets,
       hasMoved: false
     })
+  }, [layout.nodes, layout.edges, screenToSVG])
+
+  // Start dragging a node via touch (mirrors handleNodeMouseDown).
+  // Ignores a second finger landing on a different node mid-drag rather than hijacking the
+  // drag onto it, since handleTouchMove only tracks a single active drag via touches[0]
+  const handleNodeTouchStart = useCallback((e, node) => {
+    if (node.type === 'attribute' || dragStateRef.current) return
+
+    e.stopPropagation()
+    const touch = e.touches[0]
+    const svgPos = screenToSVG(touch.clientX, touch.clientY)
+
+    const offsetX = node.x - svgPos.x
+    const offsetY = node.y - svgPos.y
+
+    const attributeOffsets = []
+    if (node.type === 'entity' || node.type === 'relationship') {
+      layout.nodes.forEach(n => {
+        if (n.type === 'attribute') {
+          const edge = layout.edges.find(e =>
+            e.type === 'attribute-link' &&
+            e.from === node.id &&
+            e.to === n.id
+          )
+          if (edge) {
+            attributeOffsets.push({
+              id: n.id,
+              offsetX: n.x - node.x,
+              offsetY: n.y - node.y
+            })
+          }
+        }
+      })
+    }
+
+    const dragPayload = {
+      nodeId: node.id,
+      startX: svgPos.x,
+      startY: svgPos.y,
+      offsetX,
+      offsetY,
+      attributeOffsets,
+      hasMoved: false
+    }
+    dragStateRef.current = dragPayload
+    setDragState(dragPayload)
   }, [layout.nodes, layout.edges, screenToSVG])
 
   // Handle mouse move during drag
@@ -278,6 +332,123 @@ function ERDCanvas({ erdData }) {
     })
   }, [viewBox])
 
+  // Start panning or pinch-zooming (only if not dragging a node).
+  // Note: gating reads dragStateRef, not dragState - a touchmove immediately following this
+  // touchstart can fire before React commits the corresponding setState.
+  const handleBackgroundTouchStart = useCallback((e) => {
+    if (dragStateRef.current) return
+
+    if (e.touches.length === 1) {
+      setIsPanning(true)
+      touchPanRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else if (e.touches.length === 2) {
+      setIsPanning(false)
+      touchPanRef.current = null
+      touchPinchRef.current = {
+        distance: getTouchDistance(e.touches)
+      }
+    }
+  }, [])
+
+  // Note: React attaches touchmove as a passive listener, so preventDefault() here would be a
+  // no-op (and log a warning) - touch-action: none in CSS is what stops native scroll/zoom
+  const handleTouchMove = useCallback((e) => {
+    // Dragging a node with one finger
+    if (dragStateRef.current) {
+      const drag = dragStateRef.current
+      const touch = e.touches[0]
+      const svgPos = screenToSVG(touch.clientX, touch.clientY)
+
+      const newX = svgPos.x + drag.offsetX
+      const newY = svgPos.y + drag.offsetY
+      const dx = svgPos.x - drag.startX
+      const dy = svgPos.y - drag.startY
+      const hasMoved = drag.hasMoved || (Math.abs(dx) > 3 || Math.abs(dy) > 3)
+
+      setNodePositions(prev => {
+        const updated = { ...prev }
+        updated[drag.nodeId] = { x: newX, y: newY, manuallyPlaced: true }
+        drag.attributeOffsets.forEach(attr => {
+          updated[attr.id] = {
+            x: newX + attr.offsetX,
+            y: newY + attr.offsetY,
+            manuallyPlaced: true
+          }
+        })
+        return updated
+      })
+
+      dragStateRef.current = { ...drag, hasMoved }
+      setDragState(prev => (prev ? { ...prev, hasMoved } : prev))
+      return
+    }
+
+    // Two-finger pinch-zoom on the background
+    if (e.touches.length === 2 && touchPinchRef.current) {
+      const svg = svgRef.current
+      if (!svg) return
+      const rect = svg.getBoundingClientRect()
+      const state = touchPinchRef.current
+      const newDistance = getTouchDistance(e.touches)
+      const zoomFactor = state.distance / newDistance
+
+      // Anchor at the current midpoint (not the one from pinch start) so the zoom tracks the
+      // fingers even when they drift while pinching, matching wheel-zoom's live cursor anchor
+      const midpoint = getTouchMidpoint(e.touches)
+      const midX = midpoint.x - rect.left
+      const midY = midpoint.y - rect.top
+      const svgX = viewBox.x + (midX / rect.width) * viewBox.width
+      const svgY = viewBox.y + (midY / rect.height) * viewBox.height
+
+      setViewBox(prev => {
+        const newWidth = prev.width * zoomFactor
+        const newHeight = prev.height * zoomFactor
+        return {
+          x: svgX - (midX / rect.width) * newWidth,
+          y: svgY - (midY / rect.height) * newHeight,
+          width: newWidth,
+          height: newHeight
+        }
+      })
+
+      touchPinchRef.current = { ...state, distance: newDistance }
+      return
+    }
+
+    // Single-finger pan on the background
+    if (touchPanRef.current && e.touches.length === 1) {
+      const touch = e.touches[0]
+      const dx = touch.clientX - touchPanRef.current.x
+      const dy = touch.clientY - touchPanRef.current.y
+      const svg = svgRef.current
+      if (!svg) return
+      const rect = svg.getBoundingClientRect()
+      const scaleX = viewBox.width / rect.width
+      const scaleY = viewBox.height / rect.height
+      setViewBox(prev => ({ ...prev, x: prev.x - dx * scaleX, y: prev.y - dy * scaleY }))
+      touchPanRef.current = { x: touch.clientX, y: touch.clientY }
+    }
+  }, [viewBox, screenToSVG])
+
+  // End touch interaction — stop drag/pan/pinch, or fall back to pan if one finger remains
+  const handleTouchEnd = useCallback((e) => {
+    if (e.touches.length === 0) {
+      if (dragStateRef.current) {
+        dragStateRef.current = null
+        setDragState(null)
+      }
+      setIsPanning(false)
+      touchPanRef.current = null
+      touchPinchRef.current = null
+    } else if (e.touches.length === 1) {
+      touchPinchRef.current = null
+      if (!dragStateRef.current) {
+        setIsPanning(true)
+        touchPanRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+      }
+    }
+  }, [])
+
   return (
     <div className={styles.container}>
       <svg
@@ -289,6 +460,10 @@ function ERDCanvas({ erdData }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
+        onTouchStart={handleBackgroundTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         style={{ cursor: dragState ? 'grabbing' : isPanning ? 'grabbing' : 'grab' }}
       >
         {/* Edges first — behind nodes so lines don't overlap labels */}
@@ -300,10 +475,11 @@ function ERDCanvas({ erdData }) {
         {layout.nodes.map(node => {
           const isDraggable = node.type === 'entity' || node.type === 'relationship' || node.type === 'isa'
           return (
-            <g 
+            <g
               key={node.id}
               onMouseDown={isDraggable ? (e) => handleNodeMouseDown(e, node) : undefined}
-              style={{ cursor: isDraggable ? 'move' : 'default' }}
+              onTouchStart={isDraggable ? (e) => handleNodeTouchStart(e, node) : undefined}
+              style={{ cursor: isDraggable ? 'move' : 'default', touchAction: 'none' }}
             >
               {nodeShape(node)}
             </g>

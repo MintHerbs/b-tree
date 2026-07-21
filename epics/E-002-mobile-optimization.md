@@ -51,7 +51,7 @@ summarized from a report) before being filed.
 - [ ] T-019 — PageShell layout primitives (sidebar gutter + split-panel)
       have no mobile breakpoints, duplicated across tree/algo pages,
       **plus folded T-020** (same file, same duplicate pages) (high)
-- [ ] T-021 — Interactive SVG canvases (tree, ERD, tableaux, proof tree)
+- [x] T-021 — Interactive SVG canvases (tree, ERD, tableaux, proof tree)
       support only mouse pan/zoom, no touch gestures (high)
 - [ ] T-022 — ERDPage.module.css has zero mobile breakpoints: sidebar
       gutter plus fixed-position step controls that can overlap (medium)

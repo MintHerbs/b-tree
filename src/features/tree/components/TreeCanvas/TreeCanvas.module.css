@@ -16,6 +16,7 @@
   cursor: grab;
   user-select: none;
   background: transparent;
+  touch-action: none;
 }
 
 .svg:active {
