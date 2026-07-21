@@ -500,6 +500,7 @@
 .fileItem {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 6px 12px;
   margin: 2px 0;
@@ -512,12 +513,29 @@
   background: var(--color-hover-faint);
 }
 
+.fileContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
 .fileName {
   font-size: 13px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.fileItem .iconButton {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.fileItem:hover .iconButton {
+  opacity: 1;
 }
 
 .loadingText,

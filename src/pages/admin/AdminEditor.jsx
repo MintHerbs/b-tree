@@ -251,6 +251,7 @@ function AdminEditorContent() {
   const {
     handleNewModule, handleDeleteModule, handleRenameModule,
     handleNewSubfolder, handleRenameSubfolder, handleDeleteSubfolder, handleMoveFile,
+    handleDeleteFile, handleRenameFile,
   } = useEditorModules({
     showToast, setModules, setSelectedPath, unusedIconOptions,
     isOwner: profile?.role === 'owner',
@@ -620,6 +621,8 @@ function AdminEditorContent() {
         onNewSubfolder={handleNewSubfolder}
         onRenameSubfolder={handleRenameSubfolder}
         onDeleteSubfolder={handleDeleteSubfolder}
+        onDeleteFile={handleDeleteFile}
+        onRenameFile={handleRenameFile}
         onNewModule={handleNewModule}
         onDeleteModule={handleDeleteModule}
         onRenameModule={handleRenameModule}

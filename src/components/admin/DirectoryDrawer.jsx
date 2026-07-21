@@ -31,6 +31,8 @@ export default function DirectoryDrawer({
   onNewSubfolder,
   onRenameSubfolder,
   onDeleteSubfolder,
+  onDeleteFile,
+  onRenameFile,
   onNewModule,
   onDeleteModule,
   onRenameModule,
@@ -58,10 +60,13 @@ export default function DirectoryDrawer({
   const [loadingFiles, setLoadingFiles] = useState({}) // Track loading state per folder
   const [renamingModule, setRenamingModule] = useState(null)
   const [renameModuleValue, setRenameModuleValue] = useState('')
+  const [renamingFile, setRenamingFile] = useState(null)
+  const [renameFileValue, setRenameFileValue] = useState('')
 
   const newSubfolderInputRef = useRef(null)
   const renameInputRef = useRef(null)
   const newModuleInputRef = useRef(null)
+  const renameFileInputRef = useRef(null)
 
   // Filter modules based on allowedDirectories for contributors
   const visibleModules = allowedDirectories
@@ -86,6 +91,12 @@ export default function DirectoryDrawer({
       newModuleInputRef.current.focus()
     }
   }, [addingNewModule])
+
+  useEffect(() => {
+    if (renamingFile && renameFileInputRef.current) {
+      renameFileInputRef.current.focus()
+    }
+  }, [renamingFile])
 
   useEffect(() => {
     if (!iconOptions.some(option => option.name === newModuleIcon)) {
@@ -122,6 +133,14 @@ export default function DirectoryDrawer({
       onRenameModule(renamingModule, renameModuleValue.trim())
       setRenamingModule(null)
       setRenameModuleValue('')
+    }
+  }
+
+  const handleRenameFile = () => {
+    if (renameFileValue.trim() && renamingFile) {
+      onRenameFile(renamingFile.moduleId, renamingFile.subfolder, renamingFile.filename, renameFileValue.trim())
+      setRenamingFile(null)
+      setRenameFileValue('')
     }
   }
 
@@ -326,11 +345,19 @@ export default function DirectoryDrawer({
           ) : (
             <Files>
             {visibleModules.map(module => {
-              const subfolders = module.notes
+              const derivedSubfolders = module.notes
                 ? [...new Set(module.notes.map(n => {
                     const parts = n.filename.split('/')
                     return parts.length > 1 ? parts[0] : 'notes'
                   }))]
+                : []
+              const explicitSubfolders = module.subfolders ?? []
+              // A folder created empty (no notes yet) only shows up via
+              // `explicitSubfolders`; once it has notes it also shows up via
+              // `derivedSubfolders` — merge both. Only fall back to the
+              // hardcoded default when a module has neither kind at all.
+              const subfolders = derivedSubfolders.length > 0 || explicitSubfolders.length > 0
+                ? [...new Set([...derivedSubfolders, ...explicitSubfolders])]
                 : ['notes', 'tools']
 
               return (
@@ -518,18 +545,85 @@ export default function DirectoryDrawer({
                                   <span className={styles.emptyText}>No files found</span>
                                 </div>
                               ) : (
-                                files.map(file => (
-                                  <div
-                                    key={file.path}
-                                    className={styles.fileItem}
-                                    onClick={() => handleFileClick(file.path)}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, module.id, subfolder, file.name)}
-                                  >
-                                    <FileMd size={14} className={styles.fileIcon} />
-                                    <span className={styles.fileName}>{file.name}</span>
-                                  </div>
-                                ))
+                                files.map(file => {
+                                  const isRenamingFile = renamingFile?.moduleId === module.id &&
+                                    renamingFile?.subfolder === subfolder &&
+                                    renamingFile?.filename === file.name
+
+                                  return (
+                                    <div
+                                      key={file.path}
+                                      className={styles.fileItem}
+                                      onClick={() => !isRenamingFile && handleFileClick(file.path)}
+                                      draggable={!isRenamingFile}
+                                      onDragStart={(e) => handleDragStart(e, module.id, subfolder, file.name)}
+                                    >
+                                      <div className={styles.fileContent}>
+                                        <FileMd size={14} className={styles.fileIcon} />
+                                        {isRenamingFile ? (
+                                          <input
+                                            ref={renameFileInputRef}
+                                            type="text"
+                                            className={styles.inlineInput}
+                                            value={renameFileValue}
+                                            onChange={(e) => setRenameFileValue(e.target.value)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') handleRenameFile()
+                                              if (e.key === 'Escape') {
+                                                setRenamingFile(null)
+                                                setRenameFileValue('')
+                                              }
+                                            }}
+                                            onBlur={handleRenameFile}
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                        ) : (
+                                          <span className={styles.fileName}>{file.name}</span>
+                                        )}
+                                      </div>
+
+                                      {isOwner && !isRenamingFile && (
+                                        <Popover.Root>
+                                          <Popover.Trigger asChild>
+                                            <button
+                                              className={styles.iconButton}
+                                              onClick={(e) => e.stopPropagation()}
+                                              title="File actions"
+                                            >
+                                              <DotsThreeVertical size={14} />
+                                            </button>
+                                          </Popover.Trigger>
+                                          <Popover.Portal>
+                                            <Popover.Content className={styles.popoverContent} sideOffset={5}>
+                                              <button
+                                                className={styles.menuItem}
+                                                onClick={() => {
+                                                  setRenamingFile({ moduleId: module.id, subfolder, filename: file.name })
+                                                  setRenameFileValue(file.name.replace(/\.md$/, ''))
+                                                }}
+                                              >
+                                                Rename
+                                              </button>
+                                              <button
+                                                className={styles.menuItem}
+                                                onClick={() => {
+                                                  setDeleteConfirm({
+                                                    type: 'file',
+                                                    moduleId: module.id,
+                                                    subfolder,
+                                                    filename: file.name,
+                                                  })
+                                                }}
+                                              >
+                                                Delete
+                                              </button>
+                                            </Popover.Content>
+                                          </Popover.Portal>
+                                        </Popover.Root>
+                                      )}
+                                    </div>
+                                  )
+                                })
                               )}
                             </div>
                           )}
@@ -650,12 +744,18 @@ export default function DirectoryDrawer({
               <div className={styles.confirmHeader}>
                 <Warning size={18} weight="bold" style={{ color: colors.warning }} />
                 <span className={styles.confirmTitle}>
-                  {deleteConfirm.type === 'module' ? 'Delete subject?' : 'Delete folder?'}
+                  {deleteConfirm.type === 'module'
+                    ? 'Delete subject?'
+                    : deleteConfirm.type === 'file'
+                    ? 'Delete file?'
+                    : 'Delete folder?'}
                 </span>
               </div>
               <p className={styles.confirmMessage}>
                 {deleteConfirm.type === 'module'
                   ? `Delete ${deleteConfirm.moduleId}? It will be hidden from the app, but its files remain in the repo and aren't currently reachable for cleanup.`
+                  : deleteConfirm.type === 'file'
+                  ? `Delete ${deleteConfirm.filename}? This can't be undone.`
                   : `Delete this folder? Notes inside will be orphaned.`}
               </p>
               <div className={styles.confirmActions}>
@@ -670,6 +770,8 @@ export default function DirectoryDrawer({
                   onClick={() => {
                     if (deleteConfirm.type === 'module') {
                       onDeleteModule(deleteConfirm.moduleId)
+                    } else if (deleteConfirm.type === 'file') {
+                      onDeleteFile(deleteConfirm.moduleId, deleteConfirm.subfolder, deleteConfirm.filename)
                     } else {
                       onDeleteSubfolder(deleteConfirm.moduleId, deleteConfirm.subfolder)
                     }
