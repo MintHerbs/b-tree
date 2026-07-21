@@ -109,3 +109,33 @@
   width: 90vw;
   height: 70vh;
 }
+
+/* Mobile optimization */
+/* --breakpoint-xl */
+@media (max-width: 968px) {
+  .erdMain {
+    left: 0;
+    width: 100vw;
+  }
+}
+
+/* --breakpoint-sm */
+@media (max-width: 480px) {
+  .previousButton,
+  .resetButton {
+    /* erdMain is shifted -5vh via transform, so add that back; clear the
+       60px Navbar height too so the button doesn't sit on top of the
+       hamburger/About controls */
+    top: calc(5vh + 60px + 12px);
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .previousButton {
+    left: 16px;
+  }
+
+  .resetButton {
+    right: 16px;
+  }
+}

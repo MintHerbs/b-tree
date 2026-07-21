@@ -61,6 +61,8 @@ summarized from a report) before being filed.
       touch targets, repeated on every post card (medium)
 - [ ] T-025 — Expanded mobile Sidebar blurs its own nav text via a
       duplicate overlay pseudo-element (medium)
+- [ ] T-026 — ERDPage step content can overflow erdMain's fixed 100vh
+      height, silently clipped by erdPage's overflow:hidden (low)
 
 T-020 is `wontfix` as a standalone ticket — folded into T-019 (same
 `PageShell.module.css` root cause, plus the same `ComplexityPage`/
