@@ -1,4 +1,4 @@
-/* Grade Toolkit — Material You (M3) shell.
+/* Grade Toolkit - Material You (M3) shell.
    Tonal surfaces + state layers from the --md-* tokens; no gradient cards or
    drop shadows (M3 elevation is tonal). Error/success/warning come from the
    --tool-* vars injected by the page component. */
@@ -73,7 +73,7 @@
 }
 
 .segmentActive {
-  color: var(--md-on-primary-container);
+  color: var(--md-on-surface);
 }
 
 .segmentIndicator {
@@ -107,7 +107,7 @@
 @media (max-width: 968px) {
   .page {
     padding: 56px 20px 80px;
-    padding-left: 20px; /* sidebar collapses on mobile — drop the gutter */
+    padding-left: 20px; /* sidebar collapses on mobile - drop the gutter */
   }
 
   .segmented {

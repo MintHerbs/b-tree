@@ -134,7 +134,7 @@ export default function CpaMode({ reduceMotion }) {
         module for accuracy.
       </p>
 
-      {/* Year tabs — only the active year is shown, so the page stays short. */}
+      {/* Year tabs - only the active year is shown, so the page stays short. */}
       <div className={styles.yearTabs} role="tablist" aria-label="Year">
         {YEARS.map(y => {
           const selected = y.id === activeYear

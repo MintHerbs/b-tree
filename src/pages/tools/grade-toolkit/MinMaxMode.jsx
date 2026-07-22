@@ -5,7 +5,7 @@ import styles from './MinMaxMode.module.css'
 
 const newRow = () => ({ moduleName: '', weightage: '', marks: '' })
 
-// Difficulty tone for a required exam mark — drives the colour of each result.
+// Difficulty tone for a required exam mark - drives the colour of each result.
 const neededTone = value => {
   if (value <= 60) return 'easy'
   if (value <= 85) return 'moderate'
@@ -31,7 +31,7 @@ function ResultCell({ result }) {
         </span>
       )
     default:
-      return <span className={`${styles.result} ${styles.result_empty}`}>—</span>
+      return <span className={`${styles.result} ${styles.result_empty}`}>·</span>
   }
 }
 

@@ -1,4 +1,4 @@
-// Grade Toolkit — single source of truth for the grade scale.
+// Grade Toolkit - single source of truth for the grade scale.
 //
 // Both modes (My CPA, Min effort max result) previously defined this scale
 // separately: the CPA page hard-coded the F/D/C/B/A/A+ bands inside

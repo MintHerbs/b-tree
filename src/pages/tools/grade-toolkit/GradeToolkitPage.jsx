@@ -12,7 +12,7 @@ const MODES = [
   {
     key: 'cpa',
     label: 'My CPA',
-    blurb: 'You know your marks — see what your CPA turns into.',
+    blurb: 'You know your marks; see what your CPA turns into.',
   },
   {
     key: 'minmax',
@@ -65,7 +65,7 @@ export default function GradeToolkitPage() {
           <h1 className={styles.title}>Grade Toolkit</h1>
           <p className={styles.subtitle}>{active.blurb}</p>
 
-          {/* M3 segmented button — single-select, one active segment. */}
+          {/* M3 segmented button - single-select, one active segment. */}
           <div
             className={styles.segmented}
             role="tablist"
@@ -113,7 +113,7 @@ export default function GradeToolkitPage() {
         </AnimatePresence>
 
         <p className={styles.privacy}>
-          🔐 Fully static — your marks never leave this page. Nothing is
+          🔐 Fully static. Your marks never leave this page. Nothing is
           collected, logged, or stored. Made with love ❤️ from CS 2023.
         </p>
       </div>
