@@ -73,7 +73,7 @@ matching the sidebar's convention.
 
 | # | Title | Description | Icon | Route |
 |---|---|---|---|---|
-| 1 | CPA Calculator | Work out your CPA and see what each module does to it. | `Calculator` | `/tools/cpa-calculator` |
+| 1 | CPA Calculator | Work out your CPA and see what each module does to it. | `Calculator` | `/tools/grade-toolkit` |
 | 2 | B+ Tree Visualizer | Insert, delete, and search keys with every step animated. | `TreeStructure` | `/tree` |
 | 3 | ERD Visualizer | Turn a schema description into an entity relationship diagram. | `Graph` | `/erd` |
 | 4 | Code Complexity | Paste code and get its Big-O complexity line by line. | `ChartLineUp` | `/algo/code-complexity` |
@@ -93,6 +93,11 @@ Notes on the route choices:
   same components (see
   [`academiaRoutes.jsx`](../../src/routes/academiaRoutes.jsx)). Use the
   sidebar's spelling so the two stay consistent.
+- The CPA card points at `/tools/grade-toolkit`, not `/tools/cpa-calculator`.
+  The CPA calculator and "Min effort, max result" tools were fused into the
+  Grade Toolkit; `/tools/cpa-calculator` still resolves but only as a
+  `<Navigate>` redirect to the toolkit's default (CPA) mode. Linking straight
+  to the toolkit skips that redirect hop.
 
 ---
 

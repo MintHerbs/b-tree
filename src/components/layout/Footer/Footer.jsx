@@ -15,7 +15,7 @@ const GITHUB_URL = 'https://github.com/MintHerbs/b-tree';
 const CONTRIBUTORS_URL = 'https://github.com/MintHerbs/b-tree/graphs/contributors';
 
 const TOOL_LINKS = [
-  { label: 'CPA Calculator', to: '/tools/cpa-calculator' },
+  { label: 'CPA Calculator', to: '/tools/grade-toolkit' },
   { label: 'B+ Tree Visualizer', to: '/tree' },
   { label: 'ERD Visualizer', to: '/erd' },
   { label: 'Code Complexity', to: '/algo/code-complexity' },

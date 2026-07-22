@@ -20,7 +20,7 @@ const TOOLS = [
     title: 'CPA Calculator',
     description: 'Work out your CPA and see what each module does to it.',
     Icon: Calculator,
-    route: '/tools/cpa-calculator',
+    route: '/tools/grade-toolkit',
   },
   {
     id: 'btree',
