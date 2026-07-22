@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useMemo } from 'react'
 import styles from './TreeCanvas.module.css'
 import TreeNode from '../TreeNode/TreeNode'
 import TreeEdge from '../TreeEdge/TreeEdge'
-import { calculateTreeLayout } from '../../../../lib/treeLayout'
+import { calculateTreeLayout, getNodeSlots } from '../../../../lib/treeLayout'
 import { getTouchDistance, getTouchMidpoint } from '../../../../lib/touchGestures'
 
 function TreeCanvas({ tree }) {
@@ -234,9 +234,18 @@ function TreeCanvas({ tree }) {
 
           if (!fromNode || !toNode) return null
 
-          // Calculate edge endpoints
+          // Anchor the edge at the centre of the parent's pointer slot for this
+          // child, so each separator key visibly sits between the two subtrees it
+          // divides. Fall back to the node centre if the slot can't be resolved.
+          const parentSlots = getNodeSlots(fromNode.keys.length, fromNode.keySlotWidths)
+          const pointerSlots = parentSlots.filter(s => s.type === 'pointer')
+          const slot = pointerSlots[edge.childIndex]
+          const fromX = slot
+            ? fromNode.x - fromNode.width / 2 + slot.x + slot.width / 2
+            : fromNode.x
+
           const from = {
-            x: fromNode.x,
+            x: fromX,
             y: fromNode.y + fromNode.height / 2
           }
           const to = {

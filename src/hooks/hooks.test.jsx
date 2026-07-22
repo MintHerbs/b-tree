@@ -1,116 +1,44 @@
-// Test file for hooks - demonstrates API usage
+// Documentation of the useBPlusTree hook API (example usage).
+//
+// This file is an example/reference, not a node-runnable script — it imports
+// React hooks, which need a renderer to execute. The runnable, framework-free
+// checks for the hook's core contract (clone-then-mutate independence + the
+// stats shape it exposes) live in `src/test/tree/test-library-integration.js`
+// and run via `npm run test:tree`.
+//
+// (Per project decision T-039: no test framework; React-hook execution would
+// require one, so we verify the non-React core the hook delegates to instead.)
+
 import { useBPlusTree } from './useBPlusTree.js'
-import { useAnimationPlayer } from './useAnimationPlayer.js'
 
-// This is a demonstration of the hook APIs
-// In a real React component, these would be used like:
-
+// Example of how the hook is consumed in a component:
 function ExampleTreeComponent() {
-  // Initialize tree with values and order
+  // Current API — order is a single number; there is no animation/steps API here.
   const {
-    tree,
-    steps,
-    isInitialized,
-    stats,
-    initializeTree,
-    insert,
-    deleteValues,
-    resetTree
-  } = useBPlusTree([], 3)
+    tree,            // BPlusTree instance
+    stats,           // { order, nodeCount, keyCount, height }
+    initializeTree,  // (values, order) => void
+    insert,          // (values | value) => void   (clone-then-mutate)
+    deleteValues,    // (values | value) => void   (structural delete, clone-then-mutate)
+    resetTree        // (values, order) => void
+  } = useBPlusTree(3)
 
-  // Initialize on mount
-  // useEffect(() => {
-  //   initializeTree([5, 3, 8, 1, 9], 3)
-  // }, [])
+  // Typical usage:
+  // - initializeTree([5, 3, 8], 3) — build a tree with initial values
+  // - insert([42, 7])              — insert new values
+  // - deleteValues([5])            — structurally delete values
+  // - resetTree([1, 2, 3], 4)      — reset with new values and order
 
-  // Use animation player with the steps
-  const {
-    currentStepIndex,
-    currentStep,
-    isPlaying,
-    speed,
-    isAtStart,
-    isAtEnd,
-    hasSteps,
-    totalSteps,
-    play,
-    pause,
-    togglePlayPause,
-    next,
-    prev,
-    goToStep,
-    updateSpeed,
-    reset
-  } = useAnimationPlayer(steps)
-
-  // Example operations:
-  // - initializeTree([5, 3, 8], 3) - build tree with initial values
-  // - insert([42, 7]) - insert new values
-  // - deleteValues([5]) - delete values
-  // - resetTree([1, 2, 3], 4) - reset with new values and order
-  
-  // Animation controls:
-  // - play() - start animation
-  // - pause() - pause animation
-  // - togglePlayPause() - toggle play/pause
-  // - next() - go to next step
-  // - prev() - go to previous step
-  // - goToStep(5) - jump to specific step
-  // - updateSpeed(1.5) - change playback speed
-  // - reset() - go back to first step
-
-  // Current state:
-  // - tree - the BPlusTree instance
-  // - stats - { order, nodeCount, keyCount, height }
-  // - currentStep - current animation step object
-  // - currentStepIndex - index of current step
-  // - isPlaying - whether animation is playing
-  // - totalSteps - total number of steps
-
-  return null // This is just a demonstration
+  return null // demonstration only
 }
 
-console.log('=== Hook API Documentation ===')
-console.log('')
-console.log('useBPlusTree(initialValues, order):')
-console.log('  Returns: { tree, steps, isInitialized, stats, initializeTree, insert, deleteValues, resetTree }')
-console.log('  - tree: BPlusTree instance')
-console.log('  - steps: Array of animation step objects')
-console.log('  - isInitialized: boolean')
-console.log('  - stats: { order, nodeCount, keyCount, height }')
-console.log('  - initializeTree(values, order): Initialize tree')
-console.log('  - insert(values): Insert values (array or single value)')
-console.log('  - deleteValues(values): Delete values (array or single value)')
-console.log('  - resetTree(values, order): Reset tree')
-console.log('')
-console.log('useAnimationPlayer(steps):')
-console.log('  Returns: { currentStepIndex, currentStep, isPlaying, speed, isAtStart, isAtEnd, hasSteps, totalSteps, play, pause, togglePlayPause, next, prev, goToStep, updateSpeed, reset }')
-console.log('  - currentStepIndex: number')
-console.log('  - currentStep: step object or null')
-console.log('  - isPlaying: boolean')
-console.log('  - speed: number (0.5 to 2.0)')
-console.log('  - isAtStart: boolean')
-console.log('  - isAtEnd: boolean')
-console.log('  - hasSteps: boolean')
-console.log('  - totalSteps: number')
-console.log('  - play(): Start animation')
-console.log('  - pause(): Pause animation')
-console.log('  - togglePlayPause(): Toggle play/pause')
-console.log('  - next(): Go to next step')
-console.log('  - prev(): Go to previous step')
-console.log('  - goToStep(index): Jump to specific step')
-console.log('  - updateSpeed(speed): Change playback speed')
-console.log('  - reset(): Go back to first step')
-console.log('')
-console.log('Step object structure:')
-console.log('  {')
-console.log('    id: number,')
-console.log('    description: string,')
-console.log('    treeSnapshot: { t, root },')
-console.log('    highlightNodeId: string | null,')
-console.log('    highlightKeys: string[],')
-console.log('    arrowFrom: { x, y } | null,')
-console.log('    arrowTo: { x, y } | null,')
-console.log('    arrowLabel: string | null,')
-console.log('    type: "traverse" | "insert" | "split" | "delete" | "borrow" | "merge" | "done"')
-console.log('  }')
+void ExampleTreeComponent
+
+console.log('=== useBPlusTree(order) API ===')
+console.log('Returns: { tree, stats, initializeTree, insert, deleteValues, resetTree }')
+console.log('  - tree:           BPlusTree instance')
+console.log('  - stats:          { order, nodeCount, keyCount, height }')
+console.log('  - initializeTree(values, order)')
+console.log('  - insert(values)      // array or single value; clone-then-mutate (StrictMode-safe)')
+console.log('  - deleteValues(values)// array or single value; structural borrow/merge delete')
+console.log('  - resetTree(values, order)')
