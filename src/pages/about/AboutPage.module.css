@@ -25,21 +25,29 @@
   margin-bottom: 40px;
 }
 
-/* M3 text button — subtle tonal state layer, no lift. */
-.backButton {
-  display: inline-flex;
+/* Title + back button share one row. The row is pulled left into the gutter so
+   the arrow sits to the side while "Meet the Team" keeps its original left
+   position (instead of being shoved right by the arrow). */
+.titleRow {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 16px;
-  padding: 8px 16px 8px 12px;
+  gap: 4px;
+  margin-left: -44px;
+}
+
+/* M3 icon button — circular, tonal state layer on hover, no lift. */
+.backButton {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   border: none;
-  border-radius: var(--md-shape-xl);
+  border-radius: 50%;
   background: transparent;
   color: var(--md-on-surface-variant);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
   cursor: pointer;
+  transform: translateY(-3px); /* sit a touch higher, centered on the title */
   transition:
     color var(--md-duration-short) var(--md-easing-emphasized),
     background var(--md-duration-short) var(--md-easing-emphasized);
@@ -299,6 +307,12 @@
   .page {
     padding: 56px 20px 80px;
     padding-left: 20px; /* sidebar collapses on mobile - drop the gutter */
+  }
+
+  /* No left gutter on mobile — keep the arrow inline so it doesn't clip off. */
+  .titleRow {
+    margin-left: 0;
+    gap: 8px;
   }
 
   .grid {

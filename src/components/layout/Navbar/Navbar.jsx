@@ -1,4 +1,5 @@
 // Top navigation bar - fully prop-controlled with no hardcoded content
+import { Ghost } from 'lucide-react'
 import styles from './Navbar.module.css'
 
 export default function Navbar({
@@ -41,7 +42,10 @@ export default function Navbar({
           <a href="/disclaimer" className={styles.aboutLink}>Disclaimer</a>
         )}
         {showAbout && (
-          <a href="/about" className={styles.aboutLink}>Team</a>
+          <a href="/about" className={styles.teamButton}>
+            <span>Team</span>
+            <Ghost size={16} className={styles.teamArrow} />
+          </a>
         )}
       </div>
     </nav>

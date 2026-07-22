@@ -105,6 +105,44 @@
   text-decoration: underline;
 }
 
+/* Material You tonal "pill" button for the Team link. The arrow nudges right on
+   hover to invite the click. Colors come from the --md-* token set. */
+.teamButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background var(--md-duration-short, 200ms) var(--md-easing-emphasized, ease),
+    color var(--md-duration-short, 200ms) var(--md-easing-emphasized, ease);
+}
+
+.teamButton:hover {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.teamButton:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.teamArrow {
+  transition: transform var(--md-duration-short, 200ms)
+    var(--md-easing-emphasized, ease);
+}
+
+.teamButton:hover .teamArrow {
+  transform: translateY(-2px);
+}
+
 /* --breakpoint-lg */
 @media (max-width: 768px) {
   .navbar {

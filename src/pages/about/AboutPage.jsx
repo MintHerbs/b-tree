@@ -227,11 +227,17 @@ function AboutPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
         >
-          <button type="button" className={styles.backButton} onClick={goBack}>
-            <ArrowLeft size={18} />
-            <span>Back</span>
-          </button>
-          <h1 className={styles.pageTitle}>Meet the Team</h1>
+          <div className={styles.titleRow}>
+            <button
+              type="button"
+              className={styles.backButton}
+              onClick={goBack}
+              aria-label="Go back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className={styles.pageTitle}>Meet the Team</h1>
+          </div>
           <p className={styles.pageSubtitle}>The people behind the project.</p>
         </motion.header>
 
