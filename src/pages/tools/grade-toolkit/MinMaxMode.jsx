@@ -16,15 +16,11 @@ function ResultCell({ result }) {
   switch (result.status) {
     case 'secured':
       return (
-        <span className={`${styles.result} ${styles.result_secured}`}>
-          Secured ✓
-        </span>
+        <span className={`${styles.result} ${styles.result_secured}`}>✓</span>
       )
     case 'impossible':
       return (
-        <span className={`${styles.result} ${styles.result_impossible}`}>
-          Impossible
-        </span>
+        <span className={`${styles.result} ${styles.result_impossible}`}>✕</span>
       )
     case 'needed':
       return (
@@ -32,7 +28,6 @@ function ResultCell({ result }) {
           className={`${styles.result} ${styles[`result_${neededTone(result.value)}`]}`}
         >
           {result.value}
-          <small>/100</small>
         </span>
       )
     default:
@@ -55,88 +50,72 @@ export default function MinMaxMode({ reduceMotion }) {
 
   return (
     <div className={styles.mode}>
-      <p className={styles.supporting}>
-        Enter an exam's weightage and the coursework marks you've already
-        banked. Each cell is the <strong>minimum exam mark</strong> you'd need
-        for that grade. Example: exam worth 50% with 30 coursework marks needs
-        an <strong>80/100</strong> for an A.
+      <p className={styles.hint}>
+        Each cell is the <strong>minimum exam mark</strong> you need for that
+        grade. e.g. exam worth 50% with 30 coursework marks needs{' '}
+        <strong>80</strong> for an A. <span className={styles.legend}>✓ already secured · ✕ impossible</span>
       </p>
 
       <div className={styles.rows}>
-        {rows.map((row, index) => {
-          return (
-            <motion.section
-              key={index}
-              className={styles.moduleCard}
-              layout={!reduceMotion}
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-            >
+        {rows.map((row, index) => (
+          <motion.section
+            key={index}
+            className={styles.moduleCard}
+            layout={!reduceMotion}
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className={styles.inputs}>
               <input
                 type="text"
-                placeholder="Module name (optional)"
+                placeholder="Module (optional)"
                 className={styles.nameInput}
                 value={row.moduleName}
                 onChange={e => updateRow(index, 'moduleName', e.target.value)}
               />
-
-              <div className={styles.inputPair}>
-                <div className={styles.field}>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder=" "
-                    className={styles.fieldInput}
-                    value={row.weightage}
-                    onChange={e => updateRow(index, 'weightage', e.target.value)}
-                  />
-                  <label className={styles.floatingLabel}>Exam weightage %</label>
-                  <span className={styles.helper}>
-                    e.g. exam is 60% of the grade → 60
-                  </span>
-                </div>
-
-                <div className={styles.field}>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder=" "
-                    className={styles.fieldInput}
-                    value={row.marks}
-                    onChange={e => updateRow(index, 'marks', e.target.value)}
-                  />
-                  <label className={styles.floatingLabel}>Coursework marks</label>
-                  <span className={styles.helper}>points already banked, e.g. 30</span>
-                </div>
+              <div className={styles.field}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder=" "
+                  className={styles.fieldInput}
+                  value={row.weightage}
+                  onChange={e => updateRow(index, 'weightage', e.target.value)}
+                />
+                <label className={styles.floatingLabel}>Exam weightage %</label>
               </div>
-
-              <div className={styles.grades}>
-                {TARGET_GRADES.map(grade => {
-                  const result = examMarkNeeded(grade, row.marks, row.weightage)
-                  return (
-                    <div key={grade} className={styles.gradeCell}>
-                      <span className={styles.gradeLetter}>{grade}</span>
-                      <ResultCell result={result} />
-                    </div>
-                  )
-                })}
+              <div className={styles.field}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder=" "
+                  className={styles.fieldInput}
+                  value={row.marks}
+                  onChange={e => updateRow(index, 'marks', e.target.value)}
+                />
+                <label className={styles.floatingLabel}>Coursework marks</label>
               </div>
-            </motion.section>
-          )
-        })}
+            </div>
+
+            <div className={styles.grades}>
+              {TARGET_GRADES.map(grade => {
+                const result = examMarkNeeded(grade, row.marks, row.weightage)
+                return (
+                  <div key={grade} className={styles.gradeCell}>
+                    <span className={styles.gradeLetter}>{grade}</span>
+                    <ResultCell result={result} />
+                  </div>
+                )
+              })}
+            </div>
+          </motion.section>
+        ))}
       </div>
 
-      <motion.button
-        type="button"
-        onClick={addRow}
-        className={styles.addButton}
-        whileHover={reduceMotion ? undefined : { y: -1 }}
-        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-        transition={{ duration: 0.15 }}
-      >
+      <button type="button" onClick={addRow} className={styles.addButton}>
         + Add module
-      </motion.button>
+      </button>
     </div>
   )
 }

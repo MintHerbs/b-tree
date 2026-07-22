@@ -9,7 +9,7 @@
   min-height: 100vh;
   background: transparent;
   color: var(--md-on-surface);
-  padding: 72px 32px 96px;
+  padding: 44px 32px 64px;
   padding-left: calc(80px + 32px); /* sidebar gutter + page padding */
   font-family: var(--font-body);
 }
@@ -22,22 +22,22 @@
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
 .header {
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .title {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--md-on-surface);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .subtitle {
   color: var(--md-on-surface-variant);
-  font-size: 1.05rem;
-  margin-bottom: 24px;
-  min-height: 1.6em;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  min-height: 1.4em;
 }
 
 /* ── M3 segmented button ────────────────────────────────────────────────── */
@@ -97,9 +97,9 @@
 /* ── Footer note ────────────────────────────────────────────────────────── */
 
 .privacy {
-  margin-top: 40px;
+  margin-top: 24px;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--md-on-surface-variant);
   line-height: 1.7;
 }

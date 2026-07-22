@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'motion/react'
+import { motion, AnimatePresence } from 'motion/react'
 import { gradeForMark, toneForMark } from './gradeScale'
 import styles from './CpaMode.module.css'
 
@@ -24,6 +24,7 @@ export default function CpaMode({ reduceMotion }) {
     year3: [newRow()],
   })
   const [projectMark, setProjectMark] = useState('')
+  const [activeYear, setActiveYear] = useState('year1')
 
   const updateRow = (yearId, index, field, value) => {
     setRowsByYear(prev => {
@@ -74,119 +75,136 @@ export default function CpaMode({ reduceMotion }) {
   const totalCredits = perYear.reduce((acc, y) => acc + y.credits, 0)
   const cpa = totalCredits > 0 ? totalScore / totalCredits : 0
 
-  const renderSliderRow = (mark, onMark, tone) => (
-    <div className={styles.sliderRow}>
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value={Number(mark) || 0}
-        onChange={e => onMark(e.target.value)}
-        className={`${styles.slider} ${styles[`slider_${tone}`]}`}
-        aria-label="Mark percentage"
-      />
-      <div className={styles.markField}>
+  const activeIndex = YEARS.findIndex(y => y.id === activeYear)
+  const year = YEARS[activeIndex]
+  const activeLpa = perYear[activeIndex].lpa
+
+  const renderMarkRow = (mark, onMark, name, onName, isProject = false) => {
+    const tone = toneForMark(mark)
+    return (
+      <div className={styles.row}>
+        {isProject ? (
+          <span className={styles.projectTag}>Final Year Project</span>
+        ) : (
+          <input
+            type="text"
+            value={name}
+            placeholder="Module (optional)"
+            onChange={e => onName(e.target.value)}
+            className={styles.nameInput}
+          />
+        )}
+
         <input
-          type="number"
+          type="range"
           min="0"
           max="100"
-          inputMode="numeric"
-          value={mark}
-          placeholder="0"
+          value={Number(mark) || 0}
           onChange={e => onMark(e.target.value)}
-          className={styles.markInput}
+          className={`${styles.slider} ${styles[`slider_${tone}`]}`}
+          aria-label="Mark percentage"
         />
-        <span className={styles.markSuffix}>%</span>
+
+        <div className={styles.markField}>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            inputMode="numeric"
+            value={mark}
+            placeholder="0"
+            onChange={e => onMark(e.target.value)}
+            className={styles.markInput}
+          />
+          <span className={styles.markSuffix}>%</span>
+        </div>
+
+        <span className={`${styles.gradeChip} ${styles[`chip_${tone}`]}`}>
+          {gradeForMark(mark)}
+        </span>
       </div>
-      <span className={`${styles.gradeChip} ${styles[`chip_${tone}`]}`}>
-        {gradeForMark(mark)}
-      </span>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className={styles.mode}>
-      <p className={styles.supporting}>
-        <strong>LPA</strong> is your performance for a single year;{' '}
-        <strong>CPA</strong> is cumulative across all years (weighted ×1, ×3,
-        ×5). Fill in every module for an accurate figure.
+      <p className={styles.hint}>
+        <strong>LPA</strong> is one year; <strong>CPA</strong> is cumulative
+        (years weighted&nbsp;×1&nbsp;/&nbsp;×3&nbsp;/&nbsp;×5). Fill in every
+        module for accuracy.
       </p>
 
-      {YEARS.map((year, yi) => {
-        const yearData = perYear[yi]
-        return (
-          <section key={year.id} className={styles.yearCard}>
-            <div className={styles.yearHeader}>
-              <div className={styles.yearTitleWrap}>
-                <h2 className={styles.yearTitle}>{year.label}</h2>
-                <span className={styles.yearWeight}>weight ×{year.weight}</span>
-              </div>
-              <div className={styles.chips}>
-                <span className={styles.statChip}>
-                  LPA <b>{yearData.lpa.toFixed(2)}</b>
-                </span>
-                <span className={`${styles.statChip} ${styles.statChipCpa}`}>
-                  CPA <b>{cpa.toFixed(2)}</b>
-                </span>
-              </div>
-            </div>
-
-            {year.hasProject && (
-              <div className={styles.field}>
-                <label className={styles.fieldLabel}>
-                  Final Year Project (worth {PROJECT_CREDITS} credits)
-                </label>
-                {renderSliderRow(
-                  projectMark,
-                  setProjectMark,
-                  toneForMark(projectMark)
-                )}
-              </div>
-            )}
-
-            {rowsByYear[year.id].map((row, index) => (
-              <motion.div
-                key={index}
-                className={styles.field}
-                layout={!reduceMotion}
-                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <input
-                  type="text"
-                  value={row.name}
-                  placeholder="Module name (optional)"
-                  onChange={e =>
-                    updateRow(year.id, index, 'name', e.target.value)
-                  }
-                  className={styles.nameInput}
-                />
-                {renderSliderRow(
-                  row.percentage,
-                  value => updateRow(year.id, index, 'percentage', value),
-                  toneForMark(row.percentage)
-                )}
-              </motion.div>
-            ))}
-
-            <motion.button
+      {/* Year tabs — only the active year is shown, so the page stays short. */}
+      <div className={styles.yearTabs} role="tablist" aria-label="Year">
+        {YEARS.map(y => {
+          const selected = y.id === activeYear
+          return (
+            <button
+              key={y.id}
               type="button"
-              onClick={() => addRow(year.id)}
-              className={styles.addButton}
-              whileHover={reduceMotion ? undefined : { y: -1 }}
-              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-              transition={{ duration: 0.15 }}
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setActiveYear(y.id)}
+              className={`${styles.yearTab} ${selected ? styles.yearTabActive : ''}`}
             >
-              + Add module
-            </motion.button>
-          </section>
-        )
-      })}
+              {selected && !reduceMotion && (
+                <motion.span
+                  layoutId="yearTabIndicator"
+                  className={styles.yearTabIndicator}
+                  transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+                />
+              )}
+              <span className={styles.yearTabLabel}>
+                {y.label} <em>×{y.weight}</em>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.section
+          key={activeYear}
+          className={styles.yearCard}
+          initial={reduceMotion ? false : { opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, x: -8 }}
+          transition={{ duration: 0.18 }}
+        >
+          {year.hasProject &&
+            renderMarkRow(projectMark, setProjectMark, null, null, true)}
+
+          {rowsByYear[year.id].map((row, index) => (
+            <div key={index}>
+              {renderMarkRow(
+                row.percentage,
+                value => updateRow(year.id, index, 'percentage', value),
+                row.name,
+                value => updateRow(year.id, index, 'name', value)
+              )}
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => addRow(year.id)}
+            className={styles.addButton}
+          >
+            + Add module
+          </button>
+        </motion.section>
+      </AnimatePresence>
 
       <div className={styles.summary}>
-        <span className={styles.summaryLabel}>Projected CPA</span>
-        <span className={styles.summaryValue}>{cpa.toFixed(2)}</span>
+        <div className={styles.summaryStat}>
+          <span className={styles.summaryLabel}>{year.label} LPA</span>
+          <span className={styles.summaryLpa}>{activeLpa.toFixed(2)}</span>
+        </div>
+        <div className={styles.summaryDivider} />
+        <div className={styles.summaryStat}>
+          <span className={styles.summaryLabel}>Projected CPA</span>
+          <span className={styles.summaryValue}>{cpa.toFixed(2)}</span>
+        </div>
       </div>
     </div>
   )
