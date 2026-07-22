@@ -135,6 +135,18 @@ serve(async (req) => {
       return data.sha ?? null
     }
 
+    async function deleteFromGithub(p: string, msg: string) {
+      const sha = await fetchSha(p)
+      if (!sha) return json(null)
+      const res = await fetch(contentsUrl(p), {
+        method: 'DELETE',
+        headers: ghHeaders,
+        body: JSON.stringify({ message: msg, sha, branch: githubBranch }),
+      })
+      if (!res.ok) return json({ error: `GitHub delete failed: ${res.status}` }, res.status)
+      return json(await res.json())
+    }
+
     switch (op) {
       case 'getFileSha': {
         return json({ sha: await fetchSha(path) })
@@ -214,19 +226,23 @@ serve(async (req) => {
       }
 
       case 'deleteFile': {
+        // The user-facing "Delete" action — owner-only per T-031. Distinct
+        // from 'cleanupFile' below, which the same rename/move flows a
+        // contributor is allowed to run also depend on.
         if (!message) return json({ error: 'Missing message' }, 400)
         if (profile.role !== 'owner') {
           return json({ error: 'Only owners can delete files' }, 403)
         }
-        const sha = await fetchSha(path)
-        if (!sha) return json(null)
-        const res = await fetch(contentsUrl(path), {
-          method: 'DELETE',
-          headers: ghHeaders,
-          body: JSON.stringify({ message, sha, branch: githubBranch }),
-        })
-        if (!res.ok) return json({ error: `GitHub delete failed: ${res.status}` }, res.status)
-        return json(await res.json())
+        return await deleteFromGithub(path, message)
+      }
+
+      case 'cleanupFile': {
+        // Removes the stale copy left behind after a rename/move whose
+        // content has already landed at its new path. Any admin may trigger
+        // a same-directory rename/move (isPathAllowed already scoped this
+        // above), so this is intentionally not owner-gated like 'deleteFile'.
+        if (!message) return json({ error: 'Missing message' }, 400)
+        return await deleteFromGithub(path, message)
       }
 
       default:

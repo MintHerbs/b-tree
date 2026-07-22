@@ -1,4 +1,4 @@
-import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../lib/githubApi'
+import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent, cleanupFile } from '../lib/githubApi'
 import { supabase } from '../lib/supabaseClient'
 
 // Title to filename conversion
@@ -337,7 +337,7 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       // delete doesn't undo the save; it just leaves a duplicate to clean up.
       if (original && !isSamePath) {
         try {
-          await deleteFile(originalPath, `chore: remove old copy after rename to ${moduleId}/${newFilename}`)
+          await cleanupFile(originalPath, `chore: remove old copy after rename to ${moduleId}/${newFilename}`)
         } catch (deleteError) {
           showToast(
             `Saved, but the old file couldn't be removed (${deleteError.message}) — delete ${originalPath} manually`,

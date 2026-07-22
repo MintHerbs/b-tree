@@ -95,6 +95,17 @@ export async function getFileContent(path) {
 // ─── DELETE FILE ─────────────────────────────────────────────────────────────
 // Deletes a file from the repo. Requires the current SHA.
 // Returns null silently if the file doesn't exist (already deleted).
+// Owner-only server-side — this is the explicit, user-facing "Delete" action.
+// For removing a stale copy after a rename/move, use cleanupFile instead.
 export async function deleteFile(path, message) {
   return invokeGithub({ op: 'deleteFile', path, message })
+}
+
+// ─── CLEANUP FILE ────────────────────────────────────────────────────────────
+// Removes the old path after its content has already been committed
+// elsewhere (rename/move). Any admin may run this — a contributor is allowed
+// to rename or move their own notes, and that action isn't complete until the
+// stale copy is gone. Not owner-gated server-side, unlike deleteFile.
+export async function cleanupFile(path, message) {
+  return invokeGithub({ op: 'cleanupFile', path, message })
 }

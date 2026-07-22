@@ -1,4 +1,4 @@
-import { commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../lib/githubApi'
+import { commitFile, commitFileWithRetry, getFileContent, deleteFile, cleanupFile } from '../lib/githubApi'
 import { getIconOptionByName } from '../components/admin/adminIconOptions'
 import { upsertNoteEntry } from './useEditorSave'
 
@@ -11,6 +11,23 @@ function titleToFilename(title) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/(^-|-$)/g, '')
+}
+
+// Admin-typed names are interpolated raw into single-quoted string literals
+// in modules.js (subject labels, subfolder entries, note filenames) and into
+// GitHub paths. A quote, backslash, or line break would produce invalid JS —
+// and because the registry commit goes straight to the deployed branch, that
+// breaks the build for every visitor, not just the editor. Reject those up
+// front. `/` is additionally barred where a name must be a single path
+// segment (subfolders, filenames), since the subfolder is derived from the
+// first "/" in a filename.
+function nameError(name, { allowSlash = true } = {}) {
+  const trimmed = (name ?? '').trim()
+  if (!trimmed) return 'Please enter a name'
+  if (/['"\\]/.test(trimmed)) return 'Name cannot contain quotes or backslashes'
+  if (/[\n\r\t]/.test(trimmed)) return 'Name cannot contain line breaks or tabs'
+  if (!allowSlash && trimmed.includes('/')) return 'Name cannot contain a slash'
+  return null
 }
 
 const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
@@ -347,6 +364,11 @@ function renameNoteFilenames(modulesJs, moduleId, renames) {
 export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions, isOwner }) {
   // Module management handlers
   const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
+    const problem = nameError(name)
+    if (problem) {
+      showToast(problem, 'error')
+      return
+    }
     const moduleId = titleToFilename(name)
     if (!moduleId) {
       showToast('Please enter a subject name', 'error')
@@ -425,6 +447,12 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleRenameModule = async (moduleId, newLabel) => {
+    const problem = nameError(newLabel)
+    if (problem) {
+      showToast(problem, 'error')
+      return
+    }
+
     showToast(`Renaming subject to ${newLabel}...`, 'success')
 
     try {
@@ -450,7 +478,20 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleNewSubfolder = async (moduleId, subfolderName) => {
+    const problem = nameError(subfolderName, { allowSlash: false })
+    if (problem) {
+      showToast(`Failed to create subfolder: ${problem}`, 'error')
+      return
+    }
+
     try {
+      // Read and patch the registry *before* writing anything. Both steps can
+      // fail (unknown subject, unparseable block), and doing the .gitkeep
+      // commit first leaves an orphan folder on GitHub that nothing points at
+      // — invisible to DirectoryDrawer but very much present in the repo.
+      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
+      const updatedModulesJs = addSubfolderEntry(currentModulesJs, moduleId, subfolderName)
+
       // Create the subfolder directory on GitHub
       await commitFile(
         `src/content/notes/${moduleId}/${subfolderName}/.gitkeep`,
@@ -460,8 +501,6 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
 
       // Register it explicitly — an empty folder has no notes for
       // DirectoryDrawer to derive its subfolder list from otherwise.
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      const updatedModulesJs = addSubfolderEntry(currentModulesJs, moduleId, subfolderName)
       await commitFileWithRetry(
         MODULES_JS_PATH,
         updatedModulesJs,
@@ -484,6 +523,12 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleRenameSubfolder = async (moduleId, oldName, newName) => {
+    const problem = nameError(newName, { allowSlash: false })
+    if (problem) {
+      showToast(`Failed to rename subfolder: ${problem}`, 'error')
+      return
+    }
+
     showToast(`Renaming ${oldName} to ${newName}...`, 'success')
 
     try {
@@ -513,7 +558,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
           `feat: rename ${oldName} to ${newName} in ${moduleId}`
         )
         try {
-          await deleteFile(
+          await cleanupFile(
             `src/content/notes/${moduleId}/${oldName}/.gitkeep`,
             `chore: remove ${oldName} placeholder after rename to ${newName}`
           )
@@ -561,14 +606,32 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
         const oldPath = notePathOnDisk(moduleId, oldFilename)
         const newPath = notePathOnDisk(moduleId, newFilename)
 
+        let content
         try {
-          const content = await getFileContent(oldPath)
+          content = await getFileContent(oldPath)
+        } catch (readError) {
+          // Files move one commit at a time but the registry is written once
+          // at the end, so a run that dies partway leaves disk ahead of
+          // modules.js. On the retry those already-moved notes 404 here
+          // forever, because the entry still names a path nothing occupies.
+          // If the content is already sitting at newPath, the move did happen
+          // — count it as moved so this run repairs the stale entry.
+          try {
+            await getFileContent(newPath)
+            moved.push({ oldFilename, newFilename })
+          } catch {
+            failed.push({ oldFilename, error: readError.message })
+          }
+          continue
+        }
+
+        try {
           await commitFile(newPath, content, `feat: move ${oldFilename} to ${newFilename} in ${moduleId}`)
           // Content is safely at newPath now — a delete failure here just
           // leaves a stale duplicate at oldPath, not a broken link, so it
           // still counts as moved rather than being discarded as failed.
           try {
-            await deleteFile(oldPath, `chore: remove ${oldFilename} after move to ${newFilename}`)
+            await cleanupFile(oldPath, `chore: remove ${oldFilename} after move to ${newFilename}`)
           } catch {
             leftoverCopies.push(oldPath)
           }
@@ -792,7 +855,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
       )
 
       try {
-        await deleteFile(oldPath, `chore: remove ${base} after move to ${toModule}/${toSubfolder}`)
+        await cleanupFile(oldPath, `chore: remove ${base} after move to ${toModule}/${toSubfolder}`)
       } catch (deleteError) {
         showToast(
           `Moved ${filename} to ${toModule}/${toSubfolder}, but the original couldn't be removed (${deleteError.message}) — delete ${oldPath} manually`,
@@ -844,6 +907,12 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleRenameFile = async (moduleId, subfolder, filename, newName) => {
+    const problem = nameError(newName, { allowSlash: false })
+    if (problem) {
+      showToast(`Failed to rename ${filename}: ${problem}`, 'error')
+      return
+    }
+
     try {
       const currentModulesJs = await getFileContent(MODULES_JS_PATH)
       const block = findModuleBlock(currentModulesJs, moduleId)
@@ -895,7 +964,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
       )
 
       try {
-        await deleteFile(oldPath, `chore: remove ${entry.filename} after rename to ${newFilename}`)
+        await cleanupFile(oldPath, `chore: remove ${entry.filename} after rename to ${newFilename}`)
       } catch (deleteError) {
         showToast(
           `Renamed to ${bareNewName}, but the original couldn't be removed (${deleteError.message}) — delete ${oldPath} manually`,

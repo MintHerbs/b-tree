@@ -132,11 +132,16 @@ export default function DirectoryDrawer({
     }
   }
 
-  const handleRenameFile = () => {
+  const handleRenameFile = async () => {
     if (renameFileValue.trim() && renamingFile) {
-      onRenameFile(renamingFile.moduleId, renamingFile.subfolder, renamingFile.filename, renameFileValue.trim())
+      const { moduleId, subfolder } = renamingFile
+      await onRenameFile(moduleId, subfolder, renamingFile.filename, renameFileValue.trim())
       setRenamingFile(null)
       setRenameFileValue('')
+      // The row list renders from folderFiles, a listDirectory snapshot taken
+      // on first expand — onRenameFile only updates modules.js/GitHub, so
+      // without this the tree keeps showing the pre-rename filename.
+      await loadFolderFiles(moduleId, subfolder)
     }
   }
 
@@ -746,15 +751,19 @@ export default function DirectoryDrawer({
                 </button>
                 <button
                   className={styles.confirmDelete}
-                  onClick={() => {
-                    if (deleteConfirm.type === 'module') {
-                      onDeleteModule(deleteConfirm.moduleId)
-                    } else if (deleteConfirm.type === 'file') {
-                      onDeleteFile(deleteConfirm.moduleId, deleteConfirm.subfolder, deleteConfirm.filename)
-                    } else {
-                      onDeleteSubfolder(deleteConfirm.moduleId, deleteConfirm.subfolder)
-                    }
+                  onClick={async () => {
+                    const { type, moduleId, subfolder, filename } = deleteConfirm
                     setDeleteConfirm(null)
+                    if (type === 'module') {
+                      onDeleteModule(moduleId)
+                    } else if (type === 'file') {
+                      await onDeleteFile(moduleId, subfolder, filename)
+                      // Same stale-cache issue as rename: folderFiles won't
+                      // drop the deleted entry on its own.
+                      await loadFolderFiles(moduleId, subfolder)
+                    } else {
+                      onDeleteSubfolder(moduleId, subfolder)
+                    }
                   }}
                 >
                   Delete
