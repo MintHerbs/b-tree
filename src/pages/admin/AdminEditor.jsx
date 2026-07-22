@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
+import NoteEditor from '../../components/admin/NoteEditor'
 import { useDropzone } from 'react-dropzone'
 import { colors } from '../../constants/colors'
 import { supabase } from '../../lib/supabaseClient'
@@ -26,6 +27,11 @@ import { useEditorModules } from '../../hooks/useEditorModules'
 import { useEditorFormatting, renderInlineLaTeX } from '../../hooks/useEditorFormatting'
 import { useEditorFiles } from '../../hooks/useEditorFiles'
 import { useEditorDrafts } from '../../hooks/useEditorDrafts'
+
+// Feature flag for the WYSIWYG migration (T-036). While true the Milkdown
+// NoteEditor replaces Monaco; Monaco stays importable behind the flag until
+// acceptance passes, then it's deleted (spec §6.1, §10).
+const USE_WYSIWYG = true
 
 function resolveAdminImageSrc(src = '') {
   if (!src.startsWith('/notes/img/')) return src
@@ -267,6 +273,18 @@ function AdminEditorContent() {
   const { handleFormatAction, handleStyleChange, detectCurrentStyle } = useEditorFormatting({
     editorRef, setCurrentStyle,
   })
+
+  // Imperative handle to the WYSIWYG editor's commands (bold/italic/etc.).
+  const noteEditorRef = useRef(null)
+
+  // Route toolbar/shortcut actions to the active editor: Milkdown commands when
+  // the flag is on, Monaco `executeEdits` otherwise.
+  const onFormat = (action) => (
+    USE_WYSIWYG ? noteEditorRef.current?.format(action) : handleFormatAction(action)
+  )
+  const onStyle = (style) => (
+    USE_WYSIWYG ? noteEditorRef.current?.setStyle(style) : handleStyleChange(style)
+  )
 
   const { handleLoadFile } = useEditorFiles({
     showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath,
@@ -559,10 +577,10 @@ function AdminEditorContent() {
         handleSave()
       } else if (key === 'b') {
         event.preventDefault()
-        handleFormatAction('bold')
+        onFormat('bold')
       } else if (key === 'i') {
         event.preventDefault()
-        handleFormatAction('italic')
+        onFormat('italic')
       } else if (event.shiftKey && key === 'p') {
         event.preventDefault()
         setPreviewOpen(true)
@@ -708,12 +726,12 @@ function AdminEditorContent() {
         onSignOut={handleSignOut}
         onChangePassword={() => setChangePasswordOpen(true)}
         editorRef={editorRef}
-        onFormatAction={handleFormatAction}
+        onFormatAction={onFormat}
         onInsertImage={() => fileInputRef.current?.click()}
         onInsertFormula={() => setFormulaModalOpen(true)}
         onInsertSocialLink={() => setSocialLinkModalOpen(true)}
         currentStyle={currentStyle}
-        onStyleChange={handleStyleChange}
+        onStyleChange={onStyle}
         onNewModule={handleNewModule}
         iconOptions={unusedIconOptions}
         onDeleteModule={() => selectedPath && handleDeleteModule(selectedPath.moduleId)}
@@ -731,35 +749,43 @@ function AdminEditorContent() {
         />
 
         <div className={styles.writingArea}>
-          {content === '' && (
+          {content === '' && !USE_WYSIWYG && (
             <div className={styles.emptyPlaceholder}>Start writing…</div>
           )}
-          <Editor
-            height="100%"
-            defaultLanguage="markdown"
-            theme="mooner-dark"
-            value={content}
-            onChange={handleContentChange}
-            onMount={handleEditorMount}
-            beforeMount={handleBeforeMount}
-            options={{
-              fontSize: 15,
-              lineHeight: 28,
-              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              wordWrap: 'on',
-              minimap: { enabled: false },
-              lineNumbers: 'off',
-              scrollBeyondLastLine: true,
-              renderLineHighlight: 'none',
-              overviewRulerLanes: 0,
-              hideCursorInOverviewRuler: true,
-              scrollbar: {
-                vertical: 'hidden',
-                horizontal: 'hidden',
-              },
-              padding: { top: 0, bottom: 120 },
-            }}
-          />
+          {USE_WYSIWYG ? (
+            <NoteEditor
+              ref={noteEditorRef}
+              content={content}
+              onChange={handleContentChange}
+            />
+          ) : (
+            <Editor
+              height="100%"
+              defaultLanguage="markdown"
+              theme="mooner-dark"
+              value={content}
+              onChange={handleContentChange}
+              onMount={handleEditorMount}
+              beforeMount={handleBeforeMount}
+              options={{
+                fontSize: 15,
+                lineHeight: 28,
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                wordWrap: 'on',
+                minimap: { enabled: false },
+                lineNumbers: 'off',
+                scrollBeyondLastLine: true,
+                renderLineHighlight: 'none',
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+                scrollbar: {
+                  vertical: 'hidden',
+                  horizontal: 'hidden',
+                },
+                padding: { top: 0, bottom: 120 },
+              }}
+            />
+          )}
         </div>
 
         {isDragActive && (
