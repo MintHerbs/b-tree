@@ -41,6 +41,14 @@ function Sidebar({ activeChild, onChildSelect, isChatOpen, setIsChatOpen, unread
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Keep the mode in step with the URL, so arriving at a social route any way
+  // other than the globe button (a landing-page card, a direct link, a
+  // refresh) still shows the social icons. Keyed on `path` alone, so the
+  // Academia button can still switch mode without navigating away.
+  useEffect(() => {
+    setMode(path.startsWith('/social') ? 'social' : 'academia')
+  }, [path])
+
   useEffect(() => {
     if (!isExpanded) setIsPackageJsonOpen(false)
   }, [isExpanded])

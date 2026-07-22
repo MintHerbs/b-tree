@@ -52,6 +52,42 @@
   /* Typography */
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-mono: 'Courier New', Courier, monospace;
+
+  /* Material You (M3) — dark scheme, seeded from --color-accent (#8B5CF6)
+     rather than Material's baseline purple, so tonal roles stay on-brand.
+     Consumed by the landing page tool cards; see docs/design/colors.md. */
+
+  /* Surface container tones — M3 elevation is tonal, not shadow-based */
+  --md-surface-container-low:  #131117;
+  --md-surface-container:      #1a171f;
+  --md-surface-container-high: #241f2b;
+
+  /* Primary + tonal container */
+  --md-primary:              #8B5CF6;  /* same value as --color-accent */
+  --md-on-primary:           #ffffff;
+  --md-primary-container:    #2e2148;
+  --md-on-primary-container: #d9c8ff;
+
+  /* Text on surfaces */
+  --md-on-surface:         #eae5ef;
+  --md-on-surface-variant: #c9c2d2;
+  --md-outline-variant:    #2c2833;
+
+  /* State layer opacities — M3 spec values */
+  --md-state-hover:   0.08;
+  --md-state-focus:   0.10;
+  --md-state-pressed: 0.12;
+
+  /* Shape scale */
+  --md-shape-sm: 8px;
+  --md-shape-md: 12px;
+  --md-shape-lg: 16px;
+  --md-shape-xl: 28px;
+
+  /* Motion — durations sit inside the bands in docs/rules.md §10 */
+  --md-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-duration-short:    200ms;  /* Fast band: 150–250ms */
+  --md-duration-medium:   350ms;  /* Medium band: 300–500ms */
 }
 
 * {

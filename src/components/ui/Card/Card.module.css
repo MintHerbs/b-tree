@@ -1,12 +1,16 @@
+/* Material You (M3) filled card. Tokens: --md-* in src/styles/global.css */
+
 .card {
-  background: var(--color-surface, #0f0f0f);
-  border: 1px solid var(--color-border, #222);
-  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  background: var(--md-surface-container);
+  border: none;
+  border-radius: var(--md-shape-lg);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  color: #fff;
+  gap: 12px;
+  color: var(--md-on-surface);
   text-decoration: none;
   text-align: left;
   font: inherit;
@@ -16,21 +20,44 @@
 
 .interactive {
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: background var(--md-duration-short) var(--md-easing-emphasized);
 }
 
-.interactive:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-accent, #8B5CF6);
+/* M3 state layer — a tonal overlay on hover/press, not a hover lift.
+   Sits below the content (which is z-index 1) and above the ripple. */
+.interactive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-on-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-duration-short) var(--md-easing-emphasized);
 }
 
-.interactive:active {
-  transform: translateY(0);
+.interactive:hover::after {
+  opacity: var(--md-state-hover);
+}
+
+.interactive:focus-visible::after {
+  opacity: var(--md-state-focus);
+}
+
+.interactive:active::after {
+  opacity: var(--md-state-pressed);
 }
 
 .interactive:focus-visible {
-  outline: 2px solid var(--color-accent, #8B5CF6);
+  outline: 2px solid var(--md-primary);
   outline-offset: 2px;
+}
+
+/* Content sits above the state and ripple layers */
+.header,
+.description,
+.body {
+  position: relative;
+  z-index: 1;
 }
 
 .header {
@@ -39,26 +66,32 @@
   gap: 12px;
 }
 
+/* M3 tonal icon container */
 .icon {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  border-radius: 50%;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
 }
 
+/* M3 title-medium */
 .title {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--md-on-surface);
   margin: 0;
 }
 
+/* M3 body-medium */
 .description {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+  color: var(--md-on-surface-variant);
   line-height: 1.5;
   margin: 0;
 }
@@ -67,4 +100,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactive,
+  .interactive::after {
+    transition: none;
+  }
 }

@@ -4,6 +4,11 @@ This file is a living document. Every significant design decision made in this p
 is recorded here so future prompts to Kiro or Claude Code have full context.
 Update this file whenever a new decision is made.
 
+> For the full design-language reference (complete color/typography/motion
+> inventories, component library list, admin panel styling, iconography) see
+> [docs/design/](design/). This file stays the canonical token table and
+> decisions log — record new decisions here first.
+
 ---
 
 ## Color Palette
@@ -19,6 +24,14 @@ Update this file whenever a new decision is made.
 | `--color-border`   | `#222222`   | Subtle borders                                                         |
 | `--color-error`    | `#ef4444`   | Error states only                                                      |
 | `--color-success`  | `#22c55e`   | Online indicator dot only                                              |
+
+### Material You (`--md-*`)
+
+A Material Design 3 dark scheme seeded from `--color-accent`, added for the
+landing page tool cards. Full token table in
+[docs/design/colors.md](design/colors.md#material-you-tokens---md-). It sits
+alongside the palette above rather than replacing it — only
+[`ui/Card`](../src/components/ui/Card/Card.jsx) consumes it today.
 
 **Rule:** No new colours without updating this table first.
 **Rule:** Dynamic Island pill is always `#000` — never purple or orange.
@@ -273,3 +286,8 @@ src/components/layout/
 | Session 8 | Generic callGeminiWithParser() | Accepts any parser function, refactored existing callGemini() |
 | Session 8 | Logic group navigation updated | Added Languages icon for translate tool, removed toast alerts |
 | Session 9 | Shared `--breakpoint-*` tokens (480/640/768/968) | Codify the four values already in organic use across 30 components so new mobile work (E-002) stops picking new one-offs (T-015) |
+| Session 10 | Material You (`--md-*`) tokens, seeded from `#8B5CF6` | Landing page cards move to M3; deriving the tonal roles from the existing accent keeps the brand instead of importing Material's baseline purple |
+| Session 10 | M3 as tokens + CSS Modules, not an installed library | MUI / `@material/web` would violate rules.md §5.2; the card is hand-built on the existing `animate-ui` ripple primitive like every other `ui/` primitive |
+| Session 10 | M3 scope limited to `ui/Card` | Tokens are app-wide and ready, but restyling the sidebar/navbar/tool pages is its own epic — the landing page shouldn't drag the whole app with it |
+| Session 10 | Landing page lists tools, not faculties | The four faculty cards routed nowhere and the site has no faculty-scoped content; every tool card now hits a real route |
+| Session 10 | Sidebar `mode` derives from the pathname | Arriving at `/social/*` by card, direct link, or refresh left the sidebar showing academia icons — only the globe button used to set it |

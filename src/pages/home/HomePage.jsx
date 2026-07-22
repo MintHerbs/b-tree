@@ -1,61 +1,61 @@
+import {
+  Calculator,
+  ChartLineUp,
+  Function as FunctionIcon,
+  Globe,
+  Graph,
+  TreeStructure,
+} from '@phosphor-icons/react';
 import PageShell from '../../components/layout/PageShell';
+import Footer from '../../components/layout/Footer';
 import Card from '../../components/ui/Card';
-import RichTooltip, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../../components/ui/smoothui/rich-popover/index.tsx';
 import styles from './home.module.css';
 
-const FACULTIES = [
+// Icons come from @phosphor-icons/react — the same set the sidebar uses
+// (see src/components/layout/Sidebar/modules.js). Calculator and Globe are
+// deliberately the sidebar's own icons for these destinations.
+const TOOLS = [
   {
-    acronym: 'IT',
-    name: 'Information Technology',
-    icon: '💻',
+    id: 'cpa',
+    title: 'CPA Calculator',
+    description: 'Work out your CPA and see what each module does to it.',
+    Icon: Calculator,
+    route: '/tools/cpa-calculator',
   },
   {
-    acronym: 'Social Science',
-    name: 'Social Sciences & Humanities',
-    icon: '📚',
+    id: 'btree',
+    title: 'B+ Tree Visualizer',
+    description: 'Insert, delete, and search keys with every step animated.',
+    Icon: TreeStructure,
+    route: '/tree',
   },
   {
-    acronym: 'Agricultural Science',
-    name: 'Agricultural Science',
-    icon: '🌾',
+    id: 'erd',
+    title: 'ERD Visualizer',
+    description: 'Turn a schema description into an entity relationship diagram.',
+    Icon: Graph,
+    route: '/erd',
   },
   {
-    acronym: 'Engineering',
-    name: 'Engineering & Architecture',
-    icon: '⚙️',
-  },
-];
-
-const SOCIAL_DEMOS = [
-  {
-    platform: 'youtube',
-    icon: <YouTubeIcon />,
-    triggerLabel: 'YouTube',
-    title: 'Codex on YouTube',
-    description: 'Video walkthroughs of B+ trees, ER diagrams, logic proofs, and more.',
-    meta: '12 videos',
-    actionLabel: 'Watch now',
-    href: 'https://youtube.com',
+    id: 'complexity',
+    title: 'Code Complexity',
+    description: 'Paste code and get its Big-O complexity line by line.',
+    Icon: ChartLineUp,
+    route: '/algo/code-complexity',
   },
   {
-    platform: 'instagram',
-    icon: <InstagramIcon />,
-    triggerLabel: 'Instagram',
-    title: '@codex.dev',
-    description: 'Visual breakdowns, cheat sheets, and study tips posted weekly.',
-    meta: '2.4k followers',
-    actionLabel: 'Follow',
-    href: 'https://instagram.com',
+    id: 'recurrence',
+    title: 'Recurrence Relation',
+    description: 'Solve recurrences and follow the substitution steps.',
+    Icon: FunctionIcon,
+    route: '/algo/recurrence-relation',
   },
   {
-    platform: 'linkedin',
-    icon: <LinkedInIcon />,
-    triggerLabel: 'LinkedIn',
-    title: 'Codex on LinkedIn',
-    description: 'Project updates, contributor spotlights, and open-source news.',
-    meta: '850 connections',
-    actionLabel: 'Connect',
-    href: 'https://linkedin.com',
+    id: 'socials',
+    title: 'Socials',
+    description: 'Post, read, and reply on the community feed.',
+    Icon: Globe,
+    route: '/social/feed',
   },
 ];
 
@@ -63,64 +63,30 @@ export default function HomePage() {
   return (
     <PageShell variant="content">
       <section className={styles.hero}>
-        <h1 className={styles.heroTitle}>Codex</h1>
+        <h1 className={styles.heroTitle}>Night Vault</h1>
         <p className={styles.heroTagline}>
           A study companion built by students, for students.
         </p>
-        <p className={styles.heroDescription}>
-          Codex is an open-source toolkit of interactive visualizers, solvers,
-          and notes for university coursework — B+ trees, ER diagrams, code
-          complexity, logical proofs, recurrence relations, grade calculators,
-          and more. Everything runs in your browser, nothing is tracked, and
-          the source is yours to read, fork, and improve.
-        </p>
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Browse by faculty</h2>
         <p className={styles.sectionSubtitle}>
-          Pick your faculty to see the tools and notes relevant to your modules.
+          Pick a tool to get started. Everything runs in your browser.
         </p>
-        <div className={styles.facultyGrid}>
-          {FACULTIES.map(f => (
+        <div className={styles.toolGrid}>
+          {TOOLS.map(({ id, title, description, Icon, route }) => (
             <Card
-              key={f.acronym}
-              title={f.acronym}
-              description={f.name}
-              icon={f.icon}
+              key={id}
+              title={title}
+              description={description}
+              icon={<Icon size={22} weight="regular" />}
+              to={route}
             />
           ))}
         </div>
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Find us online</h2>
-        <p className={styles.sectionSubtitle}>
-          Click a link to see where we post content.
-        </p>
-        <div className={styles.socialRow}>
-          {SOCIAL_DEMOS.map(item => (
-            <RichTooltip
-              key={item.platform}
-              platform={item.platform}
-              title={item.title}
-              description={item.description}
-              meta={item.meta}
-              actionLabel={item.actionLabel}
-              actionHref={item.href}
-              href={item.href}
-              side="top"
-              align="center"
-              trigger={
-                <button className={styles.socialTrigger} type="button">
-                  {item.icon}
-                  <span>{item.triggerLabel}</span>
-                </button>
-              }
-            />
-          ))}
-        </div>
-      </section>
+      <Footer />
     </PageShell>
   );
 }
