@@ -2,9 +2,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import remarkGfm from 'remark-gfm'
 import rehypeKatex from 'rehype-katex'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import 'katex/dist/katex.min.css'
+import CodeBlock from '../social/CodeBlock/CodeBlock'
 import RichTooltip, { YouTubeIcon, InstagramIcon, LinkedInIcon } from '../ui/smoothui/rich-popover/index.tsx'
 import styles from './MarkdownRenderer.module.css'
 
@@ -96,27 +95,7 @@ const markdownComponents = {
     const isBlock = Boolean(match) || codeString.includes('\n')
 
     return isBlock ? (
-      <SyntaxHighlighter
-        style={vscDarkPlus}
-        language={language || 'text'}
-        PreTag="div"
-        className={styles.codeBlock}
-        showLineNumbers={false}
-        customStyle={{
-          margin: '1.5rem 0',
-          borderRadius: '8px',
-          fontSize: '14px',
-          padding: '1.5rem',
-          background: 'rgba(0, 0, 0, 0.4)',
-        }}
-        codeTagProps={{
-          style: {
-            fontFamily: "'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
-          }
-        }}
-      >
-        {codeString}
-      </SyntaxHighlighter>
+      <CodeBlock code={codeString} language={language || 'auto'} />
     ) : (
       <code className={styles.inlineCode} {...props}>
         {children}

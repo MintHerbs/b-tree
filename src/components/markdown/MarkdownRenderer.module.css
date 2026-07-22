@@ -1,30 +1,3 @@
-/* Warm dark container for notes page */
-.notesContainer {
-  background: #161311;
-  color: #E8E0D5;
-  border-radius: 12px;
-  padding: 48px 56px 80px;
-  max-width: 860px;
-  margin: 80px auto 0;
-  position: relative;
-  z-index: 5;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-  flex-shrink: 0;
-}
-
-/* Shadow overlay at the top to fade content under navbar */
-.notesContainer::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
-  pointer-events: none;
-  z-index: 10;
-}
-
 /* Container for the markdown content - centered and styled like Obsidian */
 .markdownContainer {
   width: 100%;
@@ -68,41 +41,6 @@
 .paragraph {
   margin: 1rem 0;
   color: #E8E0D5;
-}
-
-/* Code blocks - Enhanced for syntax highlighting */
-.codeBlock {
-  margin: 1.5rem 0 !important;
-  border-radius: 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  overflow-x: auto !important;
-  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace !important;
-  font-size: 14px !important;
-  line-height: 1.6 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.codeBlock pre {
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-}
-
-.codeBlock code {
-  background: transparent !important;
-  padding: 0 !important;
-  border: none !important;
-  font-family: inherit !important;
-  display: block !important;
-}
-
-/* Syntax highlighter overrides */
-.codeBlock :global(.linenumber) {
-  min-width: 2.5em;
-  padding-right: 1em;
-  text-align: right;
-  user-select: none;
-  opacity: 0.5;
 }
 
 /* Inline code */
@@ -253,25 +191,21 @@
   padding: 1rem 0;
 }
 
-/* Scrollbar styling for code blocks and tables */
-.codeBlock::-webkit-scrollbar,
+/* Scrollbar styling for tables */
 .tableWrapper::-webkit-scrollbar {
   height: 8px;
 }
 
-.codeBlock::-webkit-scrollbar-track,
 .tableWrapper::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 4px;
 }
 
-.codeBlock::-webkit-scrollbar-thumb,
 .tableWrapper::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
 
-.codeBlock::-webkit-scrollbar-thumb:hover,
 .tableWrapper::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
@@ -301,15 +235,6 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .notesContainer {
-    padding: 24px 20px;
-    margin-left: 0;
-    margin-right: 0;
-    margin-top: 16px;
-    margin-bottom: 16px;
-    border-radius: 0;
-  }
-
   .markdownContainer {
     padding: 0;
     font-size: 15px;
@@ -325,11 +250,6 @@
 
   .h3 {
     font-size: 1.3rem;
-  }
-
-  .codeBlock {
-    padding: 1rem;
-    font-size: 13px;
   }
 
   .table th,

@@ -1,0 +1,71 @@
+/* Flat, full-bleed reader surface — generalised from PreviewModal's document
+   column so the live page and the editor preview match in the content column. */
+
+.scrollContainer {
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  background: var(--bg);
+  padding: 80px 24px 120px;
+}
+
+.documentContainer {
+  width: 100%;
+  max-width: 720px;
+}
+
+/* Humanised breadcrumb (e.g. "Database · Getting Started"). The Markdown
+   `# H1` is the title; this sits above it. */
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8a8580);
+  margin: 0 0 20px 0;
+}
+
+/* Floating back affordance — mirrors PreviewModal's close button. */
+.backButton {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 40;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.backButton:hover {
+  background: var(--color-hover-strong);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.backButton:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .scrollContainer {
+    padding: 64px 16px 80px;
+  }
+
+  .backButton {
+    top: 16px;
+    left: 16px;
+    width: 36px;
+    height: 36px;
+  }
+}

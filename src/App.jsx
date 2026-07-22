@@ -27,6 +27,9 @@ function AppContent() {
 
   const isToolsRoute = location.pathname.startsWith('/tools/')
   const isAdminRoute = location.pathname.startsWith('/admin')
+  // Notes render as a full-bleed reader — suppress the sidebar/starfield chrome
+  // (same gating mechanism as admin). The DynamicIsland + MusicPlayer stay.
+  const isNoteRoute = location.pathname.startsWith('/notes/')
 
   useEffect(() => {
     const t = setTimeout(preloadRoutes, 3000)
@@ -58,7 +61,7 @@ function AppContent() {
 
   return (
     <>
-      {!isAdminRoute && <Starfield />}
+      {!isAdminRoute && !isNoteRoute && <Starfield />}
       {isChatOpen && !isToolsRoute && <ChatDimOverlay />}
       <DynamicIsland
         onlineCount={onlineCount}
@@ -68,8 +71,8 @@ function AppContent() {
         errorMessage={errorMessage}
         onSongChange={setCurrentSongId}
       />
-      {/* Global sidebar - persists across all routes except admin */}
-      {!isAdminRoute && (
+      {/* Global sidebar - persists across all routes except admin and notes */}
+      {!isAdminRoute && !isNoteRoute && (
         <Sidebar
           defaultOpenGroup="database"
           activeChild={activeChild}
