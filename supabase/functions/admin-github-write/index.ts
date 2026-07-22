@@ -215,6 +215,9 @@ serve(async (req) => {
 
       case 'deleteFile': {
         if (!message) return json({ error: 'Missing message' }, 400)
+        if (profile.role !== 'owner') {
+          return json({ error: 'Only owners can delete files' }, 403)
+        }
         const sha = await fetchSha(path)
         if (!sha) return json(null)
         const res = await fetch(contentsUrl(path), {

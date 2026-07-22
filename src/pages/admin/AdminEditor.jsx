@@ -628,26 +628,12 @@ function AdminEditorContent() {
         onDeleteModule={handleDeleteModule}
         onRenameModule={handleRenameModule}
         onLoadFile={handleLoadFile}
-        currentEditorState={{
-          content,
-          title,
-          unsaved,
-          selectedPath,
-          originalPath
-        }}
         onClearEditor={() => {
           setContent('')
           setTitle('')
           setUnsaved(false)
           setSelectedPath(null)
           setOriginalPath(null)
-        }}
-        onRestoreEditor={(state) => {
-          setContent(state.content)
-          setTitle(state.title)
-          setUnsaved(state.unsaved)
-          setSelectedPath(state.selectedPath)
-          setOriginalPath(state.originalPath ?? null)
         }}
         onMoveFile={handleMoveFile}
         isLoading={modulesLoading}

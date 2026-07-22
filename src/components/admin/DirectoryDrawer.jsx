@@ -39,13 +39,9 @@ export default function DirectoryDrawer({
   onMoveFile,
   onLoadFile,
   onClearEditor,
-  onRestoreEditor,
-  currentEditorState,
   isLoading = false,
   iconOptions = []
 }) {
-  const [mode, setMode] = useState('create') // 'create' or 'edit'
-  const [savedEditorState, setSavedEditorState] = useState(null) // Save editor state when switching modes
   const [newSubfolderModule, setNewSubfolderModule] = useState(null)
   const [newSubfolderValue, setNewSubfolderValue] = useState('')
   const [renamingPath, setRenamingPath] = useState(null)
@@ -147,16 +143,21 @@ export default function DirectoryDrawer({
   const toggleFolder = async (moduleId, subfolder) => {
     const key = `${moduleId}/${subfolder}`
     const isExpanded = expandedFolders[key]
-    
+
     setExpandedFolders(prev => ({
       ...prev,
       [key]: !isExpanded
     }))
 
     // Load files if not already loaded and we're expanding
-    if (!isExpanded && !folderFiles[key] && mode === 'edit') {
+    if (!isExpanded && !folderFiles[key]) {
       await loadFolderFiles(moduleId, subfolder)
     }
+  }
+
+  const handleNewFileInFolder = (moduleId, subfolder) => {
+    onClearEditor?.()
+    onSelectPath({ moduleId, subfolder })
   }
 
   const loadFolderFiles = async (moduleId, subfolder) => {
@@ -234,9 +235,8 @@ export default function DirectoryDrawer({
     }
   }
 
-  // Notes are dragged, not subfolders — the drag source is a file row in edit
-  // mode, which is the only mode that lists files. onMoveFile resolves the
-  // basename back to its modules.js entry.
+  // Notes are dragged, not subfolders — the drag source is a file row.
+  // onMoveFile resolves the basename back to its modules.js entry.
   const handleDragStart = (e, moduleId, subfolder, filename) => {
     e.stopPropagation()
     e.dataTransfer.effectAllowed = 'move'
@@ -300,35 +300,7 @@ export default function DirectoryDrawer({
       <div className={`${styles.drawer} ${open ? styles.open : ''}`}>
         {/* Header */}
         <div className={styles.header}>
-          <div className={styles.modeToggle}>
-            <button
-              className={`${styles.modeButton} ${mode === 'create' ? styles.active : ''}`}
-              onClick={() => {
-                if (mode === 'edit') {
-                  // Save current editor state before clearing
-                  if (currentEditorState && onClearEditor) {
-                    setSavedEditorState(currentEditorState)
-                    onClearEditor()
-                  }
-                }
-                setMode('create')
-              }}
-            >
-              Files
-            </button>
-            <button
-              className={`${styles.modeButton} ${mode === 'edit' ? styles.active : ''}`}
-              onClick={() => {
-                if (mode === 'create' && savedEditorState && onRestoreEditor) {
-                  // Restore saved editor state when switching back to edit mode
-                  onRestoreEditor(savedEditorState)
-                }
-                setMode('edit')
-              }}
-            >
-              Edit Files
-            </button>
-          </div>
+          <span className={styles.title}>Files</span>
           <button className={styles.closeButton} onClick={onClose} aria-label="Close">
             <X size={18} weight="bold" />
           </button>
@@ -451,26 +423,16 @@ export default function DirectoryDrawer({
                         <div key={subfolder}>
                           <div
                             className={`${styles.subfolderRow} ${
-                              mode === 'create' && isSelected(module.id, subfolder) ? styles.selected : ''
+                              isSelected(module.id, subfolder) ? styles.selected : ''
                             } ${isDragOver(module.id, subfolder) ? styles.dragOver : ''}`}
-                            onClick={() => {
-                              if (mode === 'create') {
-                                !isRenaming && onSelectPath({ moduleId: module.id, subfolder })
-                              } else {
-                                toggleFolder(module.id, subfolder)
-                              }
-                            }}
-                            onDragOver={(e) => mode === 'edit' && handleDragOver(e, module.id, subfolder)}
+                            onClick={() => !isRenaming && toggleFolder(module.id, subfolder)}
+                            onDragOver={(e) => handleDragOver(e, module.id, subfolder)}
                             onDragLeave={handleDragLeave}
-                            onDrop={(e) => mode === 'edit' && handleDrop(e, module.id, subfolder)}
+                            onDrop={(e) => handleDrop(e, module.id, subfolder)}
                           >
                             <div className={styles.subfolderContent}>
-                              {mode === 'edit' ? (
-                                isExpanded ? <FolderOpen size={14} className={styles.fileIcon} /> : <Folder size={14} className={styles.fileIcon} />
-                              ) : (
-                                <Folder size={14} className={styles.fileIcon} />
-                              )}
-                              
+                              {isExpanded ? <FolderOpen size={14} className={styles.fileIcon} /> : <Folder size={14} className={styles.fileIcon} />}
+
                               {isRenaming ? (
                                 <input
                                   ref={renameInputRef}
@@ -493,48 +455,63 @@ export default function DirectoryDrawer({
                               )}
                             </div>
 
-                            {isOwner && !isRenaming && (
-                              <Popover.Root>
-                                <Popover.Trigger asChild>
-                                  <button
-                                    className={styles.iconButton}
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="Subfolder actions"
-                                  >
-                                    <DotsThreeVertical size={14} />
-                                  </button>
-                                </Popover.Trigger>
-                                <Popover.Portal>
-                                  <Popover.Content className={styles.popoverContent} sideOffset={5}>
-                                    <button
-                                      className={styles.menuItem}
-                                      onClick={() => {
-                                        setRenamingPath({ moduleId: module.id, subfolder, oldName: subfolder })
-                                        setRenameValue(subfolder)
-                                      }}
-                                    >
-                                      Rename
-                                    </button>
-                                    <button
-                                      className={styles.menuItem}
-                                      onClick={() => {
-                                        setDeleteConfirm({ 
-                                          type: 'subfolder', 
-                                          moduleId: module.id, 
-                                          subfolder 
-                                        })
-                                      }}
-                                    >
-                                      Delete
-                                    </button>
-                                  </Popover.Content>
-                                </Popover.Portal>
-                              </Popover.Root>
+                            {!isRenaming && (
+                              <div className={styles.subfolderActions}>
+                                <button
+                                  className={styles.iconButton}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleNewFileInFolder(module.id, subfolder)
+                                  }}
+                                  title="New file"
+                                >
+                                  <File size={14} />
+                                </button>
+
+                                {isOwner && (
+                                  <Popover.Root>
+                                    <Popover.Trigger asChild>
+                                      <button
+                                        className={styles.iconButton}
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="Subfolder actions"
+                                      >
+                                        <DotsThreeVertical size={14} />
+                                      </button>
+                                    </Popover.Trigger>
+                                    <Popover.Portal>
+                                      <Popover.Content className={styles.popoverContent} sideOffset={5}>
+                                        <button
+                                          className={styles.menuItem}
+                                          onClick={() => {
+                                            setRenamingPath({ moduleId: module.id, subfolder, oldName: subfolder })
+                                            setRenameValue(subfolder)
+                                          }}
+                                        >
+                                          Rename
+                                        </button>
+                                        <button
+                                          className={styles.menuItem}
+                                          onClick={() => {
+                                            setDeleteConfirm({
+                                              type: 'subfolder',
+                                              moduleId: module.id,
+                                              subfolder
+                                            })
+                                          }}
+                                        >
+                                          Delete
+                                        </button>
+                                      </Popover.Content>
+                                    </Popover.Portal>
+                                  </Popover.Root>
+                                )}
+                              </div>
                             )}
                           </div>
 
-                          {/* File list in edit mode */}
-                          {mode === 'edit' && isExpanded && (
+                          {/* File list */}
+                          {isExpanded && (
                             <div className={styles.fileList}>
                               {isLoadingFolder ? (
                                 <div className={styles.fileItem}>
@@ -582,7 +559,7 @@ export default function DirectoryDrawer({
                                         )}
                                       </div>
 
-                                      {isOwner && !isRenamingFile && (
+                                      {!isRenamingFile && (
                                         <Popover.Root>
                                           <Popover.Trigger asChild>
                                             <button
@@ -604,19 +581,21 @@ export default function DirectoryDrawer({
                                               >
                                                 Rename
                                               </button>
-                                              <button
-                                                className={styles.menuItem}
-                                                onClick={() => {
-                                                  setDeleteConfirm({
-                                                    type: 'file',
-                                                    moduleId: module.id,
-                                                    subfolder,
-                                                    filename: file.name,
-                                                  })
-                                                }}
-                                              >
-                                                Delete
-                                              </button>
+                                              {isOwner && (
+                                                <button
+                                                  className={styles.menuItem}
+                                                  onClick={() => {
+                                                    setDeleteConfirm({
+                                                      type: 'file',
+                                                      moduleId: module.id,
+                                                      subfolder,
+                                                      filename: file.name,
+                                                    })
+                                                  }}
+                                                >
+                                                  Delete
+                                                </button>
+                                              )}
                                             </Popover.Content>
                                           </Popover.Portal>
                                         </Popover.Root>
