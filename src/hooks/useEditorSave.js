@@ -194,7 +194,7 @@ function removeNoteEntry(modulesJs, moduleId, filename) {
   return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
 }
 
-export function useEditorSave({ title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent, imageQueueRef, imageCountRef, originalPath, setOriginalPath, isOwner }) {
+export function useEditorSave({ title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent, imageQueueRef, imageCountRef, originalPath, setOriginalPath, isOwner, clearDraft }) {
   // Save handler
   const handleSave = async () => {
     if (!title.trim()) {
@@ -371,6 +371,19 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       } catch (error) {
         // Log but don't fail the save if image_map update fails
         console.error('Failed to update image_map:', error)
+      }
+
+      // Clear the autosave draft now that this note is published. A mid-edit
+      // rename moves the note to a new identity (see isSamePath above), so the
+      // draft it was last autosaved under before the rename may still sit at
+      // the old identity — clear both, non-fatal on either.
+      await clearDraft?.({ moduleId, subfolder, filename })
+      if (original && !isSamePath) {
+        await clearDraft?.({
+          moduleId: original.moduleId,
+          subfolder: original.subfolder,
+          filename: original.filename.split('/').pop(),
+        })
       }
 
       showToast('Published! Vercel is deploying...', 'success')

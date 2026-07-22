@@ -25,6 +25,7 @@ import { useEditorImages } from '../../hooks/useEditorImages'
 import { useEditorModules } from '../../hooks/useEditorModules'
 import { useEditorFormatting, renderInlineLaTeX } from '../../hooks/useEditorFormatting'
 import { useEditorFiles } from '../../hooks/useEditorFiles'
+import { useEditorDrafts } from '../../hooks/useEditorDrafts'
 
 function resolveAdminImageSrc(src = '') {
   if (!src.startsWith('/notes/img/')) return src
@@ -243,10 +244,15 @@ function AdminEditorContent() {
     selectedPath, showToast, editorRef, setContent,
   })
 
+  const { restoreDraftIfExists, clearDraft } = useEditorDrafts({
+    userId: user?.id, title, content, selectedPath, unsaved,
+    showToast, setTitle, setContent, setUnsaved,
+  })
+
   const { handleSave } = useEditorSave({
     title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent,
     imageQueueRef, imageCountRef, originalPath, setOriginalPath,
-    isOwner: profile?.role === 'owner',
+    isOwner: profile?.role === 'owner', clearDraft,
   })
 
   const {
@@ -264,6 +270,7 @@ function AdminEditorContent() {
 
   const { handleLoadFile } = useEditorFiles({
     showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath,
+    restoreDraftIfExists,
   })
 
   useEffect(() => {

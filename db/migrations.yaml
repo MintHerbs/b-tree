@@ -19,7 +19,7 @@
 # See db/README.md for how to apply migrations against a Supabase project.
 
 project: b-tree
-schema_version: 18
+schema_version: 19
 
 migrations:
   - id: "0001"
@@ -163,5 +163,13 @@ migrations:
     description: "Restate admin_users RLS/grants from scratch; hosted project had drifted to full anon/authenticated grants and no-owner-check write policies, letting contributors self-promote to owner"
     author: agent
     created: 2026-07-19
+    applied_envs: []
+    related_issues: []
+
+  - id: "0019"
+    file: sql/0019_admin_note_drafts.sql
+    description: "Create admin_note_drafts table for per-note editor autosave, one row per (user, module, subfolder, filename), RLS scoped to auth.uid() = user_id"
+    author: agent
+    created: 2026-07-22
     applied_envs: []
     related_issues: []

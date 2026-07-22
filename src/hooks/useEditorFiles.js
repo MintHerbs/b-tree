@@ -1,6 +1,6 @@
 import { getFileContent } from '../lib/githubApi'
 
-export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath }) {
+export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath, restoreDraftIfExists }) {
   const handleLoadFile = async (filePath) => {
     try {
       showToast('Loading file...', 'success')
@@ -18,13 +18,19 @@ export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, se
       // Extract module and subfolder from path
       // Path format: src/content/notes/{moduleId}/{subfolder}/{filename}
       const pathParts = filePath.split('/')
+      let moduleId, subfolder
       if (pathParts.length >= 5) {
-        const moduleId = pathParts[3]
-        const subfolder = pathParts[4]
+        moduleId = pathParts[3]
+        subfolder = pathParts[4]
         setSelectedPath({ moduleId, subfolder })
       }
 
       showToast(`Loaded ${fileName}`, 'success')
+
+      // Prefer an unsaved draft over the just-loaded published content, if one exists
+      if (moduleId && subfolder) {
+        await restoreDraftIfExists?.({ moduleId, subfolder, filename: fileName })
+      }
     } catch (error) {
       showToast(`Failed to load file: ${error.message}`, 'error')
     }
