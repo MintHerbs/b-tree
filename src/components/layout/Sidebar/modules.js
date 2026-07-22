@@ -52,7 +52,6 @@ import {
   Network,
   Robot,
   ShieldCheck,
-  Sparkle,
   Terminal,
   TerminalWindow,
   TreeStructure,
@@ -177,8 +176,7 @@ export const MODULES = [
 
 export const STANDALONE_TOOLS = [
   {id: 'Home', label: 'homePage.js', Icon: FileJs, route: '/home' },
-  { id: 'cpa',    label: 'CPA Calculator.js',        Icon: Calculator, route: '/tools/cpa-calculator' },
-  { id: 'minmax', label: 'Min Effort Max Result.js', Icon: Sparkle,    route: '/tools/lazy-grades' },
+  { id: 'grades', label: 'Grade Toolkit.js', Icon: Calculator, route: '/tools/grade-toolkit' },
 ]
 
 // ── Easter-egg pinned at the divider ────────────────────────────────────────

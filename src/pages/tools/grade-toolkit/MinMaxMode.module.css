@@ -1,0 +1,207 @@
+/* "Min effort, max result" mode — M3 filled fields with floating labels,
+   feasibility-coded result cells. */
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.supporting {
+  background: var(--md-surface-container-low);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg);
+  padding: 18px 20px;
+  color: var(--md-on-surface-variant);
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+.supporting strong {
+  color: var(--md-on-surface);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.moduleCard {
+  background: var(--md-surface-container);
+  border-radius: var(--md-shape-lg);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nameInput {
+  font: inherit;
+  width: 100%;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  padding: 12px 14px;
+}
+
+.nameInput::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+/* ── Fields with floating labels ────────────────────────────────────────── */
+
+.inputPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldInput {
+  font: inherit;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  padding: 22px 14px 8px;
+  transition: border-color var(--md-duration-short) var(--md-easing-emphasized);
+  -moz-appearance: textfield;
+}
+
+.fieldInput::-webkit-outer-spin-button,
+.fieldInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.fieldInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+.floatingLabel {
+  position: absolute;
+  left: 14px;
+  top: 15px;
+  color: var(--md-on-surface-variant);
+  font-size: 0.95rem;
+  pointer-events: none;
+  transition: transform var(--md-duration-short) var(--md-easing-emphasized),
+    font-size var(--md-duration-short) var(--md-easing-emphasized),
+    color var(--md-duration-short) var(--md-easing-emphasized);
+  transform-origin: left center;
+}
+
+/* Float the label up when the field has content or is focused. */
+.fieldInput:focus + .floatingLabel,
+.fieldInput:not(:placeholder-shown) + .floatingLabel {
+  transform: translateY(-9px) scale(0.75);
+}
+
+.fieldInput:focus + .floatingLabel {
+  color: var(--md-primary);
+}
+
+.helper {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--md-on-surface-variant);
+  opacity: 0.85;
+}
+
+/* ── Result grid ────────────────────────────────────────────────────────── */
+
+.grades {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.gradeCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-surface-container-high);
+}
+
+.gradeLetter {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--md-on-surface-variant);
+}
+
+.result {
+  font-weight: 800;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.result small {
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.result_easy { color: var(--tool-success); }
+.result_moderate { color: var(--tool-warning); }
+.result_hard { color: var(--tool-error); }
+
+.result_secured {
+  color: var(--tool-success);
+  font-size: 0.85rem;
+}
+
+.result_impossible {
+  color: var(--tool-error);
+  font-size: 0.85rem;
+}
+
+.result_empty {
+  color: var(--md-on-surface-variant);
+  opacity: 0.6;
+}
+
+/* ── Add button ─────────────────────────────────────────────────────────── */
+
+.addButton {
+  align-self: flex-start;
+  font: inherit;
+  font-weight: 600;
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+  border: none;
+  border-radius: var(--md-shape-xl);
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+@media (max-width: 968px) {
+  .moduleCard {
+    padding: 18px;
+  }
+
+  .inputPair {
+    grid-template-columns: 1fr;
+  }
+
+  .grades {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

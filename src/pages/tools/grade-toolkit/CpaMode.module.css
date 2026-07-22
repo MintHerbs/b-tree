@@ -1,0 +1,282 @@
+/* "My CPA" mode — M3 tonal surfaces, filled fields, chips. */
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.supporting {
+  background: var(--md-surface-container-low);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg);
+  padding: 18px 20px;
+  color: var(--md-on-surface-variant);
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+.supporting strong {
+  color: var(--md-on-surface);
+}
+
+/* ── Year card ──────────────────────────────────────────────────────────── */
+
+.yearCard {
+  background: var(--md-surface-container);
+  border-radius: var(--md-shape-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.yearHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.yearTitleWrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.yearTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--md-on-surface);
+}
+
+.yearWeight {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-variant);
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--md-shape-sm);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  color: var(--md-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.statChip b {
+  color: var(--md-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.statChipCpa {
+  background: var(--md-primary-container);
+  border-color: transparent;
+  color: var(--md-on-primary-container);
+}
+
+.statChipCpa b {
+  color: var(--md-on-primary-container);
+}
+
+/* ── Field / row ────────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fieldLabel {
+  font-size: 0.85rem;
+  color: var(--md-on-surface-variant);
+  font-weight: 600;
+}
+
+.nameInput,
+.markInput {
+  font: inherit;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  padding: 12px 14px;
+  transition: border-color var(--md-duration-short) var(--md-easing-emphasized);
+}
+
+.nameInput {
+  width: 100%;
+}
+
+.nameInput::placeholder,
+.markInput::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+}
+
+.nameInput:focus,
+.markInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.slider {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--md-outline-variant);
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  border: 2px solid var(--md-surface-container);
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  border: 2px solid var(--md-surface-container);
+  cursor: pointer;
+}
+
+.slider_fail::-webkit-slider-thumb { background: var(--tool-error); }
+.slider_fail::-moz-range-thumb { background: var(--tool-error); }
+.slider_mid::-webkit-slider-thumb { background: var(--tool-warning); }
+.slider_mid::-moz-range-thumb { background: var(--tool-warning); }
+.slider_good::-webkit-slider-thumb { background: var(--tool-success); }
+.slider_good::-moz-range-thumb { background: var(--tool-success); }
+
+.markField {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.markInput {
+  width: 76px;
+  text-align: right;
+  padding-right: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* hide number spinners for a cleaner field */
+.markInput::-webkit-outer-spin-button,
+.markInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.markInput { -moz-appearance: textfield; }
+
+.markSuffix {
+  position: absolute;
+  right: 12px;
+  color: var(--md-on-surface-variant);
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+.gradeChip {
+  flex: 0 0 auto;
+  min-width: 42px;
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: var(--md-shape-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.chip_fail {
+  background: color-mix(in srgb, var(--tool-error) 20%, transparent);
+  color: var(--tool-error);
+}
+.chip_mid {
+  background: color-mix(in srgb, var(--tool-warning) 20%, transparent);
+  color: var(--tool-warning);
+}
+.chip_good {
+  background: color-mix(in srgb, var(--tool-success) 20%, transparent);
+  color: var(--tool-success);
+}
+
+/* ── Add button (M3 tonal) ──────────────────────────────────────────────── */
+
+.addButton {
+  align-self: flex-start;
+  font: inherit;
+  font-weight: 600;
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+  border: none;
+  border-radius: var(--md-shape-xl);
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+/* ── Sticky summary ─────────────────────────────────────────────────────── */
+
+.summary {
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.summaryLabel {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.summaryValue {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 968px) {
+  .yearCard {
+    padding: 18px;
+  }
+
+  .sliderRow {
+    flex-wrap: wrap;
+  }
+
+  .slider {
+    flex-basis: 100%;
+    order: 3;
+  }
+}
