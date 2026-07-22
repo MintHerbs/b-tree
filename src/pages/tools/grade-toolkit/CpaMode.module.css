@@ -1,0 +1,302 @@
+/* "My CPA" mode - compact, low-scroll M3 layout.
+   One year visible at a time (tabs) with single-line module rows. */
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hint {
+  color: var(--md-on-surface-variant);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.hint strong {
+  color: var(--md-on-surface);
+}
+
+/* ── Year tabs ──────────────────────────────────────────────────────────── */
+
+.yearTabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-surface-container-low);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.yearTab {
+  position: relative;
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  border-radius: var(--md-shape-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--md-duration-short) var(--md-easing-emphasized);
+}
+
+.yearTab:hover {
+  color: var(--md-on-surface);
+}
+
+.yearTabActive {
+  color: var(--md-on-surface);
+}
+
+.yearTab em {
+  font-style: normal;
+  opacity: 0.7;
+  font-size: 0.8rem;
+}
+
+.yearTabIndicator {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--md-shape-md);
+  background: var(--md-primary-container);
+  z-index: 0;
+}
+
+.yearTabLabel {
+  position: relative;
+  z-index: 1;
+}
+
+.yearTab:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* ── Active year card ───────────────────────────────────────────────────── */
+
+.yearCard {
+  background: var(--md-surface-container);
+  border-radius: var(--md-shape-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Single-line module row ─────────────────────────────────────────────── */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nameInput {
+  flex: 1 1 160px;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  padding: 9px 12px;
+}
+
+.nameInput::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+.projectTag {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  padding: 9px 4px;
+}
+
+.slider {
+  flex: 2 1 120px;
+  min-width: 80px;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--md-outline-variant);
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  border: 2px solid var(--md-surface-container);
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  border: 2px solid var(--md-surface-container);
+  cursor: pointer;
+}
+
+.slider_fail::-webkit-slider-thumb { background: var(--tool-error); }
+.slider_fail::-moz-range-thumb { background: var(--tool-error); }
+.slider_mid::-webkit-slider-thumb { background: var(--tool-warning); }
+.slider_mid::-moz-range-thumb { background: var(--tool-warning); }
+.slider_good::-webkit-slider-thumb { background: var(--tool-success); }
+.slider_good::-moz-range-thumb { background: var(--tool-success); }
+
+.markField {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.markInput {
+  width: 62px;
+  text-align: right;
+  padding: 8px 22px 8px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.markInput::-webkit-outer-spin-button,
+.markInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.markInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+.markSuffix {
+  position: absolute;
+  right: 9px;
+  color: var(--md-on-surface-variant);
+  pointer-events: none;
+  font-size: 0.8rem;
+}
+
+.gradeChip {
+  flex: 0 0 auto;
+  min-width: 38px;
+  text-align: center;
+  padding: 6px 8px;
+  border-radius: var(--md-shape-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.chip_fail {
+  background: color-mix(in srgb, var(--tool-error) 20%, transparent);
+  color: var(--tool-error);
+}
+.chip_mid {
+  background: color-mix(in srgb, var(--tool-warning) 20%, transparent);
+  color: var(--tool-warning);
+}
+.chip_good {
+  background: color-mix(in srgb, var(--tool-success) 20%, transparent);
+  color: var(--tool-success);
+}
+
+.addButton {
+  align-self: flex-start;
+  margin-top: 2px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+  border: none;
+  border-radius: var(--md-shape-xl);
+  padding: 8px 18px;
+  cursor: pointer;
+}
+
+/* ── Compact summary bar ────────────────────────────────────────────────── */
+
+.summary {
+  position: sticky;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 22px;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-primary-container);
+  color: var(--md-on-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.summaryStat {
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryDivider {
+  width: 1px;
+  align-self: stretch;
+  background: color-mix(in srgb, var(--md-on-primary-container) 25%, transparent);
+}
+
+.summaryLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.summaryLpa {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryValue {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* On narrow screens the row wraps to two tidy lines: name on top, then
+   slider · mark · grade. Still far shorter than the old stacked layout. */
+@media (max-width: 640px) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .nameInput,
+  .projectTag {
+    flex: 1 1 100%;
+  }
+
+  .slider {
+    flex: 1 1 auto;
+  }
+}

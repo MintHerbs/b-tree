@@ -1,0 +1,181 @@
+/* "Min effort, max result" mode - compact, low-scroll M3 layout. */
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hint {
+  color: var(--md-on-surface-variant);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.hint strong {
+  color: var(--md-on-surface);
+}
+
+.legend {
+  display: inline-block;
+  color: var(--md-on-surface-variant);
+  opacity: 0.85;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.moduleCard {
+  background: var(--md-surface-container);
+  border-radius: var(--md-shape-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Inputs: three across on desktop ────────────────────────────────────── */
+
+.inputs {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 10px;
+}
+
+.nameInput {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  padding: 0 12px;
+}
+
+.nameInput::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+}
+
+.nameInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+.field {
+  position: relative;
+}
+
+.fieldInput {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--md-on-surface);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  padding: 20px 12px 6px;
+  transition: border-color var(--md-duration-short) var(--md-easing-emphasized);
+  -moz-appearance: textfield;
+}
+
+.fieldInput::-webkit-outer-spin-button,
+.fieldInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.fieldInput:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+.floatingLabel {
+  position: absolute;
+  left: 12px;
+  top: 13px;
+  color: var(--md-on-surface-variant);
+  font-size: 0.9rem;
+  pointer-events: none;
+  transition: transform var(--md-duration-short) var(--md-easing-emphasized),
+    color var(--md-duration-short) var(--md-easing-emphasized);
+  transform-origin: left center;
+}
+
+.fieldInput:focus + .floatingLabel,
+.fieldInput:not(:placeholder-shown) + .floatingLabel {
+  transform: translateY(-9px) scale(0.72);
+}
+
+.fieldInput:focus + .floatingLabel {
+  color: var(--md-primary);
+}
+
+/* ── Result cells ───────────────────────────────────────────────────────── */
+
+.grades {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.gradeCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-radius: var(--md-shape-md);
+  background: var(--md-surface-container-high);
+}
+
+.gradeLetter {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--md-on-surface-variant);
+}
+
+.result {
+  font-weight: 800;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.result_easy { color: var(--tool-success); }
+.result_moderate { color: var(--tool-warning); }
+.result_hard { color: var(--tool-error); }
+.result_secured { color: var(--tool-success); }
+.result_impossible { color: var(--tool-error); }
+
+.result_empty {
+  color: var(--md-on-surface-variant);
+  opacity: 0.6;
+}
+
+.addButton {
+  align-self: flex-start;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+  border: none;
+  border-radius: var(--md-shape-xl);
+  padding: 8px 18px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Module name spans the full width above the two numeric fields. */
+  .nameInput {
+    grid-column: 1 / -1;
+    padding: 10px 12px;
+  }
+}
