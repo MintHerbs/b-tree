@@ -27,8 +27,9 @@ function AppContent() {
 
   const isToolsRoute = location.pathname.startsWith('/tools/')
   const isAdminRoute = location.pathname.startsWith('/admin')
-  // Notes render as a full-bleed reader — suppress the sidebar/starfield chrome
-  // (same gating mechanism as admin). The DynamicIsland + MusicPlayer stay.
+  // Notes keep the flat reading background (no Starfield) but the global
+  // Sidebar now persists here too (reverses T-035's full-bleed suppression;
+  // owner decision 2026-07-23 — sidebar is persistent, incl. on notes).
   const isNoteRoute = location.pathname.startsWith('/notes/')
 
   useEffect(() => {
@@ -71,8 +72,10 @@ function AppContent() {
         errorMessage={errorMessage}
         onSongChange={setCurrentSongId}
       />
-      {/* Global sidebar - persists across all routes except admin and notes */}
-      {!isAdminRoute && !isNoteRoute && (
+      {/* Global sidebar - persists on every route EXCEPT admin, which has its
+          own DirectoryDrawer + EditorNavbar chrome (owner decision 2026-07-23:
+          sidebar persistent incl. on notes, but not over the admin editor). */}
+      {!isAdminRoute && (
         <Sidebar
           defaultOpenGroup="database"
           activeChild={activeChild}
