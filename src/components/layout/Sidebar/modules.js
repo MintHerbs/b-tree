@@ -102,8 +102,8 @@ export const MODULES = [
     label: 'Computational Math',
     Icon: FunctionIcon,
     notes: [
-      { filename: 'notes/determinant',               label: 'determinant.md' },
-      { filename: 'notes/cofactor',                  label: 'cofactor.md' },
+      { filename: 'notes • sem 1/determinant',               label: 'determinant.md' },
+      { filename: 'notes • sem 1/cofactor',                  label: 'cofactor.md' },
       { filename: 'notes • sem 1/types-of-matrices',         label: 'types-of-matrices.md' },
       { filename: 'notes • sem 1/properties-of-determinants',label: 'properties-of-determinants.md' },
       { filename: 'notes • sem 1/simultaneous-equations',    label: 'simultaneous-equations.md' },
