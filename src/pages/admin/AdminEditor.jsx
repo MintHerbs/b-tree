@@ -230,7 +230,7 @@ function AdminEditorContent() {
     directoryOpen, setDirectoryOpen, previewOpen, setPreviewOpen,
     usersOpen, setUsersOpen, changePasswordOpen, setChangePasswordOpen,
     formulaModalOpen, setFormulaModalOpen, socialLinkModalOpen, setSocialLinkModalOpen,
-    selectedPath, setSelectedPath, modules, setModules,
+    selectedPath, setSelectedPath, originalPath, setOriginalPath, modules, setModules,
     modulesLoading, setModulesLoading, currentStyle, setCurrentStyle,
     isTooNarrow, setIsTooNarrow, editorRef, fileInputRef,
   } = useEditorState()
@@ -245,7 +245,8 @@ function AdminEditorContent() {
 
   const { handleSave } = useEditorSave({
     title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent,
-    imageQueueRef, imageCountRef,
+    imageQueueRef, imageCountRef, originalPath, setOriginalPath,
+    isOwner: profile?.role === 'owner',
   })
 
   const {
@@ -262,7 +263,7 @@ function AdminEditorContent() {
   })
 
   const { handleLoadFile } = useEditorFiles({
-    showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath,
+    showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath,
   })
 
   useEffect(() => {
@@ -631,19 +632,22 @@ function AdminEditorContent() {
           content,
           title,
           unsaved,
-          selectedPath
+          selectedPath,
+          originalPath
         }}
         onClearEditor={() => {
           setContent('')
           setTitle('')
           setUnsaved(false)
           setSelectedPath(null)
+          setOriginalPath(null)
         }}
         onRestoreEditor={(state) => {
           setContent(state.content)
           setTitle(state.title)
           setUnsaved(state.unsaved)
           setSelectedPath(state.selectedPath)
+          setOriginalPath(state.originalPath ?? null)
         }}
         onMoveFile={handleMoveFile}
         isLoading={modulesLoading}

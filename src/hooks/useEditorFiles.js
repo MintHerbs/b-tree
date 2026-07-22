@@ -1,6 +1,6 @@
 import { getFileContent } from '../lib/githubApi'
 
-export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath }) {
+export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath }) {
   const handleLoadFile = async (filePath) => {
     try {
       showToast('Loading file...', 'success')
@@ -13,6 +13,7 @@ export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, se
       setTitle(fileName)
       setUnsaved(false)
       setDirectoryOpen(false)
+      setOriginalPath(filePath)
 
       // Extract module and subfolder from path
       // Path format: src/content/notes/{moduleId}/{subfolder}/{filename}

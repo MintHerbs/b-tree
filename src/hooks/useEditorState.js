@@ -13,6 +13,7 @@ export function useEditorState() {
   const [formulaModalOpen, setFormulaModalOpen] = useState(false)
   const [socialLinkModalOpen, setSocialLinkModalOpen] = useState(false)
   const [selectedPath, setSelectedPath] = useState(null) // { moduleId, subfolder }
+  const [originalPath, setOriginalPath] = useState(null) // GitHub path the loaded note came from, or null for a new note
   const [modules, setModules] = useState(MODULES)
   const [modulesLoading, setModulesLoading] = useState(true)
   const [currentStyle, setCurrentStyle] = useState('body')
@@ -35,6 +36,7 @@ export function useEditorState() {
     formulaModalOpen, setFormulaModalOpen,
     socialLinkModalOpen, setSocialLinkModalOpen,
     selectedPath, setSelectedPath,
+    originalPath, setOriginalPath,
     modules, setModules,
     modulesLoading, setModulesLoading,
     currentStyle, setCurrentStyle,

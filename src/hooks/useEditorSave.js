@@ -1,4 +1,4 @@
-import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent } from '../lib/githubApi'
+import { listDirectory, uploadImage, commitFile, commitFileWithRetry, getFileContent, deleteFile } from '../lib/githubApi'
 import { supabase } from '../lib/supabaseClient'
 
 // Title to filename conversion
@@ -114,7 +114,87 @@ export function upsertNoteEntry(modulesJs, moduleId, newNoteEntry, notePath) {
   return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
 }
 
-export function useEditorSave({ title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent, imageQueueRef, imageCountRef }) {
+const NOTE_ENTRY_PATTERN = /\{\s*filename:\s*'([^']+)'\s*,\s*label:\s*'([^']*)'\s*\},?/g
+
+// Splits a loaded note's GitHub path back into the pieces the registry keys
+// on. Mirrors the parsing already done in useEditorFiles.js's handleLoadFile
+// (src/content/notes/{moduleId}/{subfolder}/{basename}.md) so "was this path
+// already registered" can be checked without re-deriving it from the title.
+function parseNotePath(path) {
+  const parts = path.split('/')
+  if (parts.length < 5) return null
+
+  const moduleId = parts[3]
+  const subfolder = parts[4]
+  const basename = parts[parts.length - 1].replace(/\.md$/, '')
+
+  return { moduleId, subfolder, filename: `${subfolder}/${basename}` }
+}
+
+// True if the module already has an entry resolving to this note. Compares on
+// the .md-stripped filename because some legacy entries carry a trailing .md
+// while notePath (derived via parseNotePath) doesn't — an exact match would
+// miss those and re-inserting would duplicate the entry (mirrors the stripped
+// comparison findNoteEntry already uses in useEditorModules.js).
+function noteIsRegistered(modulesJs, moduleId, notePath) {
+  try {
+    const block = findModuleBlock(modulesJs, moduleId)
+    const target = notePath.replace(/\.md$/, '')
+    return [...block.source.matchAll(NOTE_ENTRY_PATTERN)]
+      .some(match => match[1].replace(/\.md$/, '') === target)
+  } catch {
+    return false
+  }
+}
+
+// Rewrites an existing entry's filename + label in place (same-module
+// rename/move). Throws if the old entry can't be found, so callers can fall
+// back to inserting a fresh entry instead (registry/disk got out of sync).
+function renameNoteEntry(modulesJs, moduleId, oldFilename, newFilename, newLabel) {
+  const block = findModuleBlock(modulesJs, moduleId)
+  const source = block.source
+  let renamed = false
+
+  const updatedSource = source.replace(NOTE_ENTRY_PATTERN, (fullMatch, entryFilename) => {
+    if (!renamed && entryFilename === oldFilename) {
+      renamed = true
+      return `{ filename: '${newFilename}', label: '${newLabel}' },`
+    }
+    return fullMatch
+  })
+
+  if (!renamed) {
+    throw new Error(`Could not find note "${oldFilename}" in modules.js`)
+  }
+
+  return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
+}
+
+// Drops a single note entry from a module's block (used ahead of inserting
+// it into a different module during a cross-subject rename-on-save).
+function removeNoteEntry(modulesJs, moduleId, filename) {
+  const block = findModuleBlock(modulesJs, moduleId)
+  const source = block.source
+  let removed = false
+
+  const updatedSource = source
+    .replace(NOTE_ENTRY_PATTERN, (fullMatch, entryFilename) => {
+      if (!removed && entryFilename === filename) {
+        removed = true
+        return ''
+      }
+      return fullMatch
+    })
+    .replace(/\n[ \t]*\n/g, '\n')
+
+  if (!removed) {
+    throw new Error(`Could not find note "${filename}" in modules.js`)
+  }
+
+  return `${modulesJs.slice(0, block.start)}${updatedSource}${modulesJs.slice(block.end)}`
+}
+
+export function useEditorSave({ title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent, imageQueueRef, imageCountRef, originalPath, setOriginalPath, isOwner }) {
   // Save handler
   const handleSave = async () => {
     if (!title.trim()) {
@@ -127,6 +207,13 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       return
     }
 
+    // Captured once up front — this closure's view of originalPath doesn't
+    // change even after setOriginalPath() is called later in this same run.
+    // isNewNote keys off the parsed identity so it can't disagree with the
+    // registry branching below (both treat an unparseable path as "create").
+    const original = originalPath ? parseNotePath(originalPath) : null
+    const isNewNote = !original
+
     setSaving(true)
 
     try {
@@ -136,6 +223,16 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       }
 
       const { moduleId, subfolder } = selectedPath
+      const newFilename = `${subfolder}/${filename}`
+      const isSamePath = original?.moduleId === moduleId && original?.filename === newFilename
+      const isCrossModule = original && !isSamePath && original.moduleId !== moduleId
+
+      // A cross-module rename rewrites two module blocks in modules.js, which
+      // the admin-github-write Edge Function rejects for anyone but an owner
+      // (same rule handleMoveFile in useEditorModules.js already respects).
+      if (isCrossModule && !isOwner) {
+        throw new Error('Moving a note to a different subject is owner-only')
+      }
 
       // Resolve image queue before committing
       let finalContent = content
@@ -158,9 +255,12 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
       // clear queue after successful upload
       imageQueueRef.current = {}
 
-      // Commit .md to GitHub
+      // Commit .md to GitHub — this always lands the edit, even if the
+      // registry step below turns out to be a no-op or fails.
       const mdPath = `src/content/notes/${moduleId}/${subfolder}/${filename}.md`
-      const commitMessage = `docs: add ${filename} to ${moduleId}/${subfolder}`
+      const commitMessage = original
+        ? `docs: update ${filename} in ${moduleId}/${subfolder}`
+        : `docs: add ${filename} to ${moduleId}/${subfolder}`
 
       const commitResult = await commitFile(mdPath, finalContent, commitMessage)
 
@@ -177,22 +277,77 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
         throw new Error('modules.js file is empty or does not exist')
       }
 
-      // Insert new note entry
-      const newNoteEntry = `{ filename: '${subfolder}/${filename}', label: '${filename}.md' },`
+      const newNoteEntry = `{ filename: '${newFilename}', label: '${filename}.md' },`
+      let updatedModulesJs = currentModulesJs
+      let modulesCommitModuleId = moduleId
+      let modulesCommitMessage = `feat: add ${filename} to ${moduleId} notes`
 
-      const updatedModulesJs = upsertNoteEntry(
-        currentModulesJs,
-        moduleId,
-        newNoteEntry,
-        `${subfolder}/${filename}`
-      )
+      if (!original) {
+        // Brand-new note.
+        updatedModulesJs = upsertNoteEntry(currentModulesJs, moduleId, newNoteEntry, newFilename)
+      } else if (isSamePath) {
+        // Re-saving the note it was loaded from. The content commit above
+        // already carries the edit — only touch the registry if it's
+        // somehow not registered there yet (self-heals a desynced note
+        // instead of throwing "already exists" on an unchanged path).
+        if (noteIsRegistered(currentModulesJs, moduleId, newFilename)) {
+          updatedModulesJs = currentModulesJs
+        } else {
+          updatedModulesJs = upsertNoteEntry(currentModulesJs, moduleId, newNoteEntry, newFilename)
+        }
+      } else if (!isCrossModule) {
+        // Title (and/or subfolder) changed, same subject — rewrite the
+        // existing entry in place rather than inserting a duplicate.
+        try {
+          updatedModulesJs = renameNoteEntry(
+            currentModulesJs, moduleId, original.filename, newFilename, `${filename}.md`
+          )
+          modulesCommitMessage = `feat: rename ${original.filename} to ${newFilename} in ${moduleId}`
+        } catch {
+          // Old entry wasn't where expected (registry/disk got out of sync)
+          // — fall back to inserting fresh rather than hard-failing.
+          updatedModulesJs = upsertNoteEntry(currentModulesJs, moduleId, newNoteEntry, newFilename)
+        }
+      } else {
+        // Cross-subject move (owner-only, checked above). Two single-module
+        // edits combined into one commit — allowed because owners skip the
+        // per-module scoping check server-side.
+        let withoutOld = currentModulesJs
+        try {
+          withoutOld = removeNoteEntry(currentModulesJs, original.moduleId, original.filename)
+        } catch {
+          // Old entry wasn't where expected — nothing to remove, just insert.
+        }
+        updatedModulesJs = upsertNoteEntry(withoutOld, moduleId, newNoteEntry, newFilename)
+        modulesCommitModuleId = undefined
+        modulesCommitMessage = `feat: move ${filename} from ${original.moduleId} to ${moduleId}`
+      }
 
-      await commitFileWithRetry(
-        MODULES_JS_PATH,
-        updatedModulesJs,
-        `feat: add ${filename} to ${moduleId} notes`,
-        moduleId
-      )
+      if (updatedModulesJs !== currentModulesJs) {
+        await commitFileWithRetry(
+          MODULES_JS_PATH,
+          updatedModulesJs,
+          modulesCommitMessage,
+          modulesCommitModuleId
+        )
+      }
+
+      // If the note moved (title/subfolder/subject changed), the content is
+      // already safe at the new path — remove the stale copy. A failed
+      // delete doesn't undo the save; it just leaves a duplicate to clean up.
+      if (original && !isSamePath) {
+        try {
+          await deleteFile(originalPath, `chore: remove old copy after rename to ${moduleId}/${newFilename}`)
+        } catch (deleteError) {
+          showToast(
+            `Saved, but the old file couldn't be removed (${deleteError.message}) — delete ${originalPath} manually`,
+            'error'
+          )
+          setUnsaved(false)
+          setOriginalPath(mdPath)
+          return
+        }
+      }
 
       // Update image_map with published note's image references
       try {
@@ -220,12 +375,18 @@ export function useEditorSave({ title, content, selectedPath, showToast, setSavi
 
       showToast('Published! Vercel is deploying...', 'success')
       setUnsaved(false)
+      setOriginalPath(mdPath)
 
-      // Clear form
-      setTimeout(() => {
-        setTitle('')
-        setContent('')
-      }, 2000)
+      // Only reset to a blank "create new note" state after actually
+      // creating one — clearing the editor 2s after every save would wipe
+      // an open note out from under someone who just edited it.
+      if (isNewNote) {
+        setTimeout(() => {
+          setTitle('')
+          setContent('')
+          setOriginalPath(null)
+        }, 2000)
+      }
 
     } catch (error) {
       console.error('Save failed:', error)
