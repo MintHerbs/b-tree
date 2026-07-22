@@ -41,7 +41,7 @@ export default function Navbar({
           <a href="/disclaimer" className={styles.aboutLink}>Disclaimer</a>
         )}
         {showAbout && (
-          <a href="/about" className={styles.aboutLink}>About</a>
+          <a href="/about" className={styles.aboutLink}>Team</a>
         )}
       </div>
     </nav>

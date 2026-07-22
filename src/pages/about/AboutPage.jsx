@@ -1,107 +1,264 @@
-// About page with Lottie animation and personal story
-import { useState, useEffect, useRef } from 'react'
-import lottie from 'lottie-web'
-import Starfield from '../../components/effects/Starfield/Starfield'
-// import alienAnimation from '../../img/alien.json' // Temporarily disabled
+// About page — the team behind the project as Material You (M3) profile cards.
+// Grouped into Founders and Contributors. The global Starfield + sidebar live in
+// App.jsx, so this page is a transparent M3 surface like the Grade Toolkit.
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'motion/react'
+import { X, ArrowLeft } from 'lucide-react'
+import { InstagramIcon, GithubIcon, LinkedinIcon } from './BrandIcons'
+import moonPhoto from '../../img/team/moon.jpeg'
+import tanooPhoto from '../../img/team/tanoo.png'
+import atishPhoto from '../../img/team/atish.png'
+import nooriePhoto from '../../img/team/noorie.png'
 import styles from './AboutPage.module.css'
 
-function AboutPage() {
-  const [showFullText, setShowFullText] = useState(false)
-  const lottieRef = useRef(null)
+// `photoFocus` re-frames a photo onto the face inside the circular crop:
+// translate brings the face to the centre, scale zooms in. Omit for photos
+// that already frame well centred (e.g. Atish).
+const FOUNDERS = [
+  {
+    name: 'Munazir Ramjhun',
+    photo: moonPhoto,
+    photoFocus: 'translate(-12%, 20%) scale(1.35)',
+    role: 'Founder & Developer',
+    socials: {
+      instagram: 'https://www.instagram.com/offrian',
+      linkedin: 'https://www.linkedin.com/in/offrian/',
+      github: 'https://github.com/MintHerbs',
+    },
+  },
+  {
+    name: 'Tanoo Joyekurun',
+    photo: tanooPhoto,
+    photoFocus: 'translate(21%, 27%) scale(1.6)',
+    role: 'Co-Founder & Creator of Grade Toolkit',
+    socials: {
+      instagram: 'https://www.instagram.com/msieur_sunshine',
+      linkedin: 'https://www.linkedin.com/in/tanoojoy/',
+      github: 'https://github.com/tanoojoy',
+    },
+  },
+  {
+    name: 'Atish Joottun',
+    photo: atishPhoto,
+    role: 'Co-Founder & Developer',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/atish-joottun-31a9aa321/',
+      github: 'https://github.com/JoottunAtish/JoottunAtish',
+    },
+  },
+]
 
-  // Load Lottie animation
+const CONTRIBUTORS = [
+  {
+    name: 'Saihah Noorie Ossen',
+    photo: nooriePhoto,
+    photoFocus: 'translate(2%, 34%) scale(1.75)',
+    role: 'Wrote the database notes',
+    socials: {
+      instagram: 'https://instagram.com/_noorie.07._',
+      linkedin: 'https://www.linkedin.com/in/noorie-ossen-7049b52b6',
+    },
+  },
+]
+
+// Ordered so the icon row stays consistent across cards.
+const SOCIALS = [
+  { key: 'instagram', label: 'Instagram', Icon: InstagramIcon },
+  { key: 'github', label: 'GitHub', Icon: GithubIcon },
+  { key: 'linkedin', label: 'LinkedIn', Icon: LinkedinIcon },
+]
+
+function MemberCard({ member, index, reduceMotion, onExpand }) {
+  return (
+    <motion.article
+      className={styles.card}
+      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{
+        duration: 0.4,
+        delay: reduceMotion ? 0 : index * 0.08,
+        ease: [0.2, 0, 0, 1],
+      }}
+    >
+      <button
+        type="button"
+        className={styles.avatarRing}
+        onClick={() => onExpand(member)}
+        aria-label={`Expand photo of ${member.name}`}
+      >
+        <div className={styles.avatarClip}>
+          <img
+            className={styles.avatar}
+            src={member.photo}
+            alt={member.name}
+            loading="lazy"
+            style={member.photoFocus ? { transform: member.photoFocus } : undefined}
+          />
+        </div>
+      </button>
+
+      <h3 className={styles.name}>{member.name}</h3>
+      {member.role && <p className={styles.role}>{member.role}</p>}
+
+      <div className={styles.socials}>
+        {SOCIALS.filter(s => member.socials[s.key]).map(({ key, label, Icon }) => (
+          <a
+            key={key}
+            className={styles.socialLink}
+            href={member.socials[key]}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${member.name} on ${label}`}
+          >
+            <Icon className={styles.socialIcon} />
+          </a>
+        ))}
+      </div>
+    </motion.article>
+  )
+}
+
+function Section({ heading, members, reduceMotion, onExpand }) {
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.sectionHeading}>{heading}</h2>
+      <div className={styles.grid}>
+        {members.map((member, i) => (
+          <MemberCard
+            key={member.name}
+            member={member}
+            index={i}
+            reduceMotion={reduceMotion}
+            onExpand={onExpand}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// Full-photo lightbox opened by clicking an avatar. Shows the whole (uncropped)
+// image so the circular crop isn't the only view. Closes on scrim click, the
+// close button, or Escape.
+function PhotoLightbox({ member, onClose, reduceMotion }) {
   useEffect(() => {
-    let animationInstance = null
-
-    if (lottieRef.current) {
-      try {
-        // Clear any existing content first
-        lottieRef.current.innerHTML = ''
-        
-        // Temporarily use emoji fallback
-        lottieRef.current.innerHTML = '<div class="' + styles.alienEmoji + '">👽</div>'
-        
-        /* Lottie animation disabled temporarily
-        animationInstance = lottie.loadAnimation({
-          container: lottieRef.current,
-          renderer: 'svg',
-          loop: true,
-          autoplay: true,
-          animationData: alienAnimation
-        })
-        */
-      } catch (error) {
-        console.error('Failed to load Lottie:', error)
-        // Fallback: show animated emoji if Lottie fails to load
-        if (lottieRef.current) {
-          lottieRef.current.innerHTML = '<div class="' + styles.alienEmoji + '">👽</div>'
-        }
-      }
+    const onKey = e => {
+      if (e.key === 'Escape') onClose()
     }
-
+    document.addEventListener('keydown', onKey)
+    // Lock background scroll while the overlay is open.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
-      if (animationInstance) {
-        animationInstance.destroy()
-      }
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
     }
+  }, [onClose])
+
+  return (
+    <motion.div
+      className={styles.scrim}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Photo of ${member.name}`}
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
+      transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+    >
+      <motion.figure
+        className={styles.lightbox}
+        onClick={e => e.stopPropagation()}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+      >
+        <button
+          type="button"
+          className={styles.lightboxClose}
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <X size={20} />
+        </button>
+        <img className={styles.lightboxImage} src={member.photo} alt={member.name} />
+        <figcaption className={styles.lightboxCaption}>
+          <span className={styles.lightboxName}>{member.name}</span>
+          {member.role && (
+            <span className={styles.lightboxRole}>{member.role}</span>
+          )}
+        </figcaption>
+      </motion.figure>
+    </motion.div>
+  )
+}
+
+function AboutPage() {
+  const navigate = useNavigate()
+  const [reduceMotion, setReduceMotion] = useState(false)
+  const [expanded, setExpanded] = useState(null)
+
+  // Go back to wherever the user came from; fall back to the tree if this page
+  // was opened directly (no in-app history to pop).
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1)
+    else navigate('/tree')
+  }
+
+  // Same reduced-motion contract the Card primitive and Grade Toolkit follow.
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReduceMotion(query.matches)
+    const onChange = e => setReduceMotion(e.matches)
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
   }, [])
 
   return (
-    <div className={styles.aboutPage}>
-      {/* Starfield background */}
-      <Starfield />
-      
-      {/* Main content */}
-      <main className={styles.content}>
-        {/* Lottie animation */}
-        <div ref={lottieRef} className={styles.animation} />
-        
-        {/* Text content */}
-        <div className={styles.textContainer}>
-          <p className={styles.intro}>
-            Just a dude who codes sometimes, gets lost in fantasy novels (Tolkien, Herbert - the ones that make you question reality a little), and is currently down a rabbit hole of astrophysics research. Honestly don't know what to write here so I'll let Samwise Gamgee from Lord of the Rings do the talking:
-          </p>
-          
-          <div className={styles.divider} />
-          
-          <div className={`${styles.quote} ${showFullText ? styles.expanded : ''}`}>
-            <p className={styles.quoteLine}>
-              <span className={styles.speaker}>Frodo:</span> "I can't do this, Sam."
-            </p>
-            <p className={styles.quoteLine}>
-              <span className={styles.speaker}>Sam:</span> "I know. It's all wrong. By rights we shouldn't even be here. But we are. It's like in the great stories, Mr. Frodo. The ones that really mattered. Full of darkness and danger they were. And sometimes you didn't want to know the end. Because how could the end be happy? How could the world go back to the way it was when so much bad had happened?"
-            </p>
-            <p className={styles.quoteLine}>
-              "But in the end, it's only a passing thing, this shadow. Even darkness must pass. A new day will come. And when the sun shines it will shine out the clearer. Those were the stories that stayed with you. That meant something, even if you were too small to understand why. But I think, Mr. Frodo, I do understand. I know now. Folk in those stories had lots of chances of turning back only they didn't. They kept going because they were holding on to something."
-            </p>
-            <p className={styles.quoteLine}>
-              <span className={styles.speaker}>Frodo:</span> "What are we holding on to, Sam?"
-            </p>
-            <p className={styles.quoteLine}>
-              <span className={styles.speaker}>Sam:</span> "That there's some good in this world, Mr. Frodo. And it's worth fighting for."
-            </p>
-          </div>
-          
-          {!showFullText && (
-            <button 
-              className={styles.readMore}
-              onClick={() => setShowFullText(true)}
-            >
-              Read more...
-            </button>
-          )}
-          
-          <a 
-            href="https://wa.me/23057060025"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.contactButton}
-          >
-            Contact Me
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className={styles.page}>
+      <div className={styles.content}>
+        <motion.header
+          className={styles.pageHeader}
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
+        >
+          <button type="button" className={styles.backButton} onClick={goBack}>
+            <ArrowLeft size={18} />
+            <span>Back</span>
+          </button>
+          <h1 className={styles.pageTitle}>Meet the Team</h1>
+          <p className={styles.pageSubtitle}>The people behind the project.</p>
+        </motion.header>
+
+        <Section
+          heading="Founders"
+          members={FOUNDERS}
+          reduceMotion={reduceMotion}
+          onExpand={setExpanded}
+        />
+        <Section
+          heading="Contributors"
+          members={CONTRIBUTORS}
+          reduceMotion={reduceMotion}
+          onExpand={setExpanded}
+        />
+      </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <PhotoLightbox
+            member={expanded}
+            onClose={() => setExpanded(null)}
+            reduceMotion={reduceMotion}
+          />
+        )}
+      </AnimatePresence>
+    </main>
   )
 }
 

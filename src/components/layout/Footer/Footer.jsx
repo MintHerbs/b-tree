@@ -25,7 +25,7 @@ const TOOL_LINKS = [
 const RESOURCE_LINKS = [
   { label: 'Community', to: '/social/feed' },
   { label: 'Guidelines', to: '/social/guidelines' },
-  { label: 'About', to: '/about' },
+  { label: 'Team', to: '/about' },
   { label: 'Disclaimer', to: '/disclaimer' },
 ];
 

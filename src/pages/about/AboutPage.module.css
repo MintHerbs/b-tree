@@ -1,199 +1,317 @@
-/* About page styles */
+/* About page — Material You (M3) team cards.
+   Tonal surfaces + state layers from the --md-* tokens. M3 elevation is tonal,
+   not shadow-based, and interaction is a state layer, never a lift. The global
+   Starfield (App.jsx) shows through the transparent page. */
 
-.aboutPage {
+.page {
   position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background-color: #000000;
+  z-index: 5;
+  min-height: 100vh;
+  background: transparent;
+  color: var(--md-on-surface);
+  padding: 44px 32px 64px;
+  padding-left: calc(80px + 32px); /* sidebar gutter + page padding */
+  font-family: var(--font-body);
 }
 
 .content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+/* ── Page header ────────────────────────────────────────────────────────── */
+
+.pageHeader {
+  margin-bottom: 40px;
+}
+
+/* M3 text button — subtle tonal state layer, no lift. */
+.backButton {
+  display: inline-flex;
   align-items: center;
-  gap: 32px;
-  max-width: 700px;
-  width: 90vw;
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 20px;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 8px 16px 8px 12px;
+  border: none;
+  border-radius: var(--md-shape-xl);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color var(--md-duration-short) var(--md-easing-emphasized),
+    background var(--md-duration-short) var(--md-easing-emphasized);
 }
 
-/* Custom scrollbar */
-.content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.content::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
-  border-radius: 4px;
-}
-
-.content::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.5);
-}
-
-.animation {
-  width: 200px;
-  height: 200px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.alienEmoji {
-  font-size: 120px;
-  animation: floatAlien 3s ease-in-out infinite;
-}
-
-@keyframes floatAlien {
-  0%, 100% {
-    transform: translateY(-10px);
-  }
-  50% {
-    transform: translateY(10px);
-  }
-}
-
-.textContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  align-items: center;
-}
-
-.intro {
-  font-size: 1rem;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  margin: 0;
-}
-
-.divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(139, 92, 246, 0.5),
+.backButton:hover {
+  color: var(--md-on-surface);
+  background: color-mix(
+    in srgb,
+    var(--md-on-surface) calc(var(--md-state-hover) * 100%),
     transparent
   );
-  margin: 8px 0;
 }
 
-.quote {
+.backButton:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.pageTitle {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--md-on-surface);
+  margin-bottom: 4px;
+}
+
+.pageSubtitle {
+  color: var(--md-on-surface-variant);
   font-size: 0.95rem;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.65);
-  font-style: italic;
-  text-align: left;
-  width: 100%;
-  max-height: 200px;
-  overflow: hidden;
-  position: relative;
-  transition: max-height 0.5s ease;
 }
 
-.quote.expanded {
-  max-height: 1000px;
+/* ── Section ────────────────────────────────────────────────────────────── */
+
+.section {
+  margin-bottom: 44px;
 }
 
-.quote::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(to bottom, transparent, #000000);
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.3s ease;
+.sectionHeading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--md-on-surface);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--md-outline-variant);
 }
 
-.quote.expanded::after {
-  opacity: 0;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
 }
 
-.quoteLine {
-  margin: 0 0 12px 0;
+/* ── Member card (M3 filled card) ───────────────────────────────────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 28px 22px 22px;
+  border-radius: var(--md-shape-xl);
+  background: var(--md-surface-container);
+  transition: background var(--md-duration-short) var(--md-easing-emphasized);
 }
 
-.speaker {
-  font-weight: 600;
-  color: #8B5CF6;
-  font-style: normal;
+/* State layer on hover — a tonal overlay, not a lift (M3 spec). */
+.card:hover {
+  background: color-mix(
+    in srgb,
+    var(--md-on-surface) calc(var(--md-state-hover) * 100%),
+    var(--md-surface-container)
+  );
 }
 
-.readMore {
-  padding: 8px 20px;
-  background: transparent;
-  color: #8B5CF6;
-  border: 1px solid #8B5CF6;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+/* ── Avatar ─────────────────────────────────────────────────────────────── */
 
-.readMore:hover {
-  background: rgba(139, 92, 246, 0.15);
-}
-
-.readMore:active {
-  transform: scale(0.98);
-}
-
-.contactButton {
-  padding: 12px 28px;
-  background: #8B5CF6;
-  color: #ffffff;
+.avatarRing {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  padding: 3px;
+  margin-bottom: 8px;
+  background: var(--md-primary-container);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  /* Button reset — the ring is a click-to-expand control. */
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 8px;
+  transition: background var(--md-duration-short) var(--md-easing-emphasized);
 }
 
-.contactButton:hover {
-  background: #7c3aed;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+.avatarRing:hover {
+  background: var(--md-primary);
 }
 
-.contactButton:active {
-  transform: translateY(0);
+.avatarRing:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 3px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .animation {
-    width: 150px;
-    height: 150px;
+/* Circular clip so a zoomed/translated photo stays inside the ring. */
+.avatarClip {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--md-surface-container-high);
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform-origin: center;
+}
+
+/* ── Text ───────────────────────────────────────────────────────────────── */
+
+.name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--md-on-surface);
+  line-height: 1.3;
+}
+
+.role {
+  font-size: 0.85rem;
+  color: var(--md-on-surface-variant);
+  line-height: 1.4;
+  max-width: 22ch;
+}
+
+/* ── Socials ────────────────────────────────────────────────────────────── */
+
+.socials {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.socialLink {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--md-on-surface-variant);
+  background: transparent;
+  transition:
+    color var(--md-duration-short) var(--md-easing-emphasized),
+    background var(--md-duration-short) var(--md-easing-emphasized);
+}
+
+.socialLink:hover {
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+}
+
+.socialLink:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.socialIcon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Lightbox ───────────────────────────────────────────────────────────── */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.lightbox {
+  position: relative;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: min(92vw, 560px);
+  padding: 16px;
+  border-radius: var(--md-shape-xl);
+  background: var(--md-surface-container-high);
+}
+
+.lightboxImage {
+  display: block;
+  max-width: 100%;
+  max-height: 74vh;
+  object-fit: contain;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-surface-container);
+}
+
+.lightboxCaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.lightboxName {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--md-on-surface);
+}
+
+.lightboxRole {
+  font-size: 0.85rem;
+  color: var(--md-on-surface-variant);
+}
+
+.lightboxClose {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--md-on-primary-container);
+  background: var(--md-primary-container);
+  transition: background var(--md-duration-short) var(--md-easing-emphasized);
+}
+
+.lightboxClose:hover {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.lightboxClose:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 968px) {
+  .page {
+    padding: 56px 20px 80px;
+    padding-left: 20px; /* sidebar collapses on mobile - drop the gutter */
   }
-  
-  .intro {
-    font-size: 0.9rem;
+
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
   }
-  
-  .quote {
-    font-size: 0.85rem;
+
+  .card {
+    padding: 22px 16px 18px;
+  }
+
+  .avatarRing {
+    width: 92px;
+    height: 92px;
   }
 }
