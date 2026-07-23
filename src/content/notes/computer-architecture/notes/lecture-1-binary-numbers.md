@@ -125,8 +125,11 @@ Example: Converting 37 to base 16
 Signed Magnitude
 
 * MSB: Most Significant Bit
+
 * 1: Negative
+
 * 0: Positive
+
 * Found at the start of the byte
 
 The first bit shows whether the number is positive or negative. It does not hold any value. The computer has to compare signs in order to perform addition or subtraction.
@@ -182,4 +185,58 @@ There is no room for the extra bit and so the answer becomes 25 which is incorre
 
   * 1000 0000
 
-##
+## 1's Complement
+
+* Converting a positive number to a negative number:
+
+  Steps:
+
+  * Invert all the bits
+* Negative values are indicated by '1' in the high bit order.
+* Complement systems are useful because they eliminate the need for subtraction - just complement one and add them together.
+* Simpler to implement in hardware as there is no need to compare numbers to see which is larger (applies to mixed signs).
+* Disadvantage:
+
+  * 2 representations of '0':
+
+    * positive: 0000 0000
+    * negative: 1111 1111
+* Range: 
+
+  ## 2's Complement
+* Positive number: 
+
+  * Convert to binary
+* Negative Number:
+
+  * Convert absolute value to binary
+  * Invert the bits
+  * Add '1'
+* Addition: 
+
+  * Add 2 binary numbers
+  * Discard any carries from high order bit
+  * Example:
+* Range:
+
+## Notes:
+
+* For positive numbers, the signed magnitude, one's complement and two's complement forms are all the same.
+* For one's complement and two's complement the number only needs to be modified if it is negative.
+
+## Overflow
+
+Overflow occurs when:
+
+* The result of a calculation is too large to store in the computer as we only have a finite number of bits available for each number.
+* Prevention: 
+
+  * Not without re-writing your program to use values that can fit within the computer memory.
+* Detection: 
+
+  * Easy to detect in complement arithmetic.
+  * Set of rules could be implemented in hardware.
+
+## Underflow
+
+Underflow occurs when the result of a calculation is too small to store in the computer as we only have a finite number of bits available for each number.
