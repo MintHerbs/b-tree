@@ -124,15 +124,10 @@ Example: Converting 37 to base 16
 
 Signed Magnitude
 
-1. <br />
-
-   * &#x20; MSB: Most Significant Bit
-
-   * 1: Negative
-
-   * 0: Positive
-
-   * Found at the start of the byte.
+* MSB: Most Significant Bit
+* 1: Negative
+* 0: Positive
+* Found at the start of the byte
 
 The first bit shows whether the number is positive or negative. It does not hold any value. The computer has to compare signs in order to perform addition or subtraction.
 How?
@@ -150,13 +145,13 @@ Example: 107+46
 
 There is no room for the extra bit and so the answer becomes 25 which is incorrect.
 
-Solution:
+**Solution:**
 
 * Use smaller numbers or
 
 * Bigger Registers
 
-Rules for addition:
+**Rules for addition:**
 
 1. If the signs are the same, just add the absolute values together and use the same sign for the result.
    Example: -46 + -25
@@ -165,15 +160,15 @@ Rules for addition:
 2. If the signs are different, use the sign of the larger number. Subtract the larger from the smaller (subtraction).
    Example: 46 + -25
 
-Strengths:
+**Strengths:**
 
 * Easy to understand.
 
-Disadvantage:
+**Disadvantage:**
 
 * Makes computer hardware more complicated/slower.
 
-  * Separate circutries are needed for subtraction and addition.
+  * Separate circuitries are needed for subtraction and addition.
 
 * The CPU needs to compare the 2 numbers first to determine whether to add or subtract and determine the correct sign.
 
@@ -186,3 +181,5 @@ Disadvantage:
   * 0000 0000
 
   * 1000 0000
+
+##
