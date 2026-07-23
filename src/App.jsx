@@ -73,8 +73,8 @@ function AppContent() {
         onSongChange={setCurrentSongId}
       />
       {/* Global sidebar - persists on every route EXCEPT admin, which has its
-          own DirectoryDrawer + EditorNavbar chrome (owner decision 2026-07-23:
-          sidebar persistent incl. on notes, but not over the admin editor). */}
+          own AdminBrowser + EditorNavbar chrome (owner decision 2026-07-23:
+          sidebar persistent incl. on notes, but not over the admin panel). */}
       {!isAdminRoute && (
         <Sidebar
           defaultOpenGroup="database"

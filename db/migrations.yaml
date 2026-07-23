@@ -19,7 +19,7 @@
 # See db/README.md for how to apply migrations against a Supabase project.
 
 project: b-tree
-schema_version: 20
+schema_version: 21
 
 migrations:
   - id: "0001"
@@ -189,3 +189,11 @@ migrations:
     created: 2026-07-23
     applied_envs: []
     related_issues: ["T-043", "T-002", "E-005"]
+
+  - id: "0022"
+    file: sql/0022_admin_delete_lock_and_visibility.sql
+    description: "T-045 phases B+C: admin_is_delete_authorized() locks notes/note_folders DELETE to one verified-JWT-email account (moon@mooner.dev), narrowing the existing owner-scoped delete policies rather than replacing them; adds hidden columns to notes/note_folders and a new module_visibility table (public read, owner-only write) so Subjects/folders/files can be hidden from the live site without a redeploy."
+    author: agent
+    created: 2026-07-23
+    applied_envs: []
+    related_issues: ["T-045", "E-006"]

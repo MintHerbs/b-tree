@@ -1,7 +1,8 @@
-import { commitFileWithRetry, getFileContent } from '../lib/githubApi'
+import { commitFileWithRetry, deleteModule as deleteModuleOnGithub, getFileContent } from '../lib/githubApi'
 import { getIconOptionByName } from '../components/admin/adminIconOptions'
 import {
   createFolder, renameFolder, deleteFolder, moveNote, deleteNote, deleteModuleNotes, baseName,
+  setModuleHidden, setFolderHidden, setNoteHidden, upsertNote, noteExists,
 } from '../lib/notesApi'
 import { invalidateNotesRegistry } from './useNotesRegistry'
 
@@ -85,37 +86,11 @@ function insertModuleSource(modulesJs, module) {
   return `${moduleSection.slice(0, arrayEnd)}\n${moduleToSource(module)}${moduleSection.slice(arrayEnd)}${rest}`
 }
 
-function removeModuleSource(modulesJs, moduleId) {
-  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}',`, 'm')
-  const startMatch = modulesJs.match(startPattern)
-  if (!startMatch || startMatch.index == null) {
-    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
-  }
-  const start = startMatch.index
-  let index = start + 1
-  let depth = 0
-  for (; index < modulesJs.length; index++) {
-    const char = modulesJs[index]
-    if (char === '{') depth += 1
-    if (char === '}') {
-      depth -= 1
-      if (depth === 0) {
-        let end = index + 1
-        if (modulesJs[end] === ',') end += 1
-        if (modulesJs[end] === '\r') end += 1
-        if (modulesJs[end] === '\n') end += 1
-        return `${modulesJs.slice(0, start)}\n${modulesJs.slice(end)}`
-      }
-    }
-  }
-  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
-}
-
 function refreshModuleState(setModules, updater) {
   setModules(prev => updater(prev))
 }
 
-export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions, isOwner, reloadModules }) {
+export function useEditorModules({ showToast, setModules, setSelectedPath, unusedIconOptions, isOwner, canDelete, reloadModules }) {
   // ── Structural: create / delete / rename a subject (modules.js commit) ──────
   const handleNewModule = async (name, iconName = unusedIconOptions[0]?.name || 'FileCode') => {
     const problem = nameError(name)
@@ -139,12 +114,15 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
     }
   }
 
+  // Delete is locked to one account (T-045 phase B) — server-side enforced
+  // (admin-github-write's dedicated deleteModule op checks the caller's
+  // verified email; RLS does the same for deleteNote/deleteFolder below).
+  // This client check is a UX short-circuit, not the security boundary.
   const handleDeleteModule = async (moduleId) => {
+    if (!canDelete) { showToast('Only the site owner can delete a subject', 'error'); return }
     showToast(`Removing subject ${moduleId}...`, 'success')
     try {
-      const currentModulesJs = await getFileContent(MODULES_JS_PATH)
-      const updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
-      await commitFileWithRetry(MODULES_JS_PATH, updatedModulesJs, `feat: remove ${moduleId} subject`)
+      await deleteModuleOnGithub(moduleId, `feat: remove ${moduleId} subject`)
 
       // Purge the subject's note content + folders from the DB.
       await deleteModuleNotes(moduleId)
@@ -155,6 +133,17 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
       showToast(`Subject ${moduleId} removed`, 'success')
     } catch (error) {
       showToast(`Failed to remove subject: ${error.message}`, 'error')
+    }
+  }
+
+  const handleHideModule = async (moduleId, hidden) => {
+    try {
+      await setModuleHidden(moduleId, hidden)
+      invalidateNotesRegistry()
+      await reloadModules?.()
+      showToast(hidden ? `Subject ${moduleId} hidden from the live site` : `Subject ${moduleId} unhidden`, 'success')
+    } catch (error) {
+      showToast(`Failed to update visibility: ${error.message}`, 'error')
     }
   }
 
@@ -209,6 +198,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleDeleteSubfolder = async (moduleId, subfolderName) => {
+    if (!canDelete) { showToast('Only the site owner can delete a folder', 'error'); return }
     showToast(`Deleting subfolder ${subfolderName}...`, 'success')
     try {
       const removed = await deleteFolder(moduleId, subfolderName)
@@ -228,7 +218,42 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
     }
   }
 
+  const handleHideSubfolder = async (moduleId, subfolderName, hidden) => {
+    try {
+      await setFolderHidden(moduleId, subfolderName, hidden)
+      invalidateNotesRegistry()
+      await reloadModules?.()
+      showToast(hidden ? `Folder ${subfolderName} hidden from the live site` : `Folder ${subfolderName} unhidden`, 'success')
+    } catch (error) {
+      showToast(`Failed to update visibility: ${error.message}`, 'error')
+    }
+  }
+
   // ── Notes (notes table) ──────────────────────────────────────────────────────
+  // Creates an empty note row up front (named via the browser's popup, same
+  // pattern as New Subject / New Folder) rather than jumping straight into the
+  // editor for a note that doesn't exist yet — the file appears in the list
+  // immediately, and only opens for writing once the admin clicks it.
+  const handleNewFile = async (moduleId, subfolder, title) => {
+    const problem = nameError(title, { allowSlash: false })
+    if (problem) { showToast(`Failed to create file: ${problem}`, 'error'); return }
+    const filename = titleToFilename(title)
+    if (!filename) { showToast('Please enter a file name', 'error'); return }
+    const path = `${subfolder}/${filename}`
+    try {
+      if (await noteExists(moduleId, path)) {
+        showToast(`A file named "${filename}" already exists in this folder`, 'error')
+        return
+      }
+      await upsertNote({ moduleId, path, title: `${filename}.md`, contentMd: '' })
+      invalidateNotesRegistry()
+      await reloadModules?.()
+      showToast(`${filename}.md created`, 'success')
+    } catch (error) {
+      showToast(`Failed to create file: ${error.message}`, 'error')
+    }
+  }
+
   const handleMoveFile = async ({ fromModule, fromSubfolder, fromPath, toModule, toSubfolder }) => {
     const base = baseName(fromPath)
     const newPath = `${toSubfolder}/${base}`
@@ -252,6 +277,7 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
   }
 
   const handleDeleteFile = async (moduleId, path) => {
+    if (!canDelete) { showToast('Only the site owner can delete a file', 'error'); return }
     try {
       await deleteNote(moduleId, path)
       invalidateNotesRegistry()
@@ -259,6 +285,17 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
       showToast(`${baseName(path)} deleted`, 'success')
     } catch (error) {
       showToast(`Failed to delete ${baseName(path)}: ${error.message}`, 'error')
+    }
+  }
+
+  const handleHideFile = async (moduleId, path, hidden) => {
+    try {
+      await setNoteHidden(moduleId, path, hidden)
+      invalidateNotesRegistry()
+      await reloadModules?.()
+      showToast(hidden ? `${baseName(path)} hidden from the live site` : `${baseName(path)} unhidden`, 'success')
+    } catch (error) {
+      showToast(`Failed to update visibility: ${error.message}`, 'error')
     }
   }
 
@@ -282,11 +319,15 @@ export function useEditorModules({ showToast, setModules, setSelectedPath, unuse
     handleNewModule,
     handleDeleteModule,
     handleRenameModule,
+    handleHideModule,
     handleNewSubfolder,
     handleRenameSubfolder,
     handleDeleteSubfolder,
+    handleHideSubfolder,
+    handleNewFile,
     handleMoveFile,
     handleDeleteFile,
     handleRenameFile,
+    handleHideFile,
   }
 }

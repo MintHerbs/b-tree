@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import NoteReader from '../../components/markdown/NoteReader'
 import { MODULES, primaryTool } from '../../components/layout/Sidebar/modules.js'
-import { getNote } from '../../lib/notesApi'
+import { getNote, isModuleHidden } from '../../lib/notesApi'
 
 /** "getting-started" / "notes/img-push" → "Getting Started" (last segment, humanised). */
 function humaniseFilename(subpath) {
@@ -61,9 +61,15 @@ function NotesPage() {
 
       setStatus('loading')
       try {
-        const note = await getNote(section, subpath)
+        const [note, subjectHidden] = await Promise.all([
+          getNote(section, subpath),
+          isModuleHidden(section),
+        ])
         if (cancelled) return
-        if (!note) {
+        // A hidden note, or a note under a hidden Subject (T-045 phase C), is
+        // treated as absent for public visitors — including by direct URL,
+        // not just from the listing.
+        if (!note || note.hidden || subjectHidden) {
           setStatus('not_found')
           setContent('')
           return
