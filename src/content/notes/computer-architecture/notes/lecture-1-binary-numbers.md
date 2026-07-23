@@ -174,7 +174,7 @@ There is no room for the extra bit and so the answer becomes 25 which is incorre
 
 * The range is compromised.
 
-  * With the same number of bits, unsigned integers can express twice as many postive values as signed integers.
+  * With the same number of bits, unsigned integers can express twice as many positive values as signed integers.
 
 * 2 representations of '0':
 
