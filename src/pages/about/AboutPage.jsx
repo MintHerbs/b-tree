@@ -10,6 +10,7 @@ import moonPhoto from '../../img/team/moon.jpeg'
 import tanooPhoto from '../../img/team/tanoo.png'
 import atishPhoto from '../../img/team/atish.png'
 import nooriePhoto from '../../img/team/noorie.png'
+import nusaibahPhoto from '../../img/team/nusaibah.png'
 import styles from './AboutPage.module.css'
 
 // `photoFocus` re-frames a photo onto the face inside the circular crop:
@@ -58,6 +59,14 @@ const CONTRIBUTORS = [
     socials: {
       instagram: 'https://instagram.com/_noorie.07._',
       linkedin: 'https://www.linkedin.com/in/noorie-ossen-7049b52b6',
+    },
+  },
+  {
+    name: 'Nusaibah Banu Khodabocus',
+    photo: nusaibahPhoto,
+    role: 'Wrote the Maths semester 2 notes',
+    socials: {
+      instagram: 'https://www.instagram.com/nusaibah_2205',
     },
   },
 ]
