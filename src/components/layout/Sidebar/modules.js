@@ -120,7 +120,9 @@ export const MODULES = [
       { filename: 'notes • sem 1/gauss-seidel',              label: 'gauss-seidel.md' },
     ],
   },
-  { id: 'computer-architecture', label: 'Computer Architecture', Icon: Cpu },
+  { id: 'computer-architecture', label: 'Computer Architecture', Icon: Cpu, notes: [
+    { filename: 'notes/lecture-1-binary-numbers', label: 'lecture-1-binary-numbers.md' },
+  ] },
   { id: 'computer-networking',   label: 'Computer Networking',   Icon: Network },
   { id: 'computer-security',     label: 'Computer Security',     Icon: ShieldCheck },
   { id: 'computer-vision',       label: 'Computer Vision',       Icon: Eye },
@@ -129,11 +131,7 @@ export const MODULES = [
     label: 'Operating Systems',
     Icon: HardDrive,
     notes: [
-      { filename: 'notes/process-threads', label: 'process-threads.md' 
-    notes: [
-      { filename: 'notes/lecture-1-binary-numbers', label: 'lecture-1-binary-numbers.md' },
-    ],
-  },
+      { filename: 'notes/process-threads', label: 'process-threads.md' },
     ],
   },
   {
