@@ -141,6 +141,15 @@ NoteReader/
   filename (a poor title); the `# H1` is the real title; A is the least code for the cleanest result.
 
 ### 4.3 Reconcile global chrome — decision B (true full-bleed)
+
+> **Superseded 2026-07-23 (owner decision):** the sidebar is now **persistent on
+> `/notes/*`** (global sidebar on every route except the admin editor). Only the
+> Starfield stays suppressed on notes, so the reading background stays flat. The
+> reader's back affordance moved to the top-right to clear the left sidebar rail.
+> The full-bleed *content column* (flat bg, centred ~720px) is unchanged; only the
+> sidebar-suppression part of decision B was reversed. See `src/App.jsx` sidebar
+> gate and `NoteReader.module.css` `.backButton`.
+
 - Chrome is gated by route in `src/App.jsx:28-29,61,72`: `isAdminRoute` already suppresses `Sidebar`
   and `Starfield`. Full-bleed reuses that exact pattern — add
   `isNoteRoute = location.pathname.startsWith('/notes/')` and gate `Sidebar`/`Starfield` on it. This
