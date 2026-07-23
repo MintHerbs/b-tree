@@ -25,6 +25,12 @@ suppress the sidebar on `/notes/*` by reusing App.jsx's existing admin-route chr
 not a routing rewrite), keep the floating DynamicIsland/MusicPlayer, and add a back/close affordance.
 See Suggested fix for the concrete plan.
 
+> **Superseded 2026-07-23 (owner decision, during T-036):** Q2's sidebar
+> suppression was reversed — the global sidebar is now **persistent on `/notes/*`**
+> (suppressed only on the admin editor). Only the Starfield stays off on notes, so
+> the flat reading background is unchanged; the back affordance moved to top-right
+> to clear the sidebar rail. The full-bleed content column itself is unchanged.
+
 ## Evidence
 
 **Code theme**

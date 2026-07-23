@@ -28,10 +28,12 @@
 }
 
 /* Floating back affordance — mirrors PreviewModal's close button. */
+/* Top-right so it clears the global left Sidebar rail (fixed 56px, expands on
+   hover). Mirrors the preview's close affordance. */
 .backButton {
   position: fixed;
   top: 24px;
-  left: 24px;
+  right: 24px;
   z-index: 40;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -64,7 +66,7 @@
 
   .backButton {
     top: 16px;
-    left: 16px;
+    right: 16px;
     width: 36px;
     height: 36px;
   }
