@@ -7,6 +7,45 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
+
+// Delete is locked to one account (T-045 phase B), regardless of how many
+// accounts hold the `owner` role — see docs/specs/admin-drive-navigation.md §6.
+const DELETE_AUTHORIZED_EMAIL = 'moon@mooner.dev'
+
+// Removes a Subject's block from modules.js source. Ported from the client
+// (useEditorModules.js) to here: this runs server-side, keyed only on
+// moduleId, rather than trusting a client-computed "final content" for a
+// delete — a client-supplied "this commit is a deletion" flag would be
+// trivially spoofable, which would defeat the point of locking delete to one
+// account.
+function removeModuleSource(modulesJs: string, moduleId: string): string {
+  const escaped = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escaped}',`, 'm')
+  const startMatch = modulesJs.match(startPattern)
+  if (!startMatch || startMatch.index == null) {
+    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
+  }
+  const start = startMatch.index
+  let index = start + 1
+  let depth = 0
+  for (; index < modulesJs.length; index++) {
+    const char = modulesJs[index]
+    if (char === '{') depth += 1
+    if (char === '}') {
+      depth -= 1
+      if (depth === 0) {
+        let end = index + 1
+        if (modulesJs[end] === ',') end += 1
+        if (modulesJs[end] === '\r') end += 1
+        if (modulesJs[end] === '\n') end += 1
+        return `${modulesJs.slice(0, start)}\n${modulesJs.slice(end)}`
+      }
+    }
+  }
+  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
+}
+
 // Note CONTENT no longer lives in modules.js — it's in the Supabase `notes`
 // table (E-005/T-043) — so only owners ever write modules.js (creating,
 // removing, or renaming a subject). Contributors never touch it, hence no
@@ -67,14 +106,21 @@ serve(async (req) => {
       return json({ error: 'Not an admin user' }, 403)
     }
 
-    const { op, path, content, contentBase64, message } = await req.json()
+    const { op, path, content, contentBase64, message, moduleId } = await req.json()
 
-    if (!op || !path) {
-      return json({ error: 'Missing op or path' }, 400)
+    if (!op) {
+      return json({ error: 'Missing op' }, 400)
     }
 
-    if (!isPathAllowed(path, profile.role, profile.allowed_directories ?? [])) {
-      return json({ error: 'Path is outside your allowed directories' }, 403)
+    // deleteModule has no `path` — it's keyed on moduleId and the target path
+    // (modules.js) is fixed server-side, not client-supplied.
+    if (op !== 'deleteModule') {
+      if (!path) {
+        return json({ error: 'Missing path' }, 400)
+      }
+      if (!isPathAllowed(path, profile.role, profile.allowed_directories ?? [])) {
+        return json({ error: 'Path is outside your allowed directories' }, 403)
+      }
     }
 
     const ghHeaders = {
@@ -168,14 +214,52 @@ serve(async (req) => {
       }
 
       case 'deleteFile': {
-        // The user-facing "Delete" action — owner-only per T-031. Distinct
-        // from 'cleanupFile' below, which the same rename/move flows a
-        // contributor is allowed to run also depend on.
+        // The user-facing "Delete" action — locked to one account (T-045
+        // phase B), not just the owner role. Distinct from 'cleanupFile'
+        // below, which the same rename/move flows a contributor is allowed
+        // to run also depend on.
         if (!message) return json({ error: 'Missing message' }, 400)
-        if (profile.role !== 'owner') {
-          return json({ error: 'Only owners can delete files' }, 403)
+        if (profile.role !== 'owner' || callerData.user.email !== DELETE_AUTHORIZED_EMAIL) {
+          return json({ error: 'Only the site owner can delete files' }, 403)
         }
         return await deleteFromGithub(path, message)
+      }
+
+      case 'deleteModule': {
+        // Removes a Subject's block from modules.js. Locked to one account
+        // (T-045 phase B) — verified via the caller's authenticated Supabase
+        // session (callerData.user.email), not the client-editable
+        // admin_users.email column.
+        if (!moduleId || !message) return json({ error: 'Missing moduleId or message' }, 400)
+        if (profile.role !== 'owner' || callerData.user.email !== DELETE_AUTHORIZED_EMAIL) {
+          return json({ error: 'Only the site owner can delete a subject' }, 403)
+        }
+        const res = await fetch(`${contentsUrl(MODULES_JS_PATH)}?ref=${githubBranch}`, { headers: ghHeaders })
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          return json({ error: `Failed to read modules.js (${res.status}): ${errorData.message || res.statusText}` }, res.status)
+        }
+        const data = await res.json()
+        const currentModulesJs = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))))
+        let updatedModulesJs: string
+        try {
+          updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
+        } catch (err) {
+          return json({ error: (err as Error).message }, 400)
+        }
+        const sha: string | null = await fetchSha(MODULES_JS_PATH)
+        const commitRes = await fetch(contentsUrl(MODULES_JS_PATH), {
+          method: 'PUT',
+          headers: ghHeaders,
+          body: JSON.stringify({
+            message,
+            content: btoa(unescape(encodeURIComponent(updatedModulesJs))),
+            branch: githubBranch,
+            ...(sha ? { sha } : {}),
+          }),
+        })
+        if (!commitRes.ok) return json({ error: `GitHub commit failed: ${commitRes.status}` }, commitRes.status)
+        return json(await commitRes.json())
       }
 
       case 'cleanupFile': {

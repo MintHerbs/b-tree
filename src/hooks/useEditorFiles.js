@@ -1,6 +1,6 @@
 import { getNote, displaySubfolder, baseName } from '../lib/notesApi'
 
-export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath, restoreDraftIfExists }) {
+export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setSelectedPath, setOriginalPath, restoreDraftIfExists }) {
   // Loads a note's content from Supabase. `file` is { moduleId, path } — the
   // DB identity carried by the file rows in DirectoryDrawer.
   const handleLoadFile = async (file) => {
@@ -25,7 +25,6 @@ export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, se
       setContent(note.contentMd)
       setTitle(fileName)
       setUnsaved(false)
-      setDirectoryOpen(false)
       setSelectedPath({ moduleId, subfolder })
       setOriginalPath({ moduleId, path: note.path, subfolder })
 

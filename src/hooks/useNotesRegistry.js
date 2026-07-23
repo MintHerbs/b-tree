@@ -12,13 +12,22 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { MODULES } from '../components/layout/Sidebar/modules'
-import { listNotes, listNoteFolders, mergeNotesIntoModules } from '../lib/notesApi'
+import { listModuleVisibility, listNotes, listNoteFolders, mergeNotesIntoModules } from '../lib/notesApi'
 
 let lastModules = null
 
+// Public consumer — hidden Subjects/folders/notes (T-045 phase C) must never
+// reach the sidebar or the notes listing, so they're dropped here, before the
+// merge, rather than carried through and hidden by CSS.
 async function fetchRegistry() {
-  const [notes, folders] = await Promise.all([listNotes(), listNoteFolders()])
-  return mergeNotesIntoModules(MODULES, notes, folders)
+  const [notes, folders, moduleVisibility] = await Promise.all([
+    listNotes(), listNoteFolders(), listModuleVisibility(),
+  ])
+  const hiddenModuleIds = new Set(moduleVisibility.filter(m => m.hidden).map(m => m.moduleId))
+  const visibleModules = MODULES.filter(m => !hiddenModuleIds.has(m.id))
+  const visibleNotes = notes.filter(n => !n.hidden)
+  const visibleFolders = folders.filter(f => !f.hidden)
+  return mergeNotesIntoModules(visibleModules, visibleNotes, visibleFolders)
 }
 
 export function useNotesRegistry() {

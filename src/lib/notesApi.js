@@ -54,7 +54,12 @@ export function mergeNotesIntoModules(modules, notes, folders = []) {
   const byModule = new Map()
   for (const n of notes) {
     if (!byModule.has(n.moduleId)) byModule.set(n.moduleId, [])
-    byModule.get(n.moduleId).push({ filename: n.path, label: n.title || `${baseName(n.path)}.md` })
+    byModule.get(n.moduleId).push({
+      filename: n.path,
+      label: n.title || `${baseName(n.path)}.md`,
+      hidden: !!n.hidden,
+      updatedAt: n.updatedAt ?? null,
+    })
   }
   const foldersByModule = new Map()
   for (const f of folders) {
@@ -87,7 +92,7 @@ export function mergeNotesIntoModules(modules, notes, folders = []) {
 export async function listNotes() {
   const { data, error } = await supabase
     .from('notes')
-    .select('module_id, path, title, updated_at')
+    .select('module_id, path, title, updated_at, hidden')
     .order('module_id', { ascending: true })
     .order('path', { ascending: true })
   if (error) throw new Error(error.message)
@@ -96,6 +101,7 @@ export async function listNotes() {
     path: r.path,
     title: r.title,
     updatedAt: r.updated_at,
+    hidden: !!r.hidden,
   }))
 }
 
@@ -103,9 +109,32 @@ export async function listNotes() {
 export async function listNoteFolders() {
   const { data, error } = await supabase
     .from('note_folders')
-    .select('module_id, name')
+    .select('module_id, name, hidden')
   if (error) throw new Error(error.message)
-  return (data ?? []).map((r) => ({ moduleId: r.module_id, name: r.name }))
+  return (data ?? []).map((r) => ({ moduleId: r.module_id, name: r.name, hidden: !!r.hidden }))
+}
+
+/** Every Subject's hide state, keyed by module_id — Subjects live in code
+ * (modules.js), so this side table is the only place a hide flag can live. */
+export async function listModuleVisibility() {
+  const { data, error } = await supabase
+    .from('module_visibility')
+    .select('module_id, hidden')
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((r) => ({ moduleId: r.module_id, hidden: !!r.hidden }))
+}
+
+/** Whether one Subject is hidden — for the public reader's direct-URL check
+ * (a hidden Subject's notes must 404 even if the note row itself isn't
+ * individually hidden). */
+export async function isModuleHidden(moduleId) {
+  const { data, error } = await supabase
+    .from('module_visibility')
+    .select('hidden')
+    .eq('module_id', moduleId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return !!data?.hidden
 }
 
 /**
@@ -116,7 +145,7 @@ export async function getNote(moduleId, path) {
   const clean = stripMd(path)
   const { data, error } = await supabase
     .from('notes')
-    .select('module_id, path, title, content_md')
+    .select('module_id, path, title, content_md, hidden')
     .eq('module_id', moduleId)
     .eq('path', clean)
     .maybeSingle()
@@ -127,6 +156,7 @@ export async function getNote(moduleId, path) {
     path: data.path,
     title: data.title,
     contentMd: data.content_md,
+    hidden: !!data.hidden,
   }
 }
 
@@ -263,4 +293,34 @@ export async function deleteModuleNotes(moduleId) {
   if (nErr) throw new Error(nErr.message)
   const { error: fErr } = await supabase.from('note_folders').delete().eq('module_id', moduleId)
   if (fErr) throw new Error(fErr.message)
+}
+
+// ─── Visibility ("hide from live site") ───────────────────────────────────
+
+/** Hide/unhide one note. The public reader treats a hidden note as absent. */
+export async function setNoteHidden(moduleId, path, hidden) {
+  const { error } = await supabase
+    .from('notes')
+    .update({ hidden })
+    .eq('module_id', moduleId)
+    .eq('path', stripMd(path))
+  if (error) throw new Error(error.message)
+}
+
+/** Hide/unhide a folder. Upserts the explicit row so a folder that only
+ * exists implicitly (derived from note paths) gets one to carry the flag. */
+export async function setFolderHidden(moduleId, name, hidden) {
+  const { error } = await supabase
+    .from('note_folders')
+    .upsert({ module_id: moduleId, name, hidden }, { onConflict: 'module_id,name' })
+  if (error) throw new Error(error.message)
+}
+
+/** Hide/unhide a Subject. Subjects live in `modules.js` (code), so this is
+ * the only place their visibility state can live without a redeploy. */
+export async function setModuleHidden(moduleId, hidden) {
+  const { error } = await supabase
+    .from('module_visibility')
+    .upsert({ module_id: moduleId, hidden }, { onConflict: 'module_id' })
+  if (error) throw new Error(error.message)
 }

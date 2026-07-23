@@ -5,6 +5,7 @@ import { HomeFeedPage, GuidelinesPage, SocialChatRoute, preloadSocialRoutes } fr
 
 // Admin routes
 const AdminLogin = lazy(() => import('../pages/admin/AdminLogin'))
+const AdminBrowser = lazy(() => import('../pages/admin/AdminBrowser'))
 const AdminEditor = lazy(() => import('../pages/admin/AdminEditor'))
 const AdminUsers = lazy(() => import('../pages/admin/AdminUsers'))
 
@@ -28,7 +29,13 @@ export function AppRoutes({ onAIStateChange, onChatOpen }) {
       
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLogin />} />
-      <Route path="/admin/editor" element={<AdminEditor />} />
+      {/* Drive-style browser: Subjects → module folders → files (T-045 phase A) */}
+      <Route path="/admin/editor" element={<AdminBrowser />} />
+      <Route path="/admin/editor/:moduleId" element={<AdminBrowser />} />
+      <Route path="/admin/editor/:moduleId/:subfolder" element={<AdminBrowser />} />
+      {/* Writing surface — reached only by opening or creating a file in the browser */}
+      <Route path="/admin/editor/:moduleId/:subfolder/new" element={<AdminEditor />} />
+      <Route path="/admin/editor/:moduleId/:subfolder/:slug" element={<AdminEditor />} />
       <Route path="/admin/users" element={<AdminUsers />} />
     </Routes>
   )

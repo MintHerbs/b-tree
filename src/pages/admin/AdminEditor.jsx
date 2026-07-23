@@ -1,17 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import NoteEditor from '../../components/admin/NoteEditor'
+import { resolveNoteImageSrc } from '../../lib/noteImageSrc'
 import { useDropzone } from 'react-dropzone'
 import { colors } from '../../constants/colors'
 import { supabase } from '../../lib/supabaseClient'
 import '../../styles/adminTokens.css'
-import { MODULES } from '../../components/layout/Sidebar/modules'
-import { listNotes, listNoteFolders, mergeNotesIntoModules } from '../../lib/notesApi'
-import { invalidateNotesRegistry } from '../../hooks/useNotesRegistry'
 import { useAdmin } from './useAdmin'
 import EditorNavbar from '../../components/admin/EditorNavbar'
-import DirectoryDrawer from '../../components/admin/DirectoryDrawer'
 import PreviewModal from '../../components/admin/PreviewModal'
 import UsersDrawer from '../../components/admin/UsersDrawer'
 import ImageCleanupDrawer from '../../components/admin/ImageCleanupDrawer'
@@ -19,13 +16,12 @@ import ChangePasswordModal from '../../components/admin/ChangePasswordModal'
 import FormulaModal from '../../components/admin/FormulaModal'
 import SocialLinkModal from '../../components/admin/SocialLinkModal'
 import ToastNotification, { useToast } from '../../components/admin/ToastNotification'
-import { ADMIN_ICON_OPTIONS, getIconNameForComponent } from '../../components/admin/adminIconOptions'
 import { Monitor } from '@phosphor-icons/react'
 import styles from './AdminEditor.module.css'
 import { useEditorState } from '../../hooks/useEditorState'
 import { useEditorSave } from '../../hooks/useEditorSave'
 import { useEditorImages } from '../../hooks/useEditorImages'
-import { useEditorModules } from '../../hooks/useEditorModules'
+import { useAdminModulesRegistry } from '../../hooks/useAdminModulesRegistry'
 import { useEditorFormatting, renderInlineLaTeX } from '../../hooks/useEditorFormatting'
 import { useEditorFiles } from '../../hooks/useEditorFiles'
 import { useEditorDrafts } from '../../hooks/useEditorDrafts'
@@ -35,21 +31,9 @@ import { useEditorDrafts } from '../../hooks/useEditorDrafts'
 // acceptance passes, then it's deleted (spec §6.1, §10).
 const USE_WYSIWYG = true
 
-function resolveAdminImageSrc(src = '') {
-  if (!src.startsWith('/notes/img/')) return src
-
-  const owner = import.meta.env.VITE_GITHUB_OWNER
-  const repo = import.meta.env.VITE_GITHUB_REPO
-  const branch = import.meta.env.VITE_GITHUB_BRANCH || 'main'
-
-  if (!owner || !repo) return src
-
-  return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/public${src}`
-}
-
 // Create Monaco content widget for inline image preview
 function createImageWidget(editor, monaco, src, alt, startPos, endPos, fullMatch, onDelete, onReplace) {
-  const resolvedSrc = resolveAdminImageSrc(src)
+  const resolvedSrc = resolveNoteImageSrc(src)
   const widgetId = `image-widget-${startPos.lineNumber}-${startPos.column}`
 
   return {
@@ -216,49 +200,28 @@ function createMenuOption(text, onClick, color = colors.text) {
   return option
 }
 
-function getUnusedIconOptions(modules, selectedIconName = null) {
-  const usedIconNames = new Set(
-    modules
-      .map(module => getIconNameForComponent(module.Icon))
-      .filter(Boolean)
-  )
-
-  return ADMIN_ICON_OPTIONS.filter(option => (
-    option.name === selectedIconName || !usedIconNames.has(option.name)
-  ))
-}
-
 function AdminEditorContent() {
-  const location = useLocation()
+  const navigate = useNavigate()
+  const { moduleId, subfolder, slug } = useParams()
   const { user, profile, loading } = useAdmin()
   const { showToast } = useToast()
 
   const {
     title, setTitle, content, setContent,
     unsaved, setUnsaved, saving, setSaving,
-    directoryOpen, setDirectoryOpen, previewOpen, setPreviewOpen,
+    previewOpen, setPreviewOpen,
     usersOpen, setUsersOpen, changePasswordOpen, setChangePasswordOpen,
     formulaModalOpen, setFormulaModalOpen, socialLinkModalOpen, setSocialLinkModalOpen,
-    selectedPath, setSelectedPath, originalPath, setOriginalPath, modules, setModules,
-    modulesLoading, setModulesLoading, currentStyle, setCurrentStyle,
+    selectedPath, setSelectedPath, originalPath, setOriginalPath,
+    currentStyle, setCurrentStyle,
     isTooNarrow, setIsTooNarrow, editorRef, fileInputRef,
   } = useEditorState()
 
   const [cleanupOpen, setCleanupOpen] = useState(false)
 
-  const unusedIconOptions = getUnusedIconOptions(modules)
-
-  // Re-merge the DB note registry into the current module state after a write,
-  // so the file tree reflects the change. Merges into the current `modules`
-  // (not static MODULES) so an optimistically-added subject survives.
-  const reloadModules = useCallback(async () => {
-    try {
-      const [notes, folders] = await Promise.all([listNotes(), listNoteFolders()])
-      setModules(prev => mergeNotesIntoModules(prev, notes, folders))
-    } catch (err) {
-      console.error('Failed to reload notes registry:', err)
-    }
-  }, [setModules])
+  // Subjects/folders/files list — shared with AdminBrowser so both pages see
+  // the same admin-scoped registry (T-045 phase A).
+  const { modules, reload: reloadModules } = useAdminModulesRegistry()
 
   // Imperative handle to the WYSIWYG editor's commands (bold/italic/insert
   // image/etc.). Created here so image upload can insert at the cursor via
@@ -280,15 +243,6 @@ function AdminEditorContent() {
     isOwner: profile?.role === 'owner', clearDraft, reloadModules,
   })
 
-  const {
-    handleNewModule, handleDeleteModule, handleRenameModule,
-    handleNewSubfolder, handleRenameSubfolder, handleDeleteSubfolder, handleMoveFile,
-    handleDeleteFile, handleRenameFile,
-  } = useEditorModules({
-    showToast, setModules, setSelectedPath, unusedIconOptions,
-    isOwner: profile?.role === 'owner', reloadModules,
-  })
-
   const { handleFormatAction, handleStyleChange, detectCurrentStyle } = useEditorFormatting({
     editorRef, setCurrentStyle,
   })
@@ -303,7 +257,7 @@ function AdminEditorContent() {
   )
 
   const { handleLoadFile } = useEditorFiles({
-    showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath,
+    showToast, setContent, setTitle, setUnsaved, setSelectedPath, setOriginalPath,
     restoreDraftIfExists,
   })
 
@@ -320,50 +274,29 @@ function AdminEditorContent() {
     }
   }, [])
 
+  // Drive the editor's target/loaded note from the route (T-045 phase A) —
+  // replaces the old DirectoryDrawer click handlers. `/new` loads a blank
+  // note pre-targeted at :moduleId/:subfolder; any other :slug is the note's
+  // encoded (module-relative) path and is loaded from Supabase.
   useEffect(() => {
-    if (loading) return
+    if (loading || !moduleId || !subfolder) return
 
-    let cancelled = false
-    setModulesLoading(true)
-    invalidateNotesRegistry()
-
-    ;(async () => {
-      try {
-        const [notes, folders] = await Promise.all([listNotes(), listNoteFolders()])
-        if (cancelled) return
-        setModules(mergeNotesIntoModules(MODULES, notes, folders))
-      } catch (err) {
-        if (cancelled) return
-        console.error('Failed to load notes registry:', err)
-        setModules(MODULES)
-      } finally {
-        if (!cancelled) setModulesLoading(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
+    if (slug === 'new') {
+      setContent('')
+      setTitle('')
+      setUnsaved(false)
+      setSelectedPath({ moduleId, subfolder })
+      setOriginalPath(null)
+      return
     }
-  }, [loading, setModules, setModulesLoading])
 
-  // Check for ?panel=users query param
-  useEffect(() => {
-    if (!loading && profile?.role === 'owner') {
-      const params = new URLSearchParams(location.search)
-      if (params.get('panel') === 'users') {
-        setUsersOpen(true)
-      }
+    if (slug) {
+      handleLoadFile({ moduleId, path: decodeURIComponent(slug) })
     }
-  }, [location.search, loading, profile])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, moduleId, subfolder, slug])
 
-  // Filter modules based on user permissions
-  const visibleModules = profile?.role === 'owner'
-    ? modules
-    : modules.filter(m => profile?.allowed_directories?.includes(m.id))
-
-  const allowedDirectories = profile?.role === 'owner'
-    ? null
-    : profile?.allowed_directories || []
+  const subjectLabel = moduleId ? (modules.find(m => m.id === moduleId)?.label ?? moduleId) : null
 
   // Monaco theme setup
   const handleBeforeMount = (monaco) => {
@@ -663,35 +596,6 @@ function AdminEditorContent() {
   return (
     <div className={styles.adminEditor}>
       {/* Fixed overlays */}
-      <DirectoryDrawer
-        open={directoryOpen}
-        onClose={() => setDirectoryOpen(false)}
-        modules={visibleModules}
-        allowedDirectories={allowedDirectories}
-        selectedPath={selectedPath}
-        onSelectPath={setSelectedPath}
-        isOwner={profile?.role === 'owner'}
-        onNewSubfolder={handleNewSubfolder}
-        onRenameSubfolder={handleRenameSubfolder}
-        onDeleteSubfolder={handleDeleteSubfolder}
-        onDeleteFile={handleDeleteFile}
-        onRenameFile={handleRenameFile}
-        onNewModule={handleNewModule}
-        onDeleteModule={handleDeleteModule}
-        onRenameModule={handleRenameModule}
-        onLoadFile={handleLoadFile}
-        onClearEditor={() => {
-          setContent('')
-          setTitle('')
-          setUnsaved(false)
-          setSelectedPath(null)
-          setOriginalPath(null)
-        }}
-        onMoveFile={handleMoveFile}
-        isLoading={modulesLoading}
-        iconOptions={unusedIconOptions}
-      />
-
       <PreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -740,8 +644,10 @@ function AdminEditorContent() {
         title={title}
         onTitleChange={setTitle}
         unsaved={unsaved}
-        onToggleDirectory={() => setDirectoryOpen(!directoryOpen)}
-        directoryOpen={directoryOpen}
+        subjectLabel={subjectLabel}
+        folderLabel={subfolder}
+        onNavigateRoot={() => navigate('/admin/editor')}
+        onNavigateSubject={() => navigate(`/admin/editor/${moduleId}`)}
         onPreview={() => setPreviewOpen(true)}
         onSave={handleSave}
         onBackupToGithub={handleBackupToGithub}
@@ -760,9 +666,6 @@ function AdminEditorContent() {
         onInsertSocialLink={() => setSocialLinkModalOpen(true)}
         currentStyle={currentStyle}
         onStyleChange={onStyle}
-        onNewModule={handleNewModule}
-        iconOptions={unusedIconOptions}
-        onDeleteModule={() => selectedPath && handleDeleteModule(selectedPath.moduleId)}
       />
 
       {/* Canvas */}
