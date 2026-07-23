@@ -129,7 +129,11 @@ export const MODULES = [
     label: 'Operating Systems',
     Icon: HardDrive,
     notes: [
-      { filename: 'notes/process-threads', label: 'process-threads.md' },
+      { filename: 'notes/process-threads', label: 'process-threads.md' 
+    notes: [
+      { filename: 'notes/lecture-1-binary-numbers', label: 'lecture-1-binary-numbers.md' },
+    ],
+  },
     ],
   },
   {
@@ -166,6 +170,7 @@ export const MODULES = [
     label: 'experimental',
     Icon: Atom,
     notes: [
+          { filename: 'notes/test-file', label: 'test-file.md' },
     ],
     tools: [
     ],

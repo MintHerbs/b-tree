@@ -64,17 +64,19 @@ export function calculateTreeLayout(root) {
 
     // Add children to queue
     if (node.children && node.children.length > 0) {
-      for (const child of node.children) {
+      node.children.forEach((child, childIndex) => {
         if (child) {
           queue.push({ node: child, level: level + 1 })
-          
-          // Create edge from parent to child
+
+          // Create edge from parent to child. Record childIndex so the renderer
+          // can anchor the edge at pointer slot `childIndex`, not the node centre.
           edges.push({
             fromId: node.id,
-            toId: child.id
+            toId: child.id,
+            childIndex
           })
         }
-      }
+      })
     }
   }
 

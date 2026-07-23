@@ -39,9 +39,11 @@ console.log('')
 
 // Test 4: Node dimensions
 console.log('=== Test 4: Node dimensions ===')
-console.log('1 key:', calculateNodeDimensions(1))
-console.log('3 keys:', calculateNodeDimensions(3))
-console.log('5 keys:', calculateNodeDimensions(5))
+// calculateNodeDimensions expects the keys ARRAY (it maps over the keys),
+// not a count — passing a number throws on .map.
+console.log('1 key:', calculateNodeDimensions([1]))
+console.log('3 keys:', calculateNodeDimensions([1, 2, 3]))
+console.log('5 keys:', calculateNodeDimensions([1, 2, 3, 4, 5]))
 console.log('')
 
 // Test 5: Node slots
