@@ -100,7 +100,7 @@ export const MODULES = [
     id: 'math',
     label: 'Computational Math',
     Icon: FunctionIcon,
-    subfolders: ['notes • sem 2'],
+    subfolders: ['notes • sem 3'],
     notes: [
       { filename: 'notes • sem 1/determinant',               label: 'determinant.md' },
       { filename: 'notes • sem 1/cofactor',                  label: 'cofactor.md' },
