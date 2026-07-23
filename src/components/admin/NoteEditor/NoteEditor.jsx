@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
-import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/kit/core'
+import { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core'
+import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
 import {
   commonmark,
   toggleStrongCommand,
@@ -11,9 +12,8 @@ import {
 import { gfm, toggleStrikethroughCommand } from '@milkdown/kit/preset/gfm'
 import { listener, listenerCtx } from '@milkdown/kit/plugin/listener'
 import { history } from '@milkdown/kit/plugin/history'
-import { clipboard } from '@milkdown/kit/plugin/clipboard'
 import { math } from '@milkdown/plugin-math'
-import { callCommand, replaceAll, getMarkdown } from '@milkdown/kit/utils'
+import { callCommand, replaceAll, getMarkdown, markdownToSlice, $prose } from '@milkdown/kit/utils'
 import { Milkdown, MilkdownProvider, useEditor, useInstance } from '@milkdown/react'
 import 'katex/dist/katex.min.css'
 import '@milkdown/kit/prose/view/style/prosemirror.css'
@@ -32,6 +32,65 @@ import styles from './NoteEditor.module.css'
  * of Monaco `executeEdits`.
  */
 const HEADING_LEVEL = { title: 1, subtitle: 2 }
+
+// Strip markdown backslash-escapes that leak into LaTeX when a formula is
+// copied from a markdown-escaped source (e.g. `a\_{11}` → `a_{11}` so it renders
+// as a subscript). Never touches `\\` (a LaTeX row break) or `\{`/`\}`.
+function unescapeMath(body) {
+  return body.replace(/\\([_*#~|])/g, '$1')
+}
+
+// Normalise LaTeX so pasted formulas auto-render. remark-math only knows
+// `$…$` / `$$…$$`, but LaTeX is commonly copied with `\[ … \]` (display) and
+// `\( … \)` (inline) delimiters. Convert them to `$$`/`$` before parsing.
+// Closing delimiters tolerate a missing backslash (`\[ … ]`), which some
+// sources produce.
+function normalizeLatexDelimiters(text) {
+  return text
+    // \[ … \] → $$ … $$   (display)
+    .replace(/\\\[([\s\S]*?)\\?\]/g, (_, body) => `$$\n${unescapeMath(body.trim())}\n$$`)
+    // \( … \) → $ … $     (inline)
+    .replace(/\\\(([\s\S]*?)\\?\)/g, (_, body) => `$${unescapeMath(body.trim())}$`)
+}
+
+// Markdown-first clipboard. Milkdown's stock clipboard plugin only runs the
+// Markdown parser when the clipboard is *pure* plain text; if any text/html is
+// present (copying from a browser, a rendered source, or the editor itself) it
+// takes the HTML branch and pasted `$x^2$` / fences stay literal. For a
+// Markdown notes editor we always want pasted text parsed as Markdown, so this
+// replaces the stock plugin:
+//   • paste  → parse text/plain as Markdown (LaTeX, code, headings, lists all
+//              auto-render); code blocks keep raw text.
+//   • copy   → serialise the selection back to Markdown (so copying a formula
+//              yields its `$…$` source).
+const markdownClipboard = $prose((ctx) => new Plugin({
+  key: new PluginKey('NOTE_EDITOR_MD_CLIPBOARD'),
+  props: {
+    handlePaste: (view, event) => {
+      const clip = event.clipboardData
+      if (!clip) return false
+      // Inside a code block, paste raw text verbatim (don't re-parse).
+      if (view.state.selection.$from.parent.type.spec.code) return false
+      const text = clip.getData('text/plain')
+      if (!text) return false
+      let slice
+      try {
+        slice = markdownToSlice(normalizeLatexDelimiters(text))(ctx)
+      } catch {
+        return false
+      }
+      if (!slice || typeof slice === 'string') return false
+      view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView())
+      return true
+    },
+    clipboardTextSerializer: (slice) => {
+      const serializer = ctx.get(serializerCtx)
+      const schema = ctx.get(schemaCtx)
+      const doc = schema.topNodeType.createAndFill(undefined, slice.content)
+      return doc ? serializer(doc) : ''
+    },
+  },
+}))
 
 const MilkdownInner = forwardRef(function MilkdownInner({ content, onChange }, ref) {
   // `lastEmitted` tracks the Markdown the editor last produced. Incoming
@@ -67,7 +126,7 @@ const MilkdownInner = forwardRef(function MilkdownInner({ content, onChange }, r
       .use(gfm)
       .use(math)
       .use(history)
-      .use(clipboard)
+      .use(markdownClipboard)
       .use(listener)
   )
 
