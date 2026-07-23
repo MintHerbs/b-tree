@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
 import NoteEditor from '../../components/admin/NoteEditor'
@@ -7,6 +7,8 @@ import { colors } from '../../constants/colors'
 import { supabase } from '../../lib/supabaseClient'
 import '../../styles/adminTokens.css'
 import { MODULES } from '../../components/layout/Sidebar/modules'
+import { listNotes, listNoteFolders, mergeNotesIntoModules } from '../../lib/notesApi'
+import { invalidateNotesRegistry } from '../../hooks/useNotesRegistry'
 import { useAdmin } from './useAdmin'
 import EditorNavbar from '../../components/admin/EditorNavbar'
 import DirectoryDrawer from '../../components/admin/DirectoryDrawer'
@@ -246,8 +248,25 @@ function AdminEditorContent() {
 
   const unusedIconOptions = getUnusedIconOptions(modules)
 
+  // Re-merge the DB note registry into the current module state after a write,
+  // so the file tree reflects the change. Merges into the current `modules`
+  // (not static MODULES) so an optimistically-added subject survives.
+  const reloadModules = useCallback(async () => {
+    try {
+      const [notes, folders] = await Promise.all([listNotes(), listNoteFolders()])
+      setModules(prev => mergeNotesIntoModules(prev, notes, folders))
+    } catch (err) {
+      console.error('Failed to reload notes registry:', err)
+    }
+  }, [setModules])
+
+  // Imperative handle to the WYSIWYG editor's commands (bold/italic/insert
+  // image/etc.). Created here so image upload can insert at the cursor via
+  // Milkdown instead of the legacy Monaco path.
+  const noteEditorRef = useRef(null)
+
   const { imageQueueRef, imageCountRef, handleImageUpload } = useEditorImages({
-    selectedPath, showToast, editorRef, setContent,
+    selectedPath, showToast, editorRef, noteEditorRef, useWysiwyg: USE_WYSIWYG, setContent,
   })
 
   const { restoreDraftIfExists, clearDraft } = useEditorDrafts({
@@ -255,10 +274,10 @@ function AdminEditorContent() {
     showToast, setTitle, setContent, setUnsaved,
   })
 
-  const { handleSave } = useEditorSave({
+  const { handleSave, handleBackupToGithub } = useEditorSave({
     title, content, selectedPath, showToast, setSaving, setUnsaved, setTitle, setContent,
     imageQueueRef, imageCountRef, originalPath, setOriginalPath,
-    isOwner: profile?.role === 'owner', clearDraft,
+    isOwner: profile?.role === 'owner', clearDraft, reloadModules,
   })
 
   const {
@@ -267,15 +286,12 @@ function AdminEditorContent() {
     handleDeleteFile, handleRenameFile,
   } = useEditorModules({
     showToast, setModules, setSelectedPath, unusedIconOptions,
-    isOwner: profile?.role === 'owner',
+    isOwner: profile?.role === 'owner', reloadModules,
   })
 
   const { handleFormatAction, handleStyleChange, detectCurrentStyle } = useEditorFormatting({
     editorRef, setCurrentStyle,
   })
-
-  // Imperative handle to the WYSIWYG editor's commands (bold/italic/etc.).
-  const noteEditorRef = useRef(null)
 
   // Route toolbar/shortcut actions to the active editor: Milkdown commands when
   // the flag is on, Monaco `executeEdits` otherwise.
@@ -307,17 +323,28 @@ function AdminEditorContent() {
   useEffect(() => {
     if (loading) return
 
+    let cancelled = false
     setModulesLoading(true)
-    setModules(MODULES)
+    invalidateNotesRegistry()
 
-    const loadingTimer = window.setTimeout(() => {
-      setModulesLoading(false)
-    }, 250)
+    ;(async () => {
+      try {
+        const [notes, folders] = await Promise.all([listNotes(), listNoteFolders()])
+        if (cancelled) return
+        setModules(mergeNotesIntoModules(MODULES, notes, folders))
+      } catch (err) {
+        if (cancelled) return
+        console.error('Failed to load notes registry:', err)
+        setModules(MODULES)
+      } finally {
+        if (!cancelled) setModulesLoading(false)
+      }
+    })()
 
     return () => {
-      window.clearTimeout(loadingTimer)
+      cancelled = true
     }
-  }, [loading])
+  }, [loading, setModules, setModulesLoading])
 
   // Check for ?panel=users query param
   useEffect(() => {
@@ -717,6 +744,7 @@ function AdminEditorContent() {
         directoryOpen={directoryOpen}
         onPreview={() => setPreviewOpen(true)}
         onSave={handleSave}
+        onBackupToGithub={handleBackupToGithub}
         saving={saving}
         onToggleUsers={() => setUsersOpen(!usersOpen)}
         onToggleCleanup={() => setCleanupOpen(o => !o)}

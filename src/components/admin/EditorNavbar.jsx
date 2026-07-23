@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Eye,
   CloudArrowUp,
+  GithubLogo,
   MagnifyingGlass,
   Users,
   UserCircle,
@@ -34,6 +35,7 @@ export default function EditorNavbar({
   directoryOpen,
   onPreview,
   onSave,
+  onBackupToGithub,
   saving,
   onToggleUsers,
   onToggleCleanup,
@@ -158,10 +160,25 @@ export default function EditorNavbar({
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content className={styles.tooltip} sideOffset={5}>
-                Save to GitHub
+                Save &amp; publish (instant)
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
+
+          {onBackupToGithub && (
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <button className={styles.iconButton} onClick={onBackupToGithub}>
+                  <GithubLogo size={18} />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content className={styles.tooltip} sideOffset={5}>
+                  Back up .md to GitHub (optional)
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          )}
 
           {isOwner && (
             <Tooltip.Root>

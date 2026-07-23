@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core'
 import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
 import CodeBlock from '../../social/CodeBlock/CodeBlock'
+import { resolveDraftSrc } from '../../../lib/draftImagePreviews'
 import {
   commonmark,
   codeBlockSchema,
+  imageSchema,
+  insertImageCommand,
   toggleStrongCommand,
   toggleEmphasisCommand,
   toggleInlineCodeCommand,
@@ -85,6 +88,83 @@ const codeBlockView = $view(codeBlockSchema, () => (node) => {
   }
 })
 
+// Image node view: renders the image with a Material You hover control — a
+// translucent circular "×" at the top-right — that removes the image from the
+// note after a warn-before-remove confirm. Removal is an editor edit (undoable
+// with Ctrl+Z); the underlying file in the repo is untouched and can still be
+// swept later by Image Cleanup. Rendering matches the default (src as-is), so
+// Markdown round-trip is unaffected — this only adds the overlay controls.
+const imageDeleteView = $view(imageSchema, () => (node, view, getPos) => {
+  const wrap = document.createElement('span')
+  wrap.className = styles.imageWrap
+
+  const img = document.createElement('img')
+  img.className = styles.image
+  const applyAttrs = (n) => {
+    // draft://<key> (not-yet-uploaded) resolves to a blob URL for preview;
+    // real /notes/img/… paths pass through unchanged.
+    img.src = resolveDraftSrc(n.attrs.src) || ''
+    img.alt = n.attrs.alt || ''
+    if (n.attrs.title) img.title = n.attrs.title
+  }
+  applyAttrs(node)
+  wrap.appendChild(img)
+
+  // Translucent circular delete affordance (hidden until hover).
+  const del = document.createElement('button')
+  del.type = 'button'
+  del.className = styles.imageDelete
+  del.setAttribute('aria-label', 'Delete image')
+  del.textContent = '×'
+  wrap.appendChild(del)
+
+  // Warn-before-remove confirm (replaces the × while confirming).
+  const confirm = document.createElement('span')
+  confirm.className = styles.imageConfirm
+  const label = document.createElement('span')
+  label.className = styles.imageConfirmText
+  label.textContent = 'Remove image?'
+  const cancelBtn = document.createElement('button')
+  cancelBtn.type = 'button'
+  cancelBtn.className = styles.imageConfirmCancel
+  cancelBtn.textContent = 'Cancel'
+  const removeBtn = document.createElement('button')
+  removeBtn.type = 'button'
+  removeBtn.className = styles.imageConfirmRemove
+  removeBtn.textContent = 'Remove'
+  confirm.append(label, cancelBtn, removeBtn)
+  wrap.appendChild(confirm)
+
+  const swallow = (e) => { e.preventDefault(); e.stopPropagation() }
+  for (const btn of [del, cancelBtn, removeBtn]) btn.addEventListener('mousedown', swallow)
+
+  del.addEventListener('click', (e) => { swallow(e); wrap.classList.add(styles.confirming) })
+  cancelBtn.addEventListener('click', (e) => { swallow(e); wrap.classList.remove(styles.confirming) })
+  removeBtn.addEventListener('click', (e) => {
+    swallow(e)
+    const pos = typeof getPos === 'function' ? getPos() : null
+    if (typeof pos !== 'number') return
+    const target = view.state.doc.nodeAt(pos)
+    const size = target ? target.nodeSize : 1
+    view.dispatch(view.state.tr.delete(pos, pos + size))
+    view.focus()
+  })
+
+  return {
+    dom: wrap,
+    // React/DOM controls own this subtree; keep PM's mutation observer out.
+    ignoreMutation: () => true,
+    // Let PM handle clicks on the image itself (selection); intercept only
+    // our own control clicks so they don't reach the editor.
+    stopEvent: (e) => del.contains(e.target) || confirm.contains(e.target),
+    update: (updated) => {
+      if (updated.type !== node.type) return false
+      applyAttrs(updated)
+      return true
+    },
+  }
+})
+
 // Markdown-first clipboard. Milkdown's stock clipboard plugin only runs the
 // Markdown parser when the clipboard is *pure* plain text; if any text/html is
 // present (copying from a browser, a rendered source, or the editor itself) it
@@ -160,6 +240,7 @@ const MilkdownInner = forwardRef(function MilkdownInner({ content, onChange }, r
       .use(history)
       .use(markdownClipboard)
       .use(codeBlockView)
+      .use(imageDeleteView)
       .use(listener)
   )
 
@@ -193,6 +274,15 @@ const MilkdownInner = forwardRef(function MilkdownInner({ content, onChange }, r
         code: toggleInlineCodeCommand,
       }[action]
       if (cmd) getInstance()?.action(callCommand(cmd.key))
+    },
+    // Insert an image node at the current cursor position. `src` may be a
+    // real path or a `draft://<key>` marker (the node view previews it via a
+    // blob URL; useEditorSave rewrites it to /notes/img/… on save).
+    insertImage({ src, alt = '' }) {
+      getInstance()?.action((ctx) => {
+        ctx.get(editorViewCtx).focus()
+      })
+      getInstance()?.action(callCommand(insertImageCommand.key, { src, alt }))
     },
     setStyle(style) {
       const level = HEADING_LEVEL[style]

@@ -7,64 +7,21 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Shared registry file — every save (including a correctly-scoped contributor's)
-// updates this, so it's allowed regardless of allowed_directories.
-const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
-
+// Note CONTENT no longer lives in modules.js — it's in the Supabase `notes`
+// table (E-005/T-043) — so only owners ever write modules.js (creating,
+// removing, or renaming a subject). Contributors never touch it, hence no
+// special-case allowance below; it simply falls through to the directory
+// check, which their paths match for their own notes/images only.
 function isPathAllowed(path: string, role: string, allowedDirectories: string[]): boolean {
   if (role === 'owner') return true
-  if (path === MODULES_JS_PATH) return true
+  // modules.js is owner-only now (falls through to the directory check, which
+  // it never matches). Contributors may write only their own notes/images —
+  // and note .md writes here are just optional backups; the source of truth is
+  // the notes table, guarded by RLS.
   return allowedDirectories.some(dir =>
     path.startsWith(`src/content/notes/${dir}/`) ||
     path.startsWith(`public/notes/img/${dir}/`)
   )
-}
-
-// Locates a module's `{ id: '<moduleId>', ... }` block by brace-depth matching —
-// ported from the identical parser in src/hooks/useEditorSave.js so the
-// boundaries this checks against match what the client actually edits.
-function findModuleBlock(modulesJs: string, moduleId: string): { start: number; end: number } {
-  const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  let startMatch = modulesJs.match(new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm'))
-  if (!startMatch) {
-    startMatch = modulesJs.match(new RegExp(`\\{\\s*id:\\s*'${escapedId}'\\s*,`, 'm'))
-  }
-  if (!startMatch || startMatch.index == null) {
-    throw new Error(`Could not find module: ${moduleId}`)
-  }
-  const start = startMatch.index
-  let depth = 0
-  for (let index = start + 1; index < modulesJs.length; index++) {
-    const char = modulesJs[index]
-    if (char === '{') depth += 1
-    if (char === '}') {
-      depth -= 1
-      if (depth === 0) return { start, end: index + 1 }
-    }
-  }
-  throw new Error(`Could not parse module: ${moduleId}`)
-}
-
-// A contributor may only ever touch their own module's block inside the
-// shared modules.js registry. Proves that by requiring everything outside
-// that block's old span to appear verbatim, unmoved, in the new content —
-// the block itself can grow/shrink/rewrite freely, but nothing else may.
-function isScopedModulesJsEdit(oldContent: string, newContent: string, moduleId: string): boolean {
-  let block
-  try {
-    block = findModuleBlock(oldContent, moduleId)
-  } catch {
-    return false
-  }
-  const prefix = oldContent.slice(0, block.start)
-  const suffix = oldContent.slice(block.end)
-  if (newContent.length < prefix.length + suffix.length) return false
-  return newContent.startsWith(prefix) && newContent.endsWith(suffix)
-}
-
-function decodeGithubContent(base64WithNewlines: string): string {
-  const bytes = Uint8Array.from(atob(base64WithNewlines.replace(/\n/g, '')), c => c.charCodeAt(0))
-  return new TextDecoder('utf-8').decode(bytes)
 }
 
 serve(async (req) => {
@@ -110,7 +67,7 @@ serve(async (req) => {
       return json({ error: 'Not an admin user' }, 403)
     }
 
-    const { op, path, content, contentBase64, message, moduleId } = await req.json()
+    const { op, path, content, contentBase64, message } = await req.json()
 
     if (!op || !path) {
       return json({ error: 'Missing op or path' }, 400)
@@ -176,25 +133,10 @@ serve(async (req) => {
         if (typeof content !== 'string' || !message) {
           return json({ error: 'Missing content or message' }, 400)
         }
-        let sha: string | null
-        if (path === MODULES_JS_PATH && profile.role !== 'owner') {
-          const allowedDirs: string[] = profile.allowed_directories ?? []
-          if (!moduleId || !allowedDirs.includes(moduleId)) {
-            return json({ error: 'moduleId is required and must be one of your allowed directories' }, 403)
-          }
-          const currentRes = await fetch(`${contentsUrl(path)}?ref=${githubBranch}`, { headers: ghHeaders })
-          if (!currentRes.ok) {
-            return json({ error: 'Could not verify existing modules.js content' }, 409)
-          }
-          const currentData = await currentRes.json()
-          const oldContent = decodeGithubContent(currentData.content)
-          if (!isScopedModulesJsEdit(oldContent, content, moduleId)) {
-            return json({ error: 'Edit to modules.js touches more than your own module' }, 403)
-          }
-          sha = currentData.sha ?? null
-        } else {
-          sha = await fetchSha(path)
-        }
+        // Path authorization already enforced by isPathAllowed above (owner for
+        // modules.js; own notes/img dirs for contributors). No modules.js
+        // block-scoping needed anymore — note content is in the DB.
+        const sha: string | null = await fetchSha(path)
         const body = {
           message,
           content: btoa(unescape(encodeURIComponent(content))),

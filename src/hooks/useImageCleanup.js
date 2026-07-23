@@ -1,116 +1,59 @@
 // src/hooks/useImageCleanup.js
+//
+// Finds images in the repo (public/notes/img/**) that no note references, so
+// they can be deleted. The set of "referenced images" is derived from note
+// CONTENT in Supabase (notes.content_md) — the source of truth since
+// E-005/T-043. Previously this scanned committed .md in GitHub and keyed on
+// file SHA; once content moved to the DB that scan saw nothing and flagged
+// every live image as orphaned (T-002). Reading content_md fixes that.
+//
+// Images themselves still live in GitHub (served static), so listing and
+// deleting them still goes through the GitHub proxy.
 
 import { supabase } from '../lib/supabaseClient'
-import { getFileSha, getFileContent, listDirectory, deleteFile } from '../lib/githubApi'
+import { listDirectory, deleteFile } from '../lib/githubApi'
 
 // Extract all image paths from a markdown string
 function extractImages(markdown) {
-  return [...markdown.matchAll(/!\[.*?\]\((\/notes\/img\/.*?)\)/g)]
+  return [...String(markdown || '').matchAll(/!\[.*?\]\((\/notes\/img\/.*?)\)/g)]
     .map(m => m[1])
-}
-
-// Convert a relative file_path back to the full GitHub contents path
-function toGithubPath(filePath) {
-  return `src/content/notes/${filePath}.md`
 }
 
 export function useImageCleanup({ modules, isOwner }) {
 
   // ── SCAN ──────────────────────────────────────────────────────────────────
-  // Scans .md files for a given moduleId (or all modules if moduleId is null).
-  // For each file:
-  //   - fetch its current SHA from GitHub (cheap, one API call per file)
-  //   - if SHA matches image_map: skip (use cached images_used)
-  //   - if SHA differs or no row: fetch content, extract images, upsert row
-  // Returns { orphans, scannedCount, skippedCount }
-  // orphans: array of { path, rawUrl } for images in the module's img folder
-  //          that are not referenced by any scanned .md file
-
+  // For the given module (or all), collect every image referenced by any of
+  // that module's notes (from the DB), list the images actually stored in the
+  // module's img folder (from GitHub), and return the stored ones nothing
+  // references.
   async function runScan(moduleId, onProgress) {
     if (!isOwner) throw new Error('Owners only')
 
-    // 1. Determine which modules to scan
     const modulesToScan = moduleId
       ? modules.filter(m => m.id === moduleId)
       : modules
-
-    // 2. Build list of all .md files to check across selected modules.
-    // Notes live at arbitrary depths (module.id/getting-started.md,
-    // module.id/notes/foo.md, etc.) with no fixed subfolder convention, so
-    // the only reliable source of "which .md files exist for this module"
-    // is the module's own notes[] registry in modules.js — same convention
-    // useEditorSave.js uses when it writes image_map.file_path.
-    const allFiles = []
-    for (const mod of modulesToScan) {
-      for (const note of (mod.notes ?? [])) {
-        const relativePath = `${mod.id}/${note.filename}`
-        const githubPath = toGithubPath(relativePath)
-        try {
-          const sha = await getFileSha(githubPath)
-          if (!sha) continue // file registered but missing on GitHub
-          allFiles.push({ githubPath, relativePath, moduleId: mod.id, sha })
-        } catch {
-          // unreadable — skip silently
-        }
-      }
+    const moduleIds = modulesToScan.map(m => m.id)
+    if (moduleIds.length === 0) {
+      return { orphans: [], scannedCount: 0, skippedCount: 0, totalFiles: 0 }
     }
 
-    // 3. Load existing image_map rows for these files
-    const { data: cachedRows } = await supabase
-      .from('image_map')
-      .select('file_path, images_used, file_sha')
-      .in('file_path', allFiles.map(f => f.relativePath))
+    // 1. Referenced images, straight from note content in Supabase.
+    const { data: rows, error } = await supabase
+      .from('notes')
+      .select('module_id, path, content_md')
+      .in('module_id', moduleIds)
+    if (error) throw new Error(error.message)
 
-    const cacheMap = {}
-    for (const row of (cachedRows ?? [])) {
-      cacheMap[row.file_path] = row
-    }
-
-    // 4. For each file: use cache if SHA matches, else re-scan
-    let scannedCount = 0
-    let skippedCount = 0
     const allReferencedImages = new Set()
-    const upsertBatch = []
-
-    for (let i = 0; i < allFiles.length; i++) {
-      const file = allFiles[i]
-      onProgress?.(i + 1, allFiles.length, skippedCount)
-
-      const cached = cacheMap[file.relativePath]
-
-      if (cached && cached.file_sha === file.sha) {
-        // SHA matches — use cached images_used
-        cached.images_used.forEach(img => allReferencedImages.add(img))
-        skippedCount++
-        continue
-      }
-
-      // SHA changed or no cache — fetch and re-scan
-      try {
-        const content = await getFileContent(file.githubPath)
-        const images  = extractImages(content)
-        images.forEach(img => allReferencedImages.add(img))
-        scannedCount++
-
-        upsertBatch.push({
-          file_path: file.relativePath,
-          module_id: file.moduleId,
-          images_used: images,
-          file_sha: file.sha,
-          last_scanned_at: new Date().toISOString(),
-        })
-      } catch {
-        skippedCount++  // file unreadable — skip, don't crash the scan
-      }
+    let scannedCount = 0
+    const notes = rows ?? []
+    for (const row of notes) {
+      onProgress?.(scannedCount + 1, notes.length, 0)
+      extractImages(row.content_md).forEach(img => allReferencedImages.add(img))
+      scannedCount++
     }
 
-    // 5. Batch upsert updated rows to Supabase
-    if (upsertBatch.length > 0) {
-      await supabase.from('image_map')
-        .upsert(upsertBatch, { onConflict: 'file_path' })
-    }
-
-    // 6. List all images in the scanned module(s) image folders
+    // 2. Images actually stored per module (GitHub), served static.
     const allStoredImages = []
     for (const mod of modulesToScan) {
       try {
@@ -119,7 +62,6 @@ export function useImageCleanup({ modules, isOwner }) {
           allStoredImages.push({
             path: `/notes/img/${mod.id}/${f.name}`,
             githubPath: f.path,
-            // Raw URL for thumbnail preview — direct from GitHub CDN
             rawUrl: `https://raw.githubusercontent.com/${import.meta.env.VITE_GITHUB_OWNER}/${import.meta.env.VITE_GITHUB_REPO}/${import.meta.env.VITE_GITHUB_BRANCH}/public/notes/img/${mod.id}/${f.name}`,
           })
         })
@@ -128,19 +70,16 @@ export function useImageCleanup({ modules, isOwner }) {
       }
     }
 
-    // 7. Orphans = stored images not referenced by any scanned .md
+    // 3. Orphans = stored images no note references.
     const orphans = allStoredImages.filter(
       img => !allReferencedImages.has(img.path)
     )
 
-    return { orphans, scannedCount, skippedCount, totalFiles: allFiles.length }
+    return { orphans, scannedCount, skippedCount: 0, totalFiles: notes.length }
   }
 
   // ── DELETE ────────────────────────────────────────────────────────────────
-  // Deletes a list of confirmed orphan images from GitHub.
-  // Each item must have { githubPath } from the scan result.
-  // Returns { deleted, failed }
-
+  // Deletes confirmed orphan images from GitHub. Each item needs { githubPath }.
   async function deleteOrphans(confirmedOrphans, onProgress) {
     if (!isOwner) throw new Error('Owners only')
     let deleted = 0

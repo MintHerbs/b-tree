@@ -1,38 +1,40 @@
-import { getFileContent } from '../lib/githubApi'
+import { getNote, displaySubfolder, baseName } from '../lib/notesApi'
 
 export function useEditorFiles({ showToast, setContent, setTitle, setUnsaved, setDirectoryOpen, setSelectedPath, setOriginalPath, restoreDraftIfExists }) {
-  const handleLoadFile = async (filePath) => {
+  // Loads a note's content from Supabase. `file` is { moduleId, path } — the
+  // DB identity carried by the file rows in DirectoryDrawer.
+  const handleLoadFile = async (file) => {
+    const moduleId = typeof file === 'object' ? file.moduleId : null
+    const path = typeof file === 'object' ? file.path : null
+    if (!moduleId || !path) {
+      showToast('Could not resolve that note', 'error')
+      return
+    }
+
     try {
-      showToast('Loading file...', 'success')
-      const fileContent = await getFileContent(filePath)
+      showToast('Loading note...', 'success')
+      const note = await getNote(moduleId, path)
+      if (!note) {
+        showToast('Note not found', 'error')
+        return
+      }
 
-      // Extract filename without extension for title
-      const fileName = filePath.split('/').pop().replace('.md', '')
+      const subfolder = displaySubfolder(path)
+      const fileName = baseName(path)
 
-      setContent(fileContent)
+      setContent(note.contentMd)
       setTitle(fileName)
       setUnsaved(false)
       setDirectoryOpen(false)
-      setOriginalPath(filePath)
-
-      // Extract module and subfolder from path
-      // Path format: src/content/notes/{moduleId}/{subfolder}/{filename}
-      const pathParts = filePath.split('/')
-      let moduleId, subfolder
-      if (pathParts.length >= 5) {
-        moduleId = pathParts[3]
-        subfolder = pathParts[4]
-        setSelectedPath({ moduleId, subfolder })
-      }
+      setSelectedPath({ moduleId, subfolder })
+      setOriginalPath({ moduleId, path: note.path, subfolder })
 
       showToast(`Loaded ${fileName}`, 'success')
 
-      // Prefer an unsaved draft over the just-loaded published content, if one exists
-      if (moduleId && subfolder) {
-        await restoreDraftIfExists?.({ moduleId, subfolder, filename: fileName })
-      }
+      // Prefer an unsaved draft over the just-loaded published content, if one exists.
+      await restoreDraftIfExists?.({ moduleId, subfolder, filename: fileName })
     } catch (error) {
-      showToast(`Failed to load file: ${error.message}`, 'error')
+      showToast(`Failed to load note: ${error.message}`, 'error')
     }
   }
 

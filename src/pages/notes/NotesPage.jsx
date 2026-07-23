@@ -2,11 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import NoteReader from '../../components/markdown/NoteReader'
 import { MODULES, primaryTool } from '../../components/layout/Sidebar/modules.js'
-
-const notes = import.meta.glob('../../content/notes/**/*.md', {
-  query: '?raw',
-  import: 'default',
-})
+import { getNote } from '../../lib/notesApi'
 
 /** "getting-started" / "notes/img-push" → "Getting Started" (last segment, humanised). */
 function humaniseFilename(subpath) {
@@ -37,7 +33,7 @@ function NotesPage() {
 
   const noteKey = useMemo(() => {
     if (!section || !subpath) return null
-    return `../../content/notes/${section}/${subpath}.md`
+    return `${section}::${subpath}`
   }, [section, subpath])
 
   const eyebrow = useMemo(() => {
@@ -61,19 +57,18 @@ function NotesPage() {
     let cancelled = false
 
     async function load() {
-      if (!noteKey) return
-      const loader = notes[noteKey]
-      if (!loader) {
-        setStatus('not_found')
-        setContent('')
-        return
-      }
+      if (!section || !subpath) return
 
       setStatus('loading')
       try {
-        const text = await loader()
+        const note = await getNote(section, subpath)
         if (cancelled) return
-        setContent(text)
+        if (!note) {
+          setStatus('not_found')
+          setContent('')
+          return
+        }
+        setContent(note.contentMd)
         setStatus('loaded')
       } catch {
         if (cancelled) return

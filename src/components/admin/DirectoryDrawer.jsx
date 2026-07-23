@@ -16,9 +16,22 @@ import {
   FolderItem,
   FolderTrigger,
   FolderContent,
-  FileItem
 } from '../animate-ui/components/radix/files'
+import { displaySubfolder } from '../../lib/notesApi'
 import styles from './DirectoryDrawer.module.css'
+
+// Files for a subfolder are derived from the module's DB-backed notes
+// (module.notes = [{ filename, label }], where filename is the note's path).
+// Each row carries the note identity { moduleId, path } the editor loads by.
+function filesForFolder(module, subfolder) {
+  return (module.notes ?? [])
+    .filter(n => displaySubfolder(n.filename) === subfolder)
+    .map(n => ({
+      name: n.label || `${n.filename.split('/').pop()}.md`,
+      path: n.filename,
+      moduleId: module.id,
+    }))
+}
 
 export default function DirectoryDrawer({
   open,
@@ -52,8 +65,6 @@ export default function DirectoryDrawer({
   const [dragOverPath, setDragOverPath] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [expandedFolders, setExpandedFolders] = useState({}) // Track which subfolders are expanded
-  const [folderFiles, setFolderFiles] = useState({}) // Cache files for each folder
-  const [loadingFiles, setLoadingFiles] = useState({}) // Track loading state per folder
   const [renamingModule, setRenamingModule] = useState(null)
   const [renameModuleValue, setRenameModuleValue] = useState('')
   const [renamingFile, setRenamingFile] = useState(null)
@@ -134,30 +145,17 @@ export default function DirectoryDrawer({
 
   const handleRenameFile = async () => {
     if (renameFileValue.trim() && renamingFile) {
-      const { moduleId, subfolder } = renamingFile
-      await onRenameFile(moduleId, subfolder, renamingFile.filename, renameFileValue.trim())
+      // The registry refreshes from the DB after the rename, so the row list
+      // re-renders on its own — no manual reload needed.
+      await onRenameFile(renamingFile.moduleId, renamingFile.path, renameFileValue.trim())
       setRenamingFile(null)
       setRenameFileValue('')
-      // The row list renders from folderFiles, a listDirectory snapshot taken
-      // on first expand — onRenameFile only updates modules.js/GitHub, so
-      // without this the tree keeps showing the pre-rename filename.
-      await loadFolderFiles(moduleId, subfolder)
     }
   }
 
-  const toggleFolder = async (moduleId, subfolder) => {
+  const toggleFolder = (moduleId, subfolder) => {
     const key = `${moduleId}/${subfolder}`
-    const isExpanded = expandedFolders[key]
-
-    setExpandedFolders(prev => ({
-      ...prev,
-      [key]: !isExpanded
-    }))
-
-    // Load files if not already loaded and we're expanding
-    if (!isExpanded && !folderFiles[key]) {
-      await loadFolderFiles(moduleId, subfolder)
-    }
+    setExpandedFolders(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
   const handleNewFileInFolder = (moduleId, subfolder) => {
@@ -165,90 +163,20 @@ export default function DirectoryDrawer({
     onSelectPath({ moduleId, subfolder })
   }
 
-  const loadFolderFiles = async (moduleId, subfolder) => {
-    const key = `${moduleId}/${subfolder}`
-    setLoadingFiles(prev => ({ ...prev, [key]: true }))
-
-    try {
-      // Try to load files from the GitHub API
-      const path = `src/content/notes/${moduleId}/${subfolder}`
-      const { listDirectory } = await import('../../lib/githubApi')
-      
-      let files = []
-      try {
-        const result = await listDirectory(path)
-        files = result
-      } catch (error) {
-        console.warn(`Failed to list directory ${path}:`, error)
-        // If the directory doesn't exist or is empty, return empty array
-        files = []
-      }
-      
-      // Filter for markdown files only
-      const mdFiles = files
-        .filter(f => f && f.type === 'file' && f.name && f.name.endsWith('.md'))
-        .map(f => ({
-          name: f.name,
-          path: f.path
-        }))
-
-      // If no files found via API, try to extract from modules.js
-      if (mdFiles.length === 0) {
-        const module = modules.find(m => m.id === moduleId)
-        if (module && module.notes) {
-          const notesInFolder = module.notes
-            .filter(note => {
-              const parts = note.filename.split('/')
-              const noteSubfolder = parts.length > 1 ? parts[0] : 'notes'
-              return noteSubfolder === subfolder
-            })
-            .map(note => {
-              const fileName = note.filename.split('/').pop()
-              return {
-                name: fileName.endsWith('.md') ? fileName : `${fileName}.md`,
-                path: `src/content/notes/${moduleId}/${note.filename}${note.filename.endsWith('.md') ? '' : '.md'}`
-              }
-            })
-          
-          setFolderFiles(prev => ({
-            ...prev,
-            [key]: notesInFolder
-          }))
-          setLoadingFiles(prev => ({ ...prev, [key]: false }))
-          return
-        }
-      }
-
-      setFolderFiles(prev => ({
-        ...prev,
-        [key]: mdFiles
-      }))
-    } catch (error) {
-      console.error('Failed to load folder files:', error)
-      setFolderFiles(prev => ({
-        ...prev,
-        [key]: []
-      }))
-    } finally {
-      setLoadingFiles(prev => ({ ...prev, [key]: false }))
-    }
+  const handleFileClick = (file) => {
+    if (onLoadFile) onLoadFile({ moduleId: file.moduleId, path: file.path })
   }
 
-  const handleFileClick = (filePath) => {
-    if (onLoadFile) {
-      onLoadFile(filePath)
-    }
-  }
-
-  // Notes are dragged, not subfolders — the drag source is a file row.
-  // onMoveFile resolves the basename back to its modules.js entry.
-  const handleDragStart = (e, moduleId, subfolder, filename) => {
+  // Notes are dragged, not subfolders — the drag source is a file row carrying
+  // its DB identity. onMoveFile resolves the move by path.
+  const handleDragStart = (e, moduleId, subfolder, file) => {
     e.stopPropagation()
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('application/json', JSON.stringify({
       fromModule: moduleId,
       fromSubfolder: subfolder,
-      filename
+      fromPath: file.path,
+      filename: file.name,
     }))
   }
 
@@ -276,14 +204,13 @@ export default function DirectoryDrawer({
 
     if (data.fromModule === toModule && data.fromSubfolder === toSubfolder) return
 
-    await onMoveFile({ ...data, toModule, toSubfolder })
-
-    // File lists are cached per folder on first expand, so both ends of the
-    // move would keep rendering their pre-move contents without a reload.
-    await Promise.all([
-      loadFolderFiles(data.fromModule, data.fromSubfolder),
-      loadFolderFiles(toModule, toSubfolder),
-    ])
+    await onMoveFile({
+      fromModule: data.fromModule,
+      fromSubfolder: data.fromSubfolder,
+      fromPath: data.fromPath,
+      toModule,
+      toSubfolder,
+    })
   }
 
   const isDragOver = (moduleId, subfolder) => {
@@ -323,10 +250,7 @@ export default function DirectoryDrawer({
             <Files>
             {visibleModules.map(module => {
               const derivedSubfolders = module.notes
-                ? [...new Set(module.notes.map(n => {
-                    const parts = n.filename.split('/')
-                    return parts.length > 1 ? parts[0] : 'notes'
-                  }))]
+                ? [...new Set(module.notes.map(n => displaySubfolder(n.filename)))]
                 : []
               const explicitSubfolders = module.subfolders ?? []
               // A folder created empty (no notes yet) only shows up via
@@ -365,7 +289,7 @@ export default function DirectoryDrawer({
                         module.label
                       )}
                     </FolderTrigger>
-                    
+
                     {isOwner && (
                       <div className={styles.moduleActions}>
                         <button
@@ -378,7 +302,7 @@ export default function DirectoryDrawer({
                         >
                           <FolderPlus size={14} />
                         </button>
-                        
+
                         <Popover.Root>
                           <Popover.Trigger asChild>
                             <button
@@ -417,12 +341,11 @@ export default function DirectoryDrawer({
 
                   <FolderContent>
                     {subfolders.map(subfolder => {
-                      const isRenaming = renamingPath?.moduleId === module.id && 
+                      const isRenaming = renamingPath?.moduleId === module.id &&
                                         renamingPath?.subfolder === subfolder
                       const folderKey = `${module.id}/${subfolder}`
                       const isExpanded = expandedFolders[folderKey]
-                      const files = folderFiles[folderKey] || []
-                      const isLoadingFolder = loadingFiles[folderKey]
+                      const files = filesForFolder(module, subfolder)
 
                       return (
                         <div key={subfolder}>
@@ -518,27 +441,22 @@ export default function DirectoryDrawer({
                           {/* File list */}
                           {isExpanded && (
                             <div className={styles.fileList}>
-                              {isLoadingFolder ? (
-                                <div className={styles.fileItem}>
-                                  <span className={styles.loadingText}>Loading files...</span>
-                                </div>
-                              ) : files.length === 0 ? (
+                              {files.length === 0 ? (
                                 <div className={styles.fileItem}>
                                   <span className={styles.emptyText}>No files found</span>
                                 </div>
                               ) : (
                                 files.map(file => {
                                   const isRenamingFile = renamingFile?.moduleId === module.id &&
-                                    renamingFile?.subfolder === subfolder &&
-                                    renamingFile?.filename === file.name
+                                    renamingFile?.path === file.path
 
                                   return (
                                     <div
                                       key={file.path}
                                       className={styles.fileItem}
-                                      onClick={() => !isRenamingFile && handleFileClick(file.path)}
+                                      onClick={() => !isRenamingFile && handleFileClick(file)}
                                       draggable={!isRenamingFile}
-                                      onDragStart={(e) => handleDragStart(e, module.id, subfolder, file.name)}
+                                      onDragStart={(e) => handleDragStart(e, module.id, subfolder, file)}
                                     >
                                       <div className={styles.fileContent}>
                                         <FileMd size={14} className={styles.fileIcon} />
@@ -580,7 +498,7 @@ export default function DirectoryDrawer({
                                               <button
                                                 className={styles.menuItem}
                                                 onClick={() => {
-                                                  setRenamingFile({ moduleId: module.id, subfolder, filename: file.name })
+                                                  setRenamingFile({ moduleId: module.id, subfolder, path: file.path })
                                                   setRenameFileValue(file.name.replace(/\.md$/, ''))
                                                 }}
                                               >
@@ -594,6 +512,7 @@ export default function DirectoryDrawer({
                                                       type: 'file',
                                                       moduleId: module.id,
                                                       subfolder,
+                                                      path: file.path,
                                                       filename: file.name,
                                                     })
                                                   }}
@@ -706,7 +625,7 @@ export default function DirectoryDrawer({
               Saving to: {selectedPath.moduleId} / {selectedPath.subfolder}
             </div>
           )}
-          
+
           {isOwner && (
             <button
               className={styles.newModuleButton}
@@ -737,10 +656,10 @@ export default function DirectoryDrawer({
               </div>
               <p className={styles.confirmMessage}>
                 {deleteConfirm.type === 'module'
-                  ? `Delete ${deleteConfirm.moduleId}? It will be hidden from the app, but its files remain in the repo and aren't currently reachable for cleanup.`
+                  ? `Delete ${deleteConfirm.moduleId}? Its notes are permanently removed from the database. The subject definition is removed on the next deploy.`
                   : deleteConfirm.type === 'file'
-                  ? `Delete ${deleteConfirm.filename}? This can't be undone.`
-                  : `Delete this folder? Notes inside will be orphaned.`}
+                  ? `Delete ${deleteConfirm.filename}? This permanently removes the note. This can't be undone.`
+                  : `Delete this folder? Every note inside it is permanently removed.`}
               </p>
               <div className={styles.confirmActions}>
                 <button
@@ -752,15 +671,12 @@ export default function DirectoryDrawer({
                 <button
                   className={styles.confirmDelete}
                   onClick={async () => {
-                    const { type, moduleId, subfolder, filename } = deleteConfirm
+                    const { type, moduleId, subfolder, path } = deleteConfirm
                     setDeleteConfirm(null)
                     if (type === 'module') {
                       onDeleteModule(moduleId)
                     } else if (type === 'file') {
-                      await onDeleteFile(moduleId, subfolder, filename)
-                      // Same stale-cache issue as rename: folderFiles won't
-                      // drop the deleted entry on its own.
-                      await loadFolderFiles(moduleId, subfolder)
+                      await onDeleteFile(moduleId, path)
                     } else {
                       onDeleteSubfolder(moduleId, subfolder)
                     }
