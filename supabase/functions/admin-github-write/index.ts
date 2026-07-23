@@ -7,64 +7,60 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Shared registry file — every save (including a correctly-scoped contributor's)
-// updates this, so it's allowed regardless of allowed_directories.
 const MODULES_JS_PATH = 'src/components/layout/Sidebar/modules.js'
 
-function isPathAllowed(path: string, role: string, allowedDirectories: string[]): boolean {
-  if (role === 'owner') return true
-  if (path === MODULES_JS_PATH) return true
-  return allowedDirectories.some(dir =>
-    path.startsWith(`src/content/notes/${dir}/`) ||
-    path.startsWith(`public/notes/img/${dir}/`)
-  )
-}
+// Delete is locked to one account (T-045 phase B), regardless of how many
+// accounts hold the `owner` role — see docs/specs/admin-drive-navigation.md §6.
+const DELETE_AUTHORIZED_EMAIL = 'moon@mooner.dev'
 
-// Locates a module's `{ id: '<moduleId>', ... }` block by brace-depth matching —
-// ported from the identical parser in src/hooks/useEditorSave.js so the
-// boundaries this checks against match what the client actually edits.
-function findModuleBlock(modulesJs: string, moduleId: string): { start: number; end: number } {
-  const escapedId = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  let startMatch = modulesJs.match(new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escapedId}',`, 'm'))
-  if (!startMatch) {
-    startMatch = modulesJs.match(new RegExp(`\\{\\s*id:\\s*'${escapedId}'\\s*,`, 'm'))
-  }
+// Removes a Subject's block from modules.js source. Ported from the client
+// (useEditorModules.js) to here: this runs server-side, keyed only on
+// moduleId, rather than trusting a client-computed "final content" for a
+// delete — a client-supplied "this commit is a deletion" flag would be
+// trivially spoofable, which would defeat the point of locking delete to one
+// account.
+function removeModuleSource(modulesJs: string, moduleId: string): string {
+  const escaped = moduleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const startPattern = new RegExp(`\\n\\s*\\{\\s*\\n\\s*id:\\s*'${escaped}',`, 'm')
+  const startMatch = modulesJs.match(startPattern)
   if (!startMatch || startMatch.index == null) {
-    throw new Error(`Could not find module: ${moduleId}`)
+    throw new Error(`Could not find subject "${moduleId}" in modules.js`)
   }
   const start = startMatch.index
+  let index = start + 1
   let depth = 0
-  for (let index = start + 1; index < modulesJs.length; index++) {
+  for (; index < modulesJs.length; index++) {
     const char = modulesJs[index]
     if (char === '{') depth += 1
     if (char === '}') {
       depth -= 1
-      if (depth === 0) return { start, end: index + 1 }
+      if (depth === 0) {
+        let end = index + 1
+        if (modulesJs[end] === ',') end += 1
+        if (modulesJs[end] === '\r') end += 1
+        if (modulesJs[end] === '\n') end += 1
+        return `${modulesJs.slice(0, start)}\n${modulesJs.slice(end)}`
+      }
     }
   }
-  throw new Error(`Could not parse module: ${moduleId}`)
+  throw new Error(`Could not parse subject "${moduleId}" in modules.js`)
 }
 
-// A contributor may only ever touch their own module's block inside the
-// shared modules.js registry. Proves that by requiring everything outside
-// that block's old span to appear verbatim, unmoved, in the new content —
-// the block itself can grow/shrink/rewrite freely, but nothing else may.
-function isScopedModulesJsEdit(oldContent: string, newContent: string, moduleId: string): boolean {
-  let block
-  try {
-    block = findModuleBlock(oldContent, moduleId)
-  } catch {
-    return false
-  }
-  const prefix = oldContent.slice(0, block.start)
-  const suffix = oldContent.slice(block.end)
-  if (newContent.length < prefix.length + suffix.length) return false
-  return newContent.startsWith(prefix) && newContent.endsWith(suffix)
-}
-
-function decodeGithubContent(base64WithNewlines: string): string {
-  const bytes = Uint8Array.from(atob(base64WithNewlines.replace(/\n/g, '')), c => c.charCodeAt(0))
-  return new TextDecoder('utf-8').decode(bytes)
+// Note CONTENT no longer lives in modules.js — it's in the Supabase `notes`
+// table (E-005/T-043) — so only owners ever write modules.js (creating,
+// removing, or renaming a subject). Contributors never touch it, hence no
+// special-case allowance below; it simply falls through to the directory
+// check, which their paths match for their own notes/images only.
+function isPathAllowed(path: string, role: string, allowedDirectories: string[]): boolean {
+  if (role === 'owner') return true
+  // modules.js is owner-only now (falls through to the directory check, which
+  // it never matches). Contributors may write only their own notes/images —
+  // and note .md writes here are just optional backups; the source of truth is
+  // the notes table, guarded by RLS.
+  return allowedDirectories.some(dir =>
+    path.startsWith(`src/content/notes/${dir}/`) ||
+    path.startsWith(`public/notes/img/${dir}/`)
+  )
 }
 
 serve(async (req) => {
@@ -112,12 +108,19 @@ serve(async (req) => {
 
     const { op, path, content, contentBase64, message, moduleId } = await req.json()
 
-    if (!op || !path) {
-      return json({ error: 'Missing op or path' }, 400)
+    if (!op) {
+      return json({ error: 'Missing op' }, 400)
     }
 
-    if (!isPathAllowed(path, profile.role, profile.allowed_directories ?? [])) {
-      return json({ error: 'Path is outside your allowed directories' }, 403)
+    // deleteModule has no `path` — it's keyed on moduleId and the target path
+    // (modules.js) is fixed server-side, not client-supplied.
+    if (op !== 'deleteModule') {
+      if (!path) {
+        return json({ error: 'Missing path' }, 400)
+      }
+      if (!isPathAllowed(path, profile.role, profile.allowed_directories ?? [])) {
+        return json({ error: 'Path is outside your allowed directories' }, 403)
+      }
     }
 
     const ghHeaders = {
@@ -176,25 +179,10 @@ serve(async (req) => {
         if (typeof content !== 'string' || !message) {
           return json({ error: 'Missing content or message' }, 400)
         }
-        let sha: string | null
-        if (path === MODULES_JS_PATH && profile.role !== 'owner') {
-          const allowedDirs: string[] = profile.allowed_directories ?? []
-          if (!moduleId || !allowedDirs.includes(moduleId)) {
-            return json({ error: 'moduleId is required and must be one of your allowed directories' }, 403)
-          }
-          const currentRes = await fetch(`${contentsUrl(path)}?ref=${githubBranch}`, { headers: ghHeaders })
-          if (!currentRes.ok) {
-            return json({ error: 'Could not verify existing modules.js content' }, 409)
-          }
-          const currentData = await currentRes.json()
-          const oldContent = decodeGithubContent(currentData.content)
-          if (!isScopedModulesJsEdit(oldContent, content, moduleId)) {
-            return json({ error: 'Edit to modules.js touches more than your own module' }, 403)
-          }
-          sha = currentData.sha ?? null
-        } else {
-          sha = await fetchSha(path)
-        }
+        // Path authorization already enforced by isPathAllowed above (owner for
+        // modules.js; own notes/img dirs for contributors). No modules.js
+        // block-scoping needed anymore — note content is in the DB.
+        const sha: string | null = await fetchSha(path)
         const body = {
           message,
           content: btoa(unescape(encodeURIComponent(content))),
@@ -226,14 +214,52 @@ serve(async (req) => {
       }
 
       case 'deleteFile': {
-        // The user-facing "Delete" action — owner-only per T-031. Distinct
-        // from 'cleanupFile' below, which the same rename/move flows a
-        // contributor is allowed to run also depend on.
+        // The user-facing "Delete" action — locked to one account (T-045
+        // phase B), not just the owner role. Distinct from 'cleanupFile'
+        // below, which the same rename/move flows a contributor is allowed
+        // to run also depend on.
         if (!message) return json({ error: 'Missing message' }, 400)
-        if (profile.role !== 'owner') {
-          return json({ error: 'Only owners can delete files' }, 403)
+        if (profile.role !== 'owner' || callerData.user.email !== DELETE_AUTHORIZED_EMAIL) {
+          return json({ error: 'Only the site owner can delete files' }, 403)
         }
         return await deleteFromGithub(path, message)
+      }
+
+      case 'deleteModule': {
+        // Removes a Subject's block from modules.js. Locked to one account
+        // (T-045 phase B) — verified via the caller's authenticated Supabase
+        // session (callerData.user.email), not the client-editable
+        // admin_users.email column.
+        if (!moduleId || !message) return json({ error: 'Missing moduleId or message' }, 400)
+        if (profile.role !== 'owner' || callerData.user.email !== DELETE_AUTHORIZED_EMAIL) {
+          return json({ error: 'Only the site owner can delete a subject' }, 403)
+        }
+        const res = await fetch(`${contentsUrl(MODULES_JS_PATH)}?ref=${githubBranch}`, { headers: ghHeaders })
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          return json({ error: `Failed to read modules.js (${res.status}): ${errorData.message || res.statusText}` }, res.status)
+        }
+        const data = await res.json()
+        const currentModulesJs = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))))
+        let updatedModulesJs: string
+        try {
+          updatedModulesJs = removeModuleSource(currentModulesJs, moduleId)
+        } catch (err) {
+          return json({ error: (err as Error).message }, 400)
+        }
+        const sha: string | null = await fetchSha(MODULES_JS_PATH)
+        const commitRes = await fetch(contentsUrl(MODULES_JS_PATH), {
+          method: 'PUT',
+          headers: ghHeaders,
+          body: JSON.stringify({
+            message,
+            content: btoa(unescape(encodeURIComponent(updatedModulesJs))),
+            branch: githubBranch,
+            ...(sha ? { sha } : {}),
+          }),
+        })
+        if (!commitRes.ok) return json({ error: `GitHub commit failed: ${commitRes.status}` }, commitRes.status)
+        return json(await commitRes.json())
       }
 
       case 'cleanupFile': {

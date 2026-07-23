@@ -9,13 +9,13 @@ import {
 import PackageJsonPopup from '../PackageJsonPopup/PackageJsonPopup'
 import styles from './ExpandedView.module.css'
 import {
-  MODULES,
   STANDALONE_TOOLS,
   PACKAGE_JSON,
   findActiveModule,
-  hasContent as moduleHasContent,
   noteRoute,
 } from '../modules'
+import { displaySubfolder } from '../../../../lib/notesApi'
+import { useNotesRegistry } from '../../../../hooks/useNotesRegistry'
 
 function ExpandedView({
   path,
@@ -28,17 +28,15 @@ function ExpandedView({
   sessionId,
   unreadCount,
 }) {
+  const { modules } = useNotesRegistry()
   const activeModule = findActiveModule(path)
-
-  const defaultOpen = activeModule
-    ? [activeModule.id, `${activeModule.id}-notes`, `${activeModule.id}-tools`]
-    : []
+  const defaultOpen = activeModule ? [activeModule.id] : []
 
   return (
     <div className={styles.container}>
       <div className={styles.rootLabel}>
-        <span 
-          onClick={() => go('/home', 'Home')} 
+        <span
+          onClick={() => go('/home', 'Home')}
           style={{ cursor: 'pointer', textDecoration: 'none' }}
           onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
           onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
@@ -51,14 +49,24 @@ function ExpandedView({
       <div className={styles.treeArea}>
         <div className={styles.filesContainer}>
           <Files defaultOpen={defaultOpen}>
-            {MODULES.filter(module => module.id !== 'Miscellaneous').map((module) => {
+            {modules.filter(module => module.id !== 'Miscellaneous').map((module) => {
               const notes = module.notes ?? []
               const tools = module.tools ?? []
-              const folders = module.folders ?? []
-              const hasNotesFolder = Object.prototype.hasOwnProperty.call(module, 'notes')
-              const hasToolsFolder = Object.prototype.hasOwnProperty.call(module, 'tools')
-              const hasFolders = folders.length > 0
-              const populated = moduleHasContent(module) || hasFolders
+
+              // Group notes by their display subfolder (first path segment;
+              // root-level notes fall under "notes"), matching DirectoryDrawer.
+              // Empty subfolders come from module.subfolders (note_folders).
+              const bySubfolder = new Map()
+              for (const n of notes) {
+                const sub = displaySubfolder(n.filename)
+                if (!bySubfolder.has(sub)) bySubfolder.set(sub, [])
+                bySubfolder.get(sub).push(n)
+              }
+              for (const name of (module.subfolders ?? [])) {
+                if (!bySubfolder.has(name)) bySubfolder.set(name, [])
+              }
+              const subfolders = [...bySubfolder.keys()].sort()
+              const populated = subfolders.length > 0 || tools.length > 0
 
               return (
                 <FolderItem key={module.id} value={module.id}>
@@ -68,60 +76,39 @@ function ExpandedView({
                   </FolderTrigger>
                   <FolderContent>
                     <SubFiles>
-                      {hasFolders && folders.map((folder) => (
-                        <FolderItem key={`${module.id}-${folder.name}`} value={`${module.id}-${folder.name}`}>
-                          <FolderTrigger variant="folder">{folder.name}</FolderTrigger>
-                          <FolderContent>
-                            <SubFiles>
-                              {folder.items.length > 0 ? folder.items.map((item) => {
-                                const route = noteRoute(module.id, item.filename)
-                                return (
-                                  <FileItem
-                                    key={item.filename}
-                                    onClick={() => go(route, 'notes')}
-                                    className={path === route ? styles.activeFile : undefined}
-                                  >
-                                    {item.label}
-                                  </FileItem>
-                                )
-                              }) : (
-                                <div className={styles.emptyState}>(empty)</div>
-                              )}
-                            </SubFiles>
-                          </FolderContent>
-                        </FolderItem>
-                      ))}
+                      {subfolders.map((sub) => {
+                        const items = bySubfolder.get(sub)
+                        return (
+                          <FolderItem key={`${module.id}-${sub}`} value={`${module.id}-${sub}`}>
+                            <FolderTrigger variant="folder">{sub}</FolderTrigger>
+                            <FolderContent>
+                              <SubFiles>
+                                {items.length > 0 ? items.map((n) => {
+                                  const route = noteRoute(module.id, n.filename)
+                                  return (
+                                    <FileItem
+                                      key={n.filename}
+                                      onClick={() => go(route, 'notes')}
+                                      className={path === route ? styles.activeFile : undefined}
+                                    >
+                                      {n.label}
+                                    </FileItem>
+                                  )
+                                }) : (
+                                  <div className={styles.emptyState}>(empty)</div>
+                                )}
+                              </SubFiles>
+                            </FolderContent>
+                          </FolderItem>
+                        )
+                      })}
 
-                      {hasNotesFolder && (
-                        <FolderItem value={`${module.id}-notes`}>
-                          <FolderTrigger variant="folder">notes</FolderTrigger>
-                          <FolderContent>
-                            <SubFiles>
-                              {notes.length > 0 ? notes.map((n) => {
-                                const route = noteRoute(module.id, n.filename)
-                                return (
-                                  <FileItem
-                                    key={n.filename}
-                                    onClick={() => go(route, 'notes')}
-                                    className={path === route ? styles.activeFile : undefined}
-                                  >
-                                    {n.label}
-                                  </FileItem>
-                                )
-                              }) : (
-                                <div className={styles.emptyState}>(empty)</div>
-                              )}
-                            </SubFiles>
-                          </FolderContent>
-                        </FolderItem>
-                      )}
-
-                      {hasToolsFolder && (
+                      {tools.length > 0 && (
                         <FolderItem value={`${module.id}-tools`}>
                           <FolderTrigger variant="folder">tools</FolderTrigger>
                           <FolderContent>
                             <SubFiles>
-                              {tools.length > 0 ? tools.map((t) => (
+                              {tools.map((t) => (
                                 <FileItem
                                   key={t.id}
                                   onClick={() => go(t.route, t.id)}
@@ -129,9 +116,7 @@ function ExpandedView({
                                 >
                                   {t.label}
                                 </FileItem>
-                              )) : (
-                                <div className={styles.emptyState}>(empty)</div>
-                              )}
+                              ))}
                             </SubFiles>
                           </FolderContent>
                         </FolderItem>

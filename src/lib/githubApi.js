@@ -101,6 +101,17 @@ export async function deleteFile(path, message) {
   return invokeGithub({ op: 'deleteFile', path, message })
 }
 
+// ─── DELETE MODULE (subject) ─────────────────────────────────────────────────
+// Removes a subject's block from modules.js. Unlike commitFile (where the
+// client computes the new file content), the removal itself runs server-side
+// — the caller only sends the moduleId — because delete is locked to one
+// account (T-045 phase B) and a client-computed "this commit is a deletion"
+// flag would be trivially spoofable. The edge function verifies the caller's
+// email before touching GitHub.
+export async function deleteModule(moduleId, message) {
+  return invokeGithub({ op: 'deleteModule', moduleId, message })
+}
+
 // ─── CLEANUP FILE ────────────────────────────────────────────────────────────
 // Removes the old path after its content has already been committed
 // elsewhere (rename/move). Any admin may run this — a contributor is allowed

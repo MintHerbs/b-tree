@@ -1,6 +1,7 @@
 import { useRef } from 'react'
+import { registerDraftPreview } from '../lib/draftImagePreviews'
 
-export function useEditorImages({ selectedPath, showToast, editorRef, setContent }) {
+export function useEditorImages({ selectedPath, showToast, editorRef, noteEditorRef, useWysiwyg, setContent }) {
   const imageCountRef = useRef({})
   const imageQueueRef = useRef({}) // shape: { 'draft://img-1.png': { file: File, ext: string } }
 
@@ -16,11 +17,27 @@ export function useEditorImages({ selectedPath, showToast, editorRef, setContent
       const ext = file.name.split('.').pop()
       const draftKey = `draft-img-${Date.now()}.${ext}`
 
-      // Store file in queue
+      // Store file in queue + register a blob URL so it previews immediately
+      // (the editor's image node view resolves draft://<key> to this URL).
       imageQueueRef.current[draftKey] = { file, ext }
+      registerDraftPreview(draftKey, file)
 
       // Insert draft markdown at cursor
       const imageMarkdown = `![image](draft://${draftKey})`
+
+      // WYSIWYG (Milkdown): insert an image node at the cursor. The node view
+      // resolves draft://<key> to the blob URL so it previews immediately, and
+      // useEditorSave rewrites it to /notes/img/… on save.
+      if (useWysiwyg) {
+        if (noteEditorRef?.current?.insertImage) {
+          noteEditorRef.current.insertImage({ src: `draft://${draftKey}`, alt: 'image' })
+        } else {
+          // Editor not ready yet — fall back to appending to the content prop.
+          setContent(prev => (prev ? `${prev}\n\n${imageMarkdown}` : imageMarkdown))
+        }
+        showToast('Image queued — will upload when you save', 'success')
+        return
+      }
 
       if (editorRef.current) {
         const editor = editorRef.current

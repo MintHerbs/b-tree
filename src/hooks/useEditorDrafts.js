@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-const IDLE_MS = 4000
-const CEILING_MS = 25000
+// Flat cadence (T-045 phase D) — replaces the earlier idle/ceiling pair.
+// Still a recovery draft only (admin_note_drafts), not the publish path;
+// `handleSave` is the only thing that makes a note live. saveDraft's own
+// lastSavedRef check (below) already no-ops when nothing changed since the
+// last autosave, so "only if something new was written" is free.
+const AUTOSAVE_INTERVAL_MS = 10000
 
 // Title to filename conversion — kept in sync with useEditorSave.js /
 // useEditorModules.js so a draft's key always matches its eventual publish path.
@@ -20,8 +24,7 @@ export function useEditorDrafts({
   userId, title, content, selectedPath, unsaved,
   showToast, setTitle, setContent, setUnsaved,
 }) {
-  const idleTimerRef = useRef(null)
-  const ceilingTimerRef = useRef(null)
+  const intervalRef = useRef(null)
   const lastSavedRef = useRef({ title: null, content: null })
   const latestRef = useRef({})
   latestRef.current = { userId, title, content, selectedPath }
@@ -52,35 +55,19 @@ export function useEditorDrafts({
     }
   }, [])
 
-  // Ends the ceiling window whenever the dirty flag or the note identity
-  // changes (also runs on unmount). Without this, a ceiling timer armed
-  // while editing one note can outlive a switch to a different note and
-  // later fire a spurious autosave under the new note's key, using whatever
-  // is current by then — even if that note was never touched.
+  // Flat 10s interval while the note is dirty. Scoped to the note's identity
+  // (not just `unsaved`) so switching notes tears down and re-arms the
+  // interval under the new key, rather than letting a stale one fire a
+  // spurious autosave against whatever note happens to be open when it ticks.
   useEffect(() => {
-    return () => {
-      clearTimeout(ceilingTimerRef.current)
-      ceilingTimerRef.current = null
-    }
-  }, [unsaved, userId, selectedPath?.moduleId, selectedPath?.subfolder])
-
-  useEffect(() => {
-    // Only autosave a note that's actually been edited and has a title —
-    // an untitled note has no stable key, so it's left out of the safety net.
     if (!unsaved || !userId || !selectedPath || !title.trim()) return
 
-    clearTimeout(idleTimerRef.current)
-    idleTimerRef.current = setTimeout(saveDraft, IDLE_MS)
-
-    if (!ceilingTimerRef.current) {
-      ceilingTimerRef.current = setTimeout(() => {
-        ceilingTimerRef.current = null
-        saveDraft()
-      }, CEILING_MS)
+    intervalRef.current = setInterval(saveDraft, AUTOSAVE_INTERVAL_MS)
+    return () => {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
     }
-
-    return () => clearTimeout(idleTimerRef.current)
-  }, [unsaved, title, content, userId, selectedPath, saveDraft])
+  }, [unsaved, userId, selectedPath?.moduleId, selectedPath?.subfolder, saveDraft])
 
   // Any draft row still present at this key is by definition unpublished —
   // clearDraft removes it the moment a publish succeeds, so existence alone

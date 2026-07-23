@@ -59,6 +59,31 @@
   --error: var(--color-error);
   --warning: var(--color-warning);
   --success: var(--color-success);
+
+  /* Material You (M3) aliases — repoint to the global --md-* set in
+     global.css (already page-global; see docs/design/colors.md). Scoped to
+     AdminBrowser (T-045 phase A), the M3 surface's second consumer after
+     ui/Card. Short-alias convention matches --bg/--surface/etc. above. */
+  --admin-md-surface-container-low: var(--md-surface-container-low);
+  --admin-md-surface-container: var(--md-surface-container);
+  --admin-md-surface-container-high: var(--md-surface-container-high);
+  --admin-md-primary: var(--md-primary);
+  --admin-md-on-primary: var(--md-on-primary);
+  --admin-md-primary-container: var(--md-primary-container);
+  --admin-md-on-primary-container: var(--md-on-primary-container);
+  --admin-md-on-surface: var(--md-on-surface);
+  --admin-md-on-surface-variant: var(--md-on-surface-variant);
+  --admin-md-outline-variant: var(--md-outline-variant);
+  --admin-md-state-hover: var(--md-state-hover);
+  --admin-md-state-focus: var(--md-state-focus);
+  --admin-md-state-pressed: var(--md-state-pressed);
+  --admin-md-shape-sm: var(--md-shape-sm);
+  --admin-md-shape-md: var(--md-shape-md);
+  --admin-md-shape-lg: var(--md-shape-lg);
+  --admin-md-shape-xl: var(--md-shape-xl);
+  --admin-md-easing-emphasized: var(--md-easing-emphasized);
+  --admin-md-duration-short: var(--md-duration-short);
+  --admin-md-duration-medium: var(--md-duration-medium);
 }
 
 /* KaTeX color overrides for dark theme */

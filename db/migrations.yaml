@@ -19,7 +19,7 @@
 # See db/README.md for how to apply migrations against a Supabase project.
 
 project: b-tree
-schema_version: 19
+schema_version: 21
 
 migrations:
   - id: "0001"
@@ -173,3 +173,27 @@ migrations:
     created: 2026-07-22
     applied_envs: []
     related_issues: []
+
+  - id: "0020"
+    file: sql/0020_init_notes.sql
+    description: "E-005/T-043: notes + note_folders tables make note content the source of truth in Supabase (identity module_id+path). admin_can_write_module security-definer helper mirrors the admin-github-write isPathAllowed rule (owner OR module in allowed_directories); public read, scoped insert/update, owner-only delete, owner-only cross-subject move via trigger. Applied to prod 2026-07-23."
+    author: agent
+    created: 2026-07-23
+    applied_envs: ["prod"]
+    related_issues: ["T-043", "E-005"]
+
+  - id: "0021"
+    file: sql/0021_drop_image_map.sql
+    description: "E-005/T-043 Phase C: drop the obsolete, previously-untracked image_map cache. The image-orphan scanner now reads referenced images from notes.content_md directly (fixes T-002), so the SHA-keyed cache is dead. NOT YET APPLIED — destructive DROP left for the owner to run; the table is harmless meanwhile (no code references it)."
+    author: agent
+    created: 2026-07-23
+    applied_envs: []
+    related_issues: ["T-043", "T-002", "E-005"]
+
+  - id: "0022"
+    file: sql/0022_admin_delete_lock_and_visibility.sql
+    description: "T-045 phases B+C: admin_is_delete_authorized() locks notes/note_folders DELETE to one verified-JWT-email account (moon@mooner.dev), narrowing the existing owner-scoped delete policies rather than replacing them; adds hidden columns to notes/note_folders and a new module_visibility table (public read, owner-only write) so Subjects/folders/files can be hidden from the live site without a redeploy."
+    author: agent
+    created: 2026-07-23
+    applied_envs: []
+    related_issues: ["T-045", "E-006"]
