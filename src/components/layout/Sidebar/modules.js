@@ -170,6 +170,7 @@ export const MODULES = [
     label: 'experimental',
     Icon: Atom,
     notes: [
+          { filename: 'notes/test-file', label: 'test-file.md' },
     ],
     tools: [
     ],
