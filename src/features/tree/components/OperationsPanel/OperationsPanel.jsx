@@ -1,6 +1,7 @@
 // Right sidebar - insert/delete inputs and tree info display
 import { useState } from 'react'
 import styles from './OperationsPanel.module.css'
+import { normalizeKey } from '../../../../lib/BPlusTree'
 
 function OperationsPanel({ order, stats, onInsert, onDelete }) {
   const [insertInput, setInsertInput] = useState('')
@@ -17,12 +18,13 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
     
     if (values.length === 0) return
 
-    // Deduplicate values (case-insensitive)
+    // Deduplicate using the SAME rule the tree stores keys under, so "007" and
+    // "7" (or "Banana"/"banana") collapse to one entry instead of diverging.
     const uniqueValues = []
     const seen = new Set()
-    
+
     for (const value of values) {
-      const normalized = String(value).toLowerCase()
+      const normalized = normalizeKey(value)
       if (!seen.has(normalized)) {
         seen.add(normalized)
         uniqueValues.push(value)
@@ -49,12 +51,13 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
     
     if (values.length === 0) return
 
-    // Deduplicate values (case-insensitive)
+    // Deduplicate using the SAME rule the tree stores keys under, so "007" and
+    // "7" (or "Banana"/"banana") collapse to one entry instead of diverging.
     const uniqueValues = []
     const seen = new Set()
-    
+
     for (const value of values) {
-      const normalized = String(value).toLowerCase()
+      const normalized = normalizeKey(value)
       if (!seen.has(normalized)) {
         seen.add(normalized)
         uniqueValues.push(value)
@@ -120,7 +123,7 @@ function OperationsPanel({ order, stats, onInsert, onDelete }) {
         <h3 className={styles.sectionTitle}>TREE INFO</h3>
         <div className={styles.info}>
           <div className={styles.infoRow}>
-            <span>Order (t):</span>
+            <span>Order (m):</span>
             <span>{stats?.order || order}</span>
           </div>
           <div className={styles.infoRow}>

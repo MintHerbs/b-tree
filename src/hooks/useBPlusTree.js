@@ -19,45 +19,34 @@ export function useBPlusTree(order = 3) {
     setTree(newTree)
   }, [])
 
-  // Insert values into the tree
+  // Insert values into the tree.
+  // Clone-then-mutate: the state updater must stay pure (StrictMode invokes it
+  // twice), so we never touch `currentTree`. Cloning preserves the existing tree
+  // structure, so the incremental shape is kept rather than rebuilt from keys.
   const insert = useCallback((values) => {
     if (!Array.isArray(values)) {
       values = [values]
     }
 
-    // Insert directly into the tree (library handles everything)
     setTree(currentTree => {
-      const newTree = new BPlusTree(currentTree.order)
-      
-      const existingKeys = currentTree.getAllKeys()
-      existingKeys.forEach(k => newTree.insert(k))
-      values.forEach(v => newTree.insert(v))
-      
-      return newTree
+      const next = currentTree.clone()
+      values.forEach(v => next.insert(v))
+      return next
     })
   }, [])
 
-  // Delete values from the tree
+  // Delete values from the tree.
+  // Runs the structural delete (borrow/merge) on a clone. The tree normalizes
+  // each key itself, so no separate normalization is needed here.
   const deleteValues = useCallback((values) => {
     if (!Array.isArray(values)) {
       values = [values]
     }
 
-    // Delete directly from the tree (library handles everything)
     setTree(currentTree => {
-      const newTree = new BPlusTree(currentTree.order)
-      
-      const existingKeys = currentTree.getAllKeys()
-      const normalizedValues = values.map(v => {
-        const str = String(v).toLowerCase().trim()
-        const num = Number(str)
-        return isNaN(num) ? str : num
-      })
-      existingKeys.forEach(k => {
-        if (!normalizedValues.includes(k)) newTree.insert(k)
-      })
-      
-      return newTree
+      const next = currentTree.clone()
+      values.forEach(v => next.delete(v))
+      return next
     })
   }, [])
 

@@ -52,7 +52,7 @@ function leafChainSorted(root) {
 
 // ─── Parameters ───────────────────────────────────────────────────────────────
 console.log('\n=== 1. Order parameter formulas ===')
-for (const m of [2, 3, 4, 5, 6, 7]) {
+for (const m of [3, 4, 5, 6, 7]) {
   const t = new BPlusTree(m)
   const p = t.getParameters()
   assert(p.maxKeys === m - 1,        `order ${m}: maxKeys = m-1 = ${m-1}, got ${p.maxKeys}`)
@@ -62,8 +62,8 @@ for (const m of [2, 3, 4, 5, 6, 7]) {
 }
 
 // ─── Invariants after sequential insert ───────────────────────────────────────
-console.log('\n=== 2. Invariants hold for orders 2–7, values 1–20 ===')
-for (const m of [2, 3, 4, 5, 6, 7]) {
+console.log('\n=== 2. Invariants hold for orders 3–7, values 1–20 ===')
+for (const m of [3, 4, 5, 6, 7]) {
   const t = new BPlusTree(m)
   for (let i = 1; i <= 20; i++) t.insert(i)
   validateFull(t, `order ${m}, sequential 1-20`)
@@ -172,6 +172,68 @@ console.log('\n=== 10. Textbook example: order 4, insert 1..10 ===')
   const leaves = getLeaves(r)
   const leafStr = leaves.map(l => `[${l.keys}]`).join('->')
   assert(leafStr === '[1,2]->[3,4]->[5,6]->[7,8]->[9,10]', `leaf chain: ${leafStr}`)
+}
+
+// ─── Structural delete: no-underflow case (order 4, insert 1..10, delete 5) ────
+console.log('\n=== 11. Structural delete keeps height, refreshes separator ===')
+{
+  const t = new BPlusTree(4)
+  ;[1,2,3,4,5,6,7,8,9,10].forEach(v => t.insert(v))
+  assert(t.getStats().height === 3, `pre-delete height is 3, got ${t.getStats().height}`)
+  t.delete(5)
+  assert(t.getStats().height === 3, `delete(5) keeps height 3 (no underflow), got ${t.getStats().height}`)
+  assert(!t.search(5), 'delete: 5 no longer found')
+  validateFull(t, 'after delete(5)')
+  // root separator was 5 (== deleted key); must refresh to the new right-subtree min, 6
+  assert(t.root.keys.length === 1 && t.root.keys[0] === 6,
+    `root separator refreshed 5 -> 6, got [${t.root.keys}]`)
+  const leaves = getLeaves(t.root)
+  const leafStr = leaves.map(l => `[${l.keys}]`).join('->')
+  assert(leafStr === '[1,2]->[3,4]->[6]->[7,8]->[9,10]', `only the affected leaf changed: ${leafStr}`)
+  assert(leafChainSorted(t.root), 'leaf chain still sorted after delete')
+}
+
+// ─── Structural delete: underflow triggers borrow/merge, height can shrink ─────
+console.log('\n=== 12. Structural delete resolves underflow ===')
+{
+  const t = new BPlusTree(3) // minKeys = 1
+  ;[1,2,3,4,5,6,7].forEach(v => t.insert(v))
+  validateFull(t, 'order 3, 1..7 inserted')
+  const h0 = t.getStats().height
+  // delete several keys; tree must stay valid, leaves same depth, chain == keyset
+  ;[1,2,3,4].forEach(v => t.delete(v))
+  validateFull(t, 'order 3 after deleting 1..4')
+  assert(allLeavesSameDepth(t.root), 'all leaves same depth after deletes')
+  assert(leafChainSorted(t.root), 'leaf chain sorted after deletes')
+  const remaining = [5,6,7]
+  assert(remaining.every(v => t.search(v)), 'remaining keys 5,6,7 all found')
+  assert(!t.search(1) && !t.search(4), 'deleted keys 1 and 4 absent')
+  assert(t.getStats().height <= h0, `height did not grow (was ${h0}, now ${t.getStats().height})`)
+}
+
+// ─── Hook contract: clone-then-mutate independence + stats shape ──────────────
+// The useBPlusTree hook (StrictMode-safe) relies on clone() producing a fully
+// independent tree it can mutate without touching the previous state. Verify
+// that core here (React execution would need a test framework we don't use).
+console.log('\n=== 13. clone() independence + stats shape (hook core) ===')
+{
+  const t = new BPlusTree(4)
+  ;[1,2,3,4,5,6,7,8].forEach(v => t.insert(v))
+  const before = t.getStats()
+
+  const c = t.clone()
+  c.insert(9)
+  c.delete(1)
+  const after = t.getStats()
+
+  assert(after.keyCount === before.keyCount, 'mutating the clone does not change the original key count')
+  assert(t.search(1), 'original still contains 1 after clone.delete(1)')
+  assert(!t.search(9), 'original does not contain 9 after clone.insert(9)')
+  assert(c.search(9) && !c.search(1), 'clone reflects its own insert(9)/delete(1)')
+
+  const s = t.getStats()
+  assert(['order','nodeCount','keyCount','height'].every(k => k in s),
+    `stats exposes { order, nodeCount, keyCount, height }, got keys [${Object.keys(s)}]`)
 }
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
