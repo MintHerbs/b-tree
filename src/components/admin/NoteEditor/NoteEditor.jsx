@@ -1,8 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import { createRoot } from 'react-dom/client'
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core'
 import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
+import CodeBlock from '../../social/CodeBlock/CodeBlock'
 import {
   commonmark,
+  codeBlockSchema,
   toggleStrongCommand,
   toggleEmphasisCommand,
   toggleInlineCodeCommand,
@@ -13,7 +16,7 @@ import { gfm, toggleStrikethroughCommand } from '@milkdown/kit/preset/gfm'
 import { listener, listenerCtx } from '@milkdown/kit/plugin/listener'
 import { history } from '@milkdown/kit/plugin/history'
 import { math } from '@milkdown/plugin-math'
-import { callCommand, replaceAll, getMarkdown, markdownToSlice, $prose } from '@milkdown/kit/utils'
+import { callCommand, replaceAll, getMarkdown, markdownToSlice, $prose, $view } from '@milkdown/kit/utils'
 import { Milkdown, MilkdownProvider, useEditor, useInstance } from '@milkdown/react'
 import 'katex/dist/katex.min.css'
 import '@milkdown/kit/prose/view/style/prosemirror.css'
@@ -52,6 +55,35 @@ function normalizeLatexDelimiters(text) {
     // \( … \) → $ … $     (inline)
     .replace(/\\\(([\s\S]*?)\\?\)/g, (_, body) => `$${unescapeMath(body.trim())}$`)
 }
+
+// Render fenced code blocks with the shared social CodeBlock (themed, read-only)
+// so the editor matches the reader. Reuses the real React component via a
+// react-dom root; no contentDOM => not inline-editable here (reveal-to-edit is
+// T-037). The node's text stays in the doc model, so Markdown round-trip is
+// unaffected. React root mount/unmount is deferred a microtask to stay clear of
+// ProseMirror's synchronous view-update cycle.
+const codeBlockView = $view(codeBlockSchema, () => (node) => {
+  const dom = document.createElement('div')
+  const root = createRoot(dom)
+  const render = (n) => queueMicrotask(() => {
+    try {
+      root.render(<CodeBlock code={n.textContent} language={n.attrs.language || 'auto'} />)
+    } catch { /* editor may have torn down */ }
+  })
+  render(node)
+  return {
+    dom,
+    update: (updated) => {
+      if (updated.type !== node.type) return false
+      render(updated)
+      return true
+    },
+    // React owns this subtree — keep ProseMirror's mutation observer out of it.
+    ignoreMutation: () => true,
+    stopEvent: () => false,
+    destroy: () => queueMicrotask(() => root.unmount()),
+  }
+})
 
 // Markdown-first clipboard. Milkdown's stock clipboard plugin only runs the
 // Markdown parser when the clipboard is *pure* plain text; if any text/html is
@@ -127,6 +159,7 @@ const MilkdownInner = forwardRef(function MilkdownInner({ content, onChange }, r
       .use(math)
       .use(history)
       .use(markdownClipboard)
+      .use(codeBlockView)
       .use(listener)
   )
 
