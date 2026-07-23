@@ -15,4 +15,9 @@
 - Hexadecimal
 - USed to represent colours and MAC addresses.
 - Digits used are: 0-9 and A-F
-    -
+    - A: 10
+    - B: 11
+    - C: 12
+    - D: 13
+    - E: 14
+    - F: 15
