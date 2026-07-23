@@ -121,7 +121,11 @@ export const MODULES = [
     ],
   },
   { id: 'computer-architecture', label: 'Computer Architecture', Icon: Cpu, notes: [
-    { filename: 'notes/lecture-1-binary-numbers', label: 'lecture-1-binary-numbers.md' },
+    { filename: 'notes/lecture-1-binary-numbers', label: 'lecture-1-binary-numbers.md' 
+    notes: [
+      { filename: 'notes/lecture-2floating-point-numbers', label: 'lecture-2floating-point-numbers.md' },
+    ],
+  },
   ] },
   { id: 'computer-networking',   label: 'Computer Networking',   Icon: Network },
   { id: 'computer-security',     label: 'Computer Security',     Icon: ShieldCheck },
